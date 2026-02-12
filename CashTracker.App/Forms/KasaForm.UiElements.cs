@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Windows.Forms;
 using CashTracker.App.UI;
@@ -63,11 +64,12 @@ namespace CashTracker.App.Forms
                 FlatStyle = FlatStyle.Flat
             };
 
-            button.FlatAppearance.BorderColor = Color.FromArgb(218, 224, 232);
+            button.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
             button.FlatAppearance.BorderSize = 1;
-            button.FlatAppearance.MouseOverBackColor = back == Color.White
-                ? Color.FromArgb(245, 247, 251)
-                : back;
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(
+                Math.Max(back.R - 12, 0),
+                Math.Max(back.G - 12, 0),
+                Math.Max(back.B - 12, 0));
 
             return button;
         }

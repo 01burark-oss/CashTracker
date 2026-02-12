@@ -85,7 +85,7 @@ namespace CashTracker.Infrastructure.Services
 
                     case "/backup":
                     case "/yedek":
-                        await _telegram.SendTextAsync(ToChatId(update.ChatId), "Yedek al\u0131n\u0131yor...", ct);
+                        await _telegram.SendTextAsync(ToChatId(update.ChatId), "Yedek alınıyor, lütfen bekleyin.", ct);
                         await _backupReport.SendBackupAsync("Telegram komutu");
                         break;
 
@@ -263,7 +263,7 @@ namespace CashTracker.Infrastructure.Services
         {
             if (args.Length < 2)
             {
-                await _telegram.SendTextAsync(ToChatId(chatId), "Kullan\u0131m: /ekle gelir|gider <tutar> ...", ct);
+                await _telegram.SendTextAsync(ToChatId(chatId), "Kullanım: /ekle gelir|gider <tutar> [açıklama]", ct);
                 return;
             }
 

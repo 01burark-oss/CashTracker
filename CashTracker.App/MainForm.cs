@@ -74,7 +74,7 @@ namespace CashTracker.App
             Text = "CashTracker Gösterge Paneli";
             Width = 1320;
             Height = 900;
-            MinimumSize = new Size(1180, 760);
+            MinimumSize = new Size(1320, 820);
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);

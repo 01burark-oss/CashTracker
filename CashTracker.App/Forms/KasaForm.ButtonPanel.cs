@@ -9,9 +9,9 @@ namespace CashTracker.App.Forms
         private FlowLayoutPanel CreateButtonPanel()
         {
             _btnSave = CreateButton("Kaydet", BrandTheme.Navy, Color.White);
-            _btnNew = CreateButton("Yeni", Color.FromArgb(236, 240, 246), Color.FromArgb(52, 61, 73));
-            _btnDelete = CreateButton("Sil", Color.FromArgb(210, 73, 73), Color.White);
-            _btnRefresh = CreateButton("Yenile", Color.FromArgb(236, 240, 246), Color.FromArgb(52, 61, 73));
+            _btnNew = CreateButton("Yeni", BrandTheme.Navy, Color.White);
+            _btnDelete = CreateButton("Sil", BrandTheme.Navy, Color.White);
+            _btnRefresh = CreateButton("Yenile", BrandTheme.Navy, Color.White);
 
             WireButtons();
             return new FlowLayoutPanel

@@ -95,18 +95,15 @@ namespace CashTracker.App
                 Text = buttonText,
                 Dock = DockStyle.Top,
                 Height = 38,
-                BackColor = accent,
+                BackColor = BrandTheme.Navy,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
                 Margin = new Padding(0, 10, 0, 0)
             };
-            sendButton.FlatAppearance.BorderColor = accent;
-            sendButton.FlatAppearance.BorderSize = 0;
-            sendButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(
-                Math.Max(accent.R - 16, 0),
-                Math.Max(accent.G - 16, 0),
-                Math.Max(accent.B - 16, 0));
+            sendButton.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
+            sendButton.FlatAppearance.BorderSize = 1;
+            sendButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             layout.Controls.Add(sendButton, 0, 3);
 
             return new SummaryCard

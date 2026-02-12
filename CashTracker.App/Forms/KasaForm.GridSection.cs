@@ -25,6 +25,7 @@ namespace CashTracker.App.Forms
 
             _grid = CreateGrid();
             _grid.SelectionChanged += (_, __) => GridToForm();
+            _grid.CellFormatting += GridCellFormatting;
             layout.Controls.Add(_grid, 0, 1);
         }
 
@@ -80,6 +81,31 @@ namespace CashTracker.App.Forms
             };
 
             return grid;
+        }
+
+        private void GridCellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex != 2)
+                return;
+
+            var row = _grid.Rows[e.RowIndex];
+            var tip = MapTip(row.Cells[1].Value?.ToString());
+            var style = e.CellStyle;
+            if (style is null)
+                return;
+
+            if (tip == "Gelir")
+            {
+                style.ForeColor = Color.FromArgb(17, 121, 85);
+                style.SelectionForeColor = Color.FromArgb(17, 121, 85);
+                return;
+            }
+
+            if (tip == "Gider")
+            {
+                style.ForeColor = Color.FromArgb(173, 59, 56);
+                style.SelectionForeColor = Color.FromArgb(173, 59, 56);
+            }
         }
     }
 }

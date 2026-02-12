@@ -19,6 +19,15 @@ namespace CashTracker.App.Forms
         private readonly Label _lblTokenStatus;
         private readonly Label _lblUserStatus;
         private readonly Label _lblConnectionStatus;
+        private readonly Label _lblStep1;
+        private readonly Label _lblStep2;
+        private readonly Label _lblStep3;
+        private readonly Label _lblStep4;
+        private readonly Label _lblStep5;
+        private readonly Label _lblStep6;
+        private readonly Label _lblStep7;
+        private readonly Label _lblStep8;
+        private readonly Label _lblStepHint;
         private readonly Button _btnSave;
         private readonly Button _btnTestConnection;
         private readonly Button _btnFetchChatId;
@@ -35,12 +44,11 @@ namespace CashTracker.App.Forms
         {
             var navy = BrandTheme.Navy;
             var teal = BrandTheme.Teal;
-            var amber = BrandTheme.Amber;
 
             Text = "CashTracker • İlk Kurulum";
             Width = 980;
             Height = 640;
-            MinimumSize = new Size(900, 600);
+            MinimumSize = new Size(1120, 680);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = true;
@@ -56,8 +64,8 @@ namespace CashTracker.App.Forms
                 ColumnCount = 2,
                 RowCount = 1
             };
-            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 37f));
-            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 63f));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42f));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58f));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             Controls.Add(root);
 
@@ -65,7 +73,8 @@ namespace CashTracker.App.Forms
             {
                 Dock = DockStyle.Fill,
                 BackColor = navy,
-                Padding = new Padding(24, 24, 24, 20)
+                Padding = new Padding(24, 24, 24, 20),
+                AutoScroll = true
             };
             root.Controls.Add(brandPanel, 0, 0);
 
@@ -78,8 +87,8 @@ namespace CashTracker.App.Forms
             brandLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             brandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             brandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            brandLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             brandLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            brandLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             brandPanel.Controls.Add(brandLayout);
 
             var brandHeader = new TableLayoutPanel
@@ -100,35 +109,43 @@ namespace CashTracker.App.Forms
             };
             brandHeader.Controls.Add(logo, 0, 0);
 
-            var brandTitleWrap = new FlowLayoutPanel
+            var brandTitleWrap = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoSize = true,
+                ColumnCount = 1,
+                RowCount = 2,
                 Margin = new Padding(10, 2, 0, 0)
             };
+            brandTitleWrap.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            brandTitleWrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            brandTitleWrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             brandHeader.Controls.Add(brandTitleWrap, 1, 0);
 
             var brandTitle = new Label
             {
                 Text = "CASHTRACKER",
-                AutoSize = true,
+                AutoSize = false,
+                AutoEllipsis = false,
+                Dock = DockStyle.Top,
+                Height = 28,
                 ForeColor = Color.White,
                 Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
                 Margin = new Padding(0, 0, 0, 2)
             };
-            brandTitleWrap.Controls.Add(brandTitle);
+            brandTitleWrap.Controls.Add(brandTitle, 0, 0);
 
             var brandSubtitle = new Label
             {
                 Text = "Güvenli başlangıç ayarları",
-                AutoSize = true,
+                AutoSize = false,
+                AutoEllipsis = false,
+                Dock = DockStyle.Top,
+                Height = 22,
                 ForeColor = Color.FromArgb(205, 222, 240),
                 Font = BrandTheme.CreateFont(10f, FontStyle.Regular),
                 Margin = new Padding(0)
             };
-            brandTitleWrap.Controls.Add(brandSubtitle);
+            brandTitleWrap.Controls.Add(brandSubtitle, 0, 1);
 
             var stripe = new Panel
             {
@@ -139,21 +156,62 @@ namespace CashTracker.App.Forms
             };
             brandLayout.Controls.Add(stripe, 0, 1);
 
-            var summary = new Label
+            var stepsPanel = new TableLayoutPanel
             {
-                Text =
-                    "Uygulama ilk açılışta Telegram bağlantısı ister.\n\n" +
-                    "• Bot Token\n" +
-                    "• Telegram User ID (Chat ID)\n\n" +
-                    "Kurulumu tamamlamak için test mesajı gönderilir.",
-                AutoSize = true,
-                MaximumSize = new Size(340, 0),
-                ForeColor = Color.FromArgb(219, 231, 244),
-                Font = BrandTheme.CreateFont(10f, FontStyle.Regular),
                 Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1,
+                RowCount = 10,
                 Margin = new Padding(0, 0, 0, 14)
             };
-            brandLayout.Controls.Add(summary, 0, 2);
+            stepsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            for (var i = 0; i < 10; i++)
+                stepsPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            brandLayout.Controls.Add(stepsPanel, 0, 2);
+
+            var stepTitle = new Label
+            {
+                Text = "Kurulum Adımları",
+                AutoSize = false,
+                AutoEllipsis = false,
+                Height = 22,
+                Dock = DockStyle.Top,
+                ForeColor = Color.White,
+                Font = BrandTheme.CreateHeadingFont(11f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 8)
+            };
+            stepsPanel.Controls.Add(stepTitle, 0, 0);
+
+            const int stepWrapWidth = 360;
+            _lblStep1 = CreateGuideStepLabel("1) Telegramda BotFather kullanicisina git (mavi tikli).", stepWrapWidth);
+            _lblStep2 = CreateGuideStepLabel("2) /newbot komutunu gir ve yeni botu olustur.", stepWrapWidth);
+            _lblStep3 = CreateGuideStepLabel("3) Botuna isim ver ve kullanici adi belirle.", stepWrapWidth);
+            _lblStep4 = CreateGuideStepLabel("4) Verilen tokeni bu ekrandaki Bot Token alanina gir.", stepWrapWidth);
+            _lblStep5 = CreateGuideStepLabel("5) Telegramda bota /start yaz.", stepWrapWidth);
+            _lblStep6 = CreateGuideStepLabel("6) Buradan User ID al butonuyla Chat ID bilgisini cek.", stepWrapWidth);
+            _lblStep7 = CreateGuideStepLabel("7) Baglantiyi Test Et butonuna bas.", stepWrapWidth);
+            _lblStep8 = CreateGuideStepLabel("8) Kurulumu Tamamla butonuna bas.", stepWrapWidth);
+            _lblStepHint = new Label
+            {
+                AutoSize = true,
+                AutoEllipsis = false,
+                MaximumSize = new Size(stepWrapWidth, 0),
+                Dock = DockStyle.Top,
+                ForeColor = Color.FromArgb(219, 231, 244),
+                Font = BrandTheme.CreateFont(9.5f, FontStyle.Bold),
+                Margin = new Padding(0, 8, 0, 0)
+            };
+
+            stepsPanel.Controls.Add(_lblStep1, 0, 1);
+            stepsPanel.Controls.Add(_lblStep2, 0, 2);
+            stepsPanel.Controls.Add(_lblStep3, 0, 3);
+            stepsPanel.Controls.Add(_lblStep4, 0, 4);
+            stepsPanel.Controls.Add(_lblStep5, 0, 5);
+            stepsPanel.Controls.Add(_lblStep6, 0, 6);
+            stepsPanel.Controls.Add(_lblStep7, 0, 7);
+            stepsPanel.Controls.Add(_lblStep8, 0, 8);
+            stepsPanel.Controls.Add(_lblStepHint, 0, 9);
 
             if (isReconfigureMode)
             {
@@ -318,22 +376,23 @@ namespace CashTracker.App.Forms
             _btnFetchChatId = new Button
             {
                 Text = "Chat ID'yi Otomatik Al",
-                Width = 174,
-                Height = 34,
-                BackColor = Color.FromArgb(236, 241, 247),
-                ForeColor = Color.FromArgb(31, 57, 90),
+                Width = 220,
+                Height = 36,
+                BackColor = navy,
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(0, 0, 8, 8)
             };
-            _btnFetchChatId.FlatAppearance.BorderColor = Color.FromArgb(201, 213, 228);
+            _btnFetchChatId.FlatAppearance.BorderColor = Color.FromArgb(93, 118, 150);
             _btnFetchChatId.FlatAppearance.BorderSize = 1;
+            _btnFetchChatId.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             _btnFetchChatId.Click += async (_, __) => await FetchChatIdAsync();
 
             var btnOpenBotFather = new Button
             {
                 Text = "BotFather'a Git",
-                Width = 132,
-                Height = 34,
+                Width = 150,
+                Height = 36,
                 BackColor = Color.FromArgb(31, 57, 90),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -372,10 +431,12 @@ namespace CashTracker.App.Forms
             var helper = new Label
             {
                 AutoSize = true,
-                Text = "Not: Bota /start yazdıktan sonra \"Chat ID'yi Otomatik Al\" butonunu kullanabilirsiniz.",
+                AutoEllipsis = false,
+                MaximumSize = new Size(620, 0),
+                Dock = DockStyle.Top,
+                Text = "Not: Bota /start yazin ve sonra Chat ID'yi Otomatik Al butonunu kullanin.",
                 ForeColor = Color.FromArgb(113, 122, 138),
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Regular),
-                MaximumSize = new Size(620, 0),
                 Margin = new Padding(0, 2, 0, 8)
             };
             cardLayout.Controls.Add(helper, 0, 3);
@@ -383,9 +444,11 @@ namespace CashTracker.App.Forms
             _lblConnectionStatus = new Label
             {
                 AutoSize = true,
+                AutoEllipsis = false,
+                MaximumSize = new Size(620, 0),
+                Dock = DockStyle.Top,
                 Font = BrandTheme.CreateHeadingFont(9.6f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(94, 106, 122),
-                MaximumSize = new Size(620, 0),
                 Margin = new Padding(0, 0, 0, 10),
                 Text = "Bağlantı testi bekleniyor."
             };
@@ -396,7 +459,7 @@ namespace CashTracker.App.Forms
                 AutoSize = true,
                 Height = 42,
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = true,
+                WrapContents = false,
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0)
             };
@@ -405,23 +468,23 @@ namespace CashTracker.App.Forms
             _btnSave = new Button
             {
                 Text = "Kurulumu Tamamla",
-                Width = 140,
-                Height = 34,
-                BackColor = amber,
+                Width = 188,
+                Height = 36,
+                BackColor = navy,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(8, 0, 0, 0)
             };
             _btnSave.FlatAppearance.BorderSize = 0;
-            _btnSave.FlatAppearance.MouseOverBackColor = Color.FromArgb(205, 137, 42);
+            _btnSave.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             _btnSave.Click += (_, __) => Submit();
             btnBar.Controls.Add(_btnSave);
 
             _btnTestConnection = new Button
             {
                 Text = "Bağlantıyı Test Et",
-                Width = 136,
-                Height = 34,
+                Width = 170,
+                Height = 36,
                 BackColor = navy,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
@@ -435,15 +498,16 @@ namespace CashTracker.App.Forms
             var btnCancel = new Button
             {
                 Text = isReconfigureMode ? "Geri Dön" : "Çıkış",
-                Width = 84,
-                Height = 34,
-                BackColor = Color.FromArgb(236, 241, 247),
-                ForeColor = Color.FromArgb(42, 58, 82),
+                Width = 96,
+                Height = 36,
+                BackColor = navy,
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Margin = new Padding(0)
             };
-            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(201, 213, 228);
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(93, 118, 150);
             btnCancel.FlatAppearance.BorderSize = 1;
+            btnCancel.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             btnCancel.Click += (_, __) =>
             {
                 DialogResult = DialogResult.Cancel;
@@ -468,7 +532,7 @@ namespace CashTracker.App.Forms
             _isTesting = true;
             RefreshValidationState();
             SetConnectionStatus(
-                "Test mesaj\u0131 g\u00F6nderiliyor...",
+                "Test mesajı gönderiliyor, lütfen bekleyin.",
                 Color.FromArgb(31, 72, 117));
 
             try
@@ -528,7 +592,7 @@ namespace CashTracker.App.Forms
             _isTesting = true;
             RefreshValidationState();
             SetConnectionStatus(
-                "Chat ID i\u00E7in son bot mesajlar\u0131 okunuyor...",
+                "Chat ID için son bot mesajları okunuyor, lütfen bekleyin.",
                 Color.FromArgb(31, 72, 117));
 
             try
@@ -701,6 +765,7 @@ namespace CashTracker.App.Forms
             _btnFetchChatId.Enabled = !_isTesting && tokenValid;
             _btnTestConnection.Enabled = !_isTesting && tokenValid && userValid;
             _btnSave.Enabled = !_isTesting && tokenValid && userValid && IsCurrentInputVerified();
+            UpdateStepGuide(tokenValid, userValid);
         }
 
         private bool IsCurrentInputVerified()
@@ -725,7 +790,7 @@ namespace CashTracker.App.Forms
                 parts[1].Length < 10 ||
                 !long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
             {
-                message = "Bi\u00E7im ge\u00E7ersiz. \u00D6rnek: 123456789:ABCDEF...";
+                message = "Biçim geçersiz. Örnek: 123456789:ABCDEF123456";
                 return false;
             }
 
@@ -753,6 +818,67 @@ namespace CashTracker.App.Forms
             label.ForeColor = isValid
                 ? Color.FromArgb(23, 122, 88)
                 : Color.FromArgb(166, 57, 54);
+        }
+
+        private static Label CreateGuideStepLabel(string text, int maxWidth)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                AutoEllipsis = false,
+                MaximumSize = new Size(maxWidth, 0),
+                Dock = DockStyle.Top,
+                ForeColor = Color.FromArgb(190, 210, 232),
+                Font = BrandTheme.CreateFont(9.6f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 4)
+            };
+        }
+
+        private void UpdateStepGuide(bool tokenValid, bool userValid)
+        {
+            var testValid = IsCurrentInputVerified();
+            var activeStep = !tokenValid
+                ? 1
+                : !userValid
+                    ? 5
+                    : !testValid
+                        ? 7
+                        : 8;
+
+            ApplyStepState(_lblStep1, tokenValid, activeStep == 1);
+            ApplyStepState(_lblStep2, tokenValid, activeStep == 2);
+            ApplyStepState(_lblStep3, tokenValid, activeStep == 3);
+            ApplyStepState(_lblStep4, tokenValid, activeStep == 4);
+            ApplyStepState(_lblStep5, userValid, activeStep == 5);
+            ApplyStepState(_lblStep6, userValid, activeStep == 6);
+            ApplyStepState(_lblStep7, testValid, activeStep == 7);
+            ApplyStepState(_lblStep8, testValid, activeStep == 8);
+
+            _lblStepHint.Text = activeStep switch
+            {
+                1 => "Siradaki islem: BotFather adimlarini tamamlayip tokeni girin.",
+                5 => "Siradaki islem: Bota /start yazip User ID bilgisini alin.",
+                7 => "Siradaki islem: Baglantiyi Test Et butonuna basin.",
+                _ => "Siradaki islem: Kurulumu Tamamla butonuna basin."
+            };
+        }
+
+        private static void ApplyStepState(Label label, bool completed, bool isActive)
+        {
+            if (completed)
+            {
+                label.ForeColor = Color.FromArgb(117, 226, 177);
+                return;
+            }
+
+            if (isActive)
+            {
+                label.ForeColor = Color.FromArgb(255, 214, 138);
+                return;
+            }
+
+            label.ForeColor = Color.FromArgb(190, 210, 232);
         }
 
         private void SetConnectionStatus(string text, Color foreColor)

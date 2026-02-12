@@ -49,7 +49,7 @@ namespace CashTracker.App
 
             var originalText = triggerButton.Text;
             triggerButton.Enabled = false;
-            triggerButton.Text = "Denetleniyor...";
+            triggerButton.Text = "Denetleniyor, lütfen bekleyin";
 
             try
             {

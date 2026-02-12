@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 using CashTracker.App.Controls;
@@ -11,7 +11,7 @@ namespace CashTracker.App
     {
         private void BuildUi()
         {
-            const int sidebarExpandedWidth = 278;
+            const int sidebarExpandedWidth = 360;
             const int sidebarCollapsedWidth = 92;
             var isSidebarExpanded = true;
 
@@ -167,21 +167,22 @@ namespace CashTracker.App
                 Text = "<",
                 Width = 36,
                 Height = 32,
-                BackColor = Color.FromArgb(240, 247, 255),
-                ForeColor = BrandTheme.Navy,
+                BackColor = BrandTheme.Navy,
+                ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
                 Margin = new Padding(0)
             };
-            btnSidebarToggle.FlatAppearance.BorderColor = border;
+            btnSidebarToggle.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
             btnSidebarToggle.FlatAppearance.BorderSize = 1;
+            btnSidebarToggle.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             sidebarFooter.Controls.Add(btnSidebarToggle);
 
             var contentShell = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2,
+                RowCount = 1,
                 BackColor = contentBackground
             };
             contentShell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -217,32 +218,21 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2
+                RowCount = 1
             };
             titleStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             topLayout.Controls.Add(titleStack, 0, 0);
 
             var topTitle = new Label
             {
-                Text = "Komuta Paneli",
+                Text = "Komut Paneli",
                 Font = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
                 ForeColor = heading,
                 AutoSize = true,
                 Margin = new Padding(0, 2, 0, 4)
             };
             titleStack.Controls.Add(topTitle, 0, 0);
-
-            var topSubtitle = new Label
-            {
-                Text = "Gelir, gider, dönemsel özet ve Telegram aksiyonları",
-                Font = BrandTheme.CreateFont(9.8f, FontStyle.Regular),
-                ForeColor = textMuted,
-                AutoSize = true,
-                Margin = new Padding(0)
-            };
-            titleStack.Controls.Add(topSubtitle, 0, 1);
 
             var badgeFlow = new FlowLayoutPanel
             {
@@ -389,7 +379,7 @@ namespace CashTracker.App
                 if (compact)
                 {
                     reportGrid.ColumnCount = 1;
-                    reportGrid.RowCount = 2;
+                    reportGrid.RowCount = 1;
                     reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
                     reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                     reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -432,7 +422,7 @@ namespace CashTracker.App
                 footerCredit.Visible = isSidebarExpanded;
                 brandText.Visible = isSidebarExpanded;
 
-                var buttonWidth = isSidebarExpanded ? 222 : 54;
+                var buttonWidth = isSidebarExpanded ? 300 : 54;
                 foreach (var item in navItems)
                 {
                     item.Button.Text = isSidebarExpanded ? item.ExpandedText : item.CollapsedText;
@@ -497,7 +487,7 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Top,
                 ColumnCount = 1,
-                RowCount = 2,
+                RowCount = 1,
                 AutoSize = true
             };
             header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
@@ -593,3 +583,4 @@ namespace CashTracker.App
         }
     }
 }
+

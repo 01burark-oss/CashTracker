@@ -32,7 +32,7 @@ namespace CashTracker.App.Forms
             Text = "Gelir / Gider";
             Width = 1080;
             Height = 700;
-            MinimumSize = new Size(960, 640);
+            MinimumSize = new Size(1120, 700);
             StartPosition = FormStartPosition.CenterParent;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);

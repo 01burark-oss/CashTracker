@@ -101,12 +101,12 @@ namespace CashTracker.App
             var button = new Button
             {
                 Text = text,
-                Width = 226,
+                Width = 300,
                 Height = 42,
                 Margin = new Padding(0, 0, 0, 10),
                 BackColor = back,
                 ForeColor = fore,
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
 
@@ -120,23 +120,21 @@ namespace CashTracker.App
 
         private static Button CreatePanelActionButton(string text, Color back, Color fore)
         {
+            var standardBack = BrandTheme.Navy;
             var button = new Button
             {
                 Text = text,
                 Width = 188,
                 Height = 34,
-                BackColor = back,
-                ForeColor = fore,
+                BackColor = standardBack,
+                ForeColor = Color.White,
                 Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat
             };
 
-            button.FlatAppearance.BorderColor = back;
-            button.FlatAppearance.BorderSize = 0;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(
-                Math.Max(back.R - 15, 0),
-                Math.Max(back.G - 15, 0),
-                Math.Max(back.B - 15, 0));
+            button.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
 
             return button;
         }
