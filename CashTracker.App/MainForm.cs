@@ -78,6 +78,8 @@ namespace CashTracker.App
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
+            if (AppIconProvider.Current is Icon appIcon)
+                Icon = appIcon;
 
             BuildUi();
             Shown += async (_, __) => await RefreshSummariesAsync();

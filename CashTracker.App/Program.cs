@@ -78,10 +78,10 @@ static class Program
 
         var updateSettings = new UpdateSettings
         {
-            RepoOwner = config["Update:RepoOwner"] ?? string.Empty,
-            RepoName = config["Update:RepoName"] ?? string.Empty,
-            AssetName = config["Update:AssetName"] ?? string.Empty,
-            ChecksumAssetName = config["Update:ChecksumAssetName"] ?? string.Empty
+            RepoOwner = FirstNonEmpty(config["Update:RepoOwner"], "01burark-oss"),
+            RepoName = FirstNonEmpty(config["Update:RepoName"], "CashTracker"),
+            AssetName = FirstNonEmpty(config["Update:AssetName"], "CashTracker.exe"),
+            ChecksumAssetName = FirstNonEmpty(config["Update:ChecksumAssetName"], "CashTracker.exe.sha256")
         };
 
         services.AddDbContextFactory<CashTrackerDbContext>(opt =>

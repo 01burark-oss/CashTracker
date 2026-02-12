@@ -36,6 +36,8 @@ namespace CashTracker.App.Forms
             StartPosition = FormStartPosition.CenterParent;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
+            if (AppIconProvider.Current is Icon appIcon)
+                Icon = appIcon;
 
             BuildUi();
             Load += async (_, __) => await LoadAllAsync();

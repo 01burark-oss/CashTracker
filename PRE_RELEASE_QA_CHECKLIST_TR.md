@@ -97,3 +97,15 @@ Kabul kriteri:
 - [ ] Güncelleme, kurulum ve bot değiştir akışları geçti.
 - [ ] EXE release için onay verildi.
 
+## 10) Release Asset ve Ikon Kontrolu
+
+- [ ] GitHub'da ilgili surum tag'i ile release sayfasi olusturuldu/guncellendi.
+- [ ] `CashTracker.exe` release asset olarak yuklendi.
+- [ ] `CashTracker.exe.sha256` release asset olarak yuklendi.
+- [ ] README'deki direct download linki test edildi (404 degil, dosya iniyor).
+- [ ] Main / Setup / Kasa pencereleri tek bir uygulama ikonu ile aciliyor.
+
+Kabul kriteri:
+- Release sayfasindaki direct link calisiyor ve uygulamanin tum pencerelerinde ayni ikon gorunuyor.
+
+- [ ] PLANLANAN: GitHub release asset upload (exe + sha256) ve tek ikon son kontrolu release yayinlama asamasinda yapilacak.

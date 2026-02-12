@@ -47,6 +47,8 @@ namespace CashTracker.App.Forms
             MinimizeBox = true;
             BackColor = Color.FromArgb(241, 246, 252);
             Font = BrandTheme.CreateFont(10f);
+            if (AppIconProvider.Current is Icon appIcon)
+                Icon = appIcon;
 
             var root = new TableLayoutPanel
             {

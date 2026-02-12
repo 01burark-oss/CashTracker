@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore CashTracker.sln
+
+      - name: Build
+        run: dotnet build CashTracker.sln -c Release --no-restore
+
+      - name: Validate Tag And Version
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith("v")) {
+            throw "Tag must start with 'v'. Example: v1.0.2"
+          }
+
+          $version = $tag.Substring(1)
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Tag version must be SemVer major.minor.patch. Found: $tag"
+          }
+
+          [xml]$projectXml = Get-Content .\CashTracker.App\CashTracker.App.csproj
+          $projectVersion = $projectXml.Project.PropertyGroup.Version
+          if ([string]::IsNullOrWhiteSpace($projectVersion)) {
+            throw "Project version is empty in CashTracker.App.csproj"
+          }
+
+          if ($projectVersion -ne $version) {
+            throw "Tag ($tag) and project version ($projectVersion) do not match."
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Publish Release Artifacts
+        shell: pwsh
+        run: |
+          .\scripts\publish-release.ps1 `
+            -Version "${{ steps.meta.outputs.version }}" `
+            -Runtime "win-x64" `
+            -Configuration "Release" `
+            -AssetName "CashTracker.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CashTracker ${{ github.ref_name }}
+          generate_release_notes: true
+          overwrite_files: true
+          files: |
+            artifacts/${{ steps.meta.outputs.version }}/CashTracker.exe
+            artifacts/${{ steps.meta.outputs.version }}/CashTracker.exe.sha256
