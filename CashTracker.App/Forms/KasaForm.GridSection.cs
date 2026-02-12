@@ -8,11 +8,24 @@ namespace CashTracker.App.Forms
     {
         private void BuildGridSection(Panel left)
         {
-            left.Controls.Add(CreateSectionHeader("Kayıtlar", "Tüm hareketler ve detay listesi"));
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            left.Controls.Add(layout);
+
+            var header = CreateSectionHeader("Kayıtlar", "Tum hareketler ve detay listesi");
+            header.Margin = new Padding(0, 0, 0, 10);
+            layout.Controls.Add(header, 0, 0);
 
             _grid = CreateGrid();
             _grid.SelectionChanged += (_, __) => GridToForm();
-            left.Controls.Add(_grid);
+            layout.Controls.Add(_grid, 0, 1);
         }
 
         private static DataGridView CreateGrid()

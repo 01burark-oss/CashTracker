@@ -12,72 +12,102 @@ namespace CashTracker.App
         {
             var panel = new Panel
             {
-                Width = 292,
-                Height = 196,
-                MinimumSize = new Size(260, 196),
+                Width = 330,
+                Height = 236,
+                MinimumSize = new Size(280, 220),
                 BackColor = backColor,
-                Margin = new Padding(0, 0, 18, 14),
-                Padding = new Padding(16, 14, 16, 12)
+                Margin = new Padding(0, 0, 16, 16),
+                Padding = new Padding(18, 16, 18, 14)
             };
+
             panel.Paint += (_, e) =>
             {
                 ControlPaint.DrawBorder(e.Graphics, panel.ClientRectangle, borderColor, ButtonBorderStyle.Solid);
-                using var accentPen = new Pen(Color.FromArgb(accent.R, accent.G, accent.B), 1.8f);
-                e.Graphics.DrawLine(accentPen, 8, 8, panel.Width - 10, 8);
+                using var accentPen = new Pen(accent, 3f);
+                e.Graphics.DrawLine(accentPen, 10, 9, panel.Width - 12, 9);
             };
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.Controls.Add(layout);
 
             var titleLabel = new Label
             {
                 Text = title,
-                Font = BrandTheme.CreateFont(10.5f, FontStyle.Bold),
+                Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
                 ForeColor = accent,
                 AutoSize = true,
-                Location = new Point(10, 12)
+                Margin = new Padding(0, 0, 0, 12)
             };
-            panel.Controls.Add(titleLabel);
+            layout.Controls.Add(titleLabel, 0, 0);
+
+            var metrics = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 3,
+                AutoSize = true,
+                Margin = new Padding(0)
+            };
+            metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.Controls.Add(metrics, 0, 1);
 
             var income = new Label
             {
                 AutoSize = true,
-                Location = new Point(10, 52),
-                ForeColor = Color.FromArgb(20, 117, 92)
+                ForeColor = Color.FromArgb(17, 121, 85),
+                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 8)
             };
             var expense = new Label
             {
                 AutoSize = true,
-                Location = new Point(10, 79),
-                ForeColor = Color.FromArgb(166, 57, 54)
+                ForeColor = Color.FromArgb(173, 59, 56),
+                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Margin = new Padding(0, 0, 0, 8)
             };
             var net = new Label
             {
                 AutoSize = true,
-                Location = new Point(10, 108),
-                Font = BrandTheme.CreateFont(11f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(35, 52, 75)
+                ForeColor = Color.FromArgb(35, 49, 74),
+                Font = BrandTheme.CreateHeadingFont(11.6f, FontStyle.Bold),
+                Margin = new Padding(0)
             };
+
+            metrics.Controls.Add(income, 0, 0);
+            metrics.Controls.Add(expense, 0, 1);
+            metrics.Controls.Add(net, 0, 2);
 
             var sendButton = new Button
             {
                 Text = buttonText,
-                Width = 240,
-                Height = 34,
-                Location = new Point(10, 145),
+                Dock = DockStyle.Top,
+                Height = 38,
                 BackColor = accent,
                 ForeColor = Color.White,
-                Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Margin = new Padding(0, 10, 0, 0)
             };
             sendButton.FlatAppearance.BorderColor = accent;
             sendButton.FlatAppearance.BorderSize = 0;
             sendButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(
-                Math.Max(accent.R - 15, 0),
-                Math.Max(accent.G - 15, 0),
-                Math.Max(accent.B - 15, 0));
-
-            panel.Controls.Add(income);
-            panel.Controls.Add(expense);
-            panel.Controls.Add(net);
-            panel.Controls.Add(sendButton);
+                Math.Max(accent.R - 16, 0),
+                Math.Max(accent.G - 16, 0),
+                Math.Max(accent.B - 16, 0));
+            layout.Controls.Add(sendButton, 0, 3);
 
             return new SummaryCard
             {

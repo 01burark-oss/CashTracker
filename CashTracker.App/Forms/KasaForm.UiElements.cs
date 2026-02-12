@@ -11,8 +11,19 @@ namespace CashTracker.App.Forms
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 60
+                Height = 62
             };
+
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.Controls.Add(layout);
 
             var titleLabel = new Label
             {
@@ -20,9 +31,9 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateHeadingFont(13.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(42, 50, 61),
                 AutoSize = true,
-                Location = new Point(0, 0)
+                Margin = new Padding(0)
             };
-            panel.Controls.Add(titleLabel);
+            layout.Controls.Add(titleLabel, 0, 0);
 
             var subtitleLabel = new Label
             {
@@ -30,9 +41,9 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateFont(9.4f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(106, 118, 136),
                 AutoSize = true,
-                Location = new Point(1, 25)
+                Margin = new Padding(0, 2, 0, 0)
             };
-            panel.Controls.Add(subtitleLabel);
+            layout.Controls.Add(subtitleLabel, 0, 1);
 
             return panel;
         }

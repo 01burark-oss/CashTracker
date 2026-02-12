@@ -16,11 +16,11 @@ namespace CashTracker.App.Forms
             WireButtons();
             return new FlowLayoutPanel
             {
-                Dock = DockStyle.Bottom,
-                Height = 52,
+                Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
-                AutoSize = false,
+                AutoSize = true,
+                Margin = new Padding(0),
                 Padding = new Padding(0, 14, 0, 0)
             };
         }

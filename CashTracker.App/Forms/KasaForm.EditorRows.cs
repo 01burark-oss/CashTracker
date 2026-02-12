@@ -10,13 +10,16 @@ namespace CashTracker.App.Forms
         {
             var form = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                AutoSize = true
+                AutoSize = false,
+                AutoScroll = true,
+                GrowStyle = TableLayoutPanelGrowStyle.AddRows,
+                Padding = new Padding(0, 2, 0, 2)
             };
 
-            form.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
-            form.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
+            form.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36));
+            form.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 64));
             return form;
         }
 

@@ -6,10 +6,24 @@ namespace CashTracker.App.Forms
     {
         private void BuildEditorSection(Panel right)
         {
-            right.Controls.Add(CreateSectionHeader("\u0130\u015Flem Formu", "Kay\u0131t d\u00FCzenleme ve i\u015Flem komutlar\u0131"));
+            var layout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3
+            };
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            right.Controls.Add(layout);
+
+            var header = CreateSectionHeader("Islem Formu", "Kayit duzenleme ve islem komutlari");
+            header.Margin = new Padding(0, 0, 0, 8);
+            layout.Controls.Add(header, 0, 0);
 
             var form = CreateEditorForm();
-            right.Controls.Add(form);
+            layout.Controls.Add(form, 0, 1);
 
             AddRow(form, "Tarih", out _dtTarih);
             _dtTarih.Enabled = false;
@@ -21,7 +35,7 @@ namespace CashTracker.App.Forms
 
             var buttons = CreateButtonPanel();
             buttons.Controls.AddRange(new Control[] { _btnSave, _btnNew, _btnDelete, _btnRefresh });
-            right.Controls.Add(buttons);
+            layout.Controls.Add(buttons, 0, 2);
         }
     }
 }

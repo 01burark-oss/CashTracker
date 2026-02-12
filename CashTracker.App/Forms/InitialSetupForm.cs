@@ -185,13 +185,16 @@ namespace CashTracker.App.Forms
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(24, 20, 24, 20),
-                BackColor = BackColor
+                BackColor = BackColor,
+                AutoScroll = true
             };
             root.Controls.Add(rightPanel, 1, 0);
 
             var card = new Panel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.White,
                 Padding = new Padding(26, 24, 26, 22)
             };
@@ -205,6 +208,8 @@ namespace CashTracker.App.Forms
             var cardLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 1,
                 RowCount = 7
             };
@@ -391,8 +396,8 @@ namespace CashTracker.App.Forms
                 AutoSize = true,
                 Height = 42,
                 FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                Dock = DockStyle.Right,
+                WrapContents = true,
+                Dock = DockStyle.Fill,
                 Margin = new Padding(0)
             };
             cardLayout.Controls.Add(btnBar, 0, 6);

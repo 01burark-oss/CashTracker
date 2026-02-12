@@ -9,7 +9,7 @@ namespace CashTracker.App.Forms
             if (_rootLayout is null || _leftPanel is null || _rightPanel is null)
                 return;
 
-            var compact = ClientSize.Width < 1120;
+            var compact = ClientSize.Width < 1180;
 
             _rootLayout.SuspendLayout();
             _rootLayout.Padding = compact ? new Padding(10) : new Padding(14);
@@ -21,8 +21,8 @@ namespace CashTracker.App.Forms
                 _rootLayout.ColumnCount = 1;
                 _rootLayout.RowCount = 2;
                 _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 56));
-                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 44));
+                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
+                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
                 _rootLayout.SetColumn(_leftPanel, 0);
                 _rootLayout.SetRow(_leftPanel, 0);
                 _rootLayout.SetColumn(_rightPanel, 0);

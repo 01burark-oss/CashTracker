@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using CashTracker.App.UI;
 
 namespace CashTracker.App.Forms
 {
@@ -12,7 +13,7 @@ namespace CashTracker.App.Forms
             _rightPanel = CreateSurfacePanel();
             _leftPanel.Margin = new Padding(0, 0, 10, 0);
             _rightPanel.Margin = new Padding(10, 0, 0, 0);
-            _rightPanel.AutoScroll = false;
+            _rightPanel.AutoScroll = true;
 
             _rootLayout.Controls.Add(_leftPanel, 0, 0);
             _rootLayout.Controls.Add(_rightPanel, 1, 0);
@@ -29,9 +30,10 @@ namespace CashTracker.App.Forms
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(14),
+                Padding = new Padding(14, 12, 14, 14),
                 ColumnCount = 2,
-                RowCount = 1
+                RowCount = 1,
+                BackColor = BrandTheme.AppBackground
             };
 
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62));
@@ -42,13 +44,14 @@ namespace CashTracker.App.Forms
 
         private static Panel CreateSurfacePanel()
         {
-            return new Panel
+            var panel = new Panel
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(14),
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
+            return panel;
         }
     }
 }
