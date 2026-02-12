@@ -1,0 +1,22 @@
+# Build outputs
+**/bin/
+**/obj/
+/artifacts/
+
+# Local secrets
+.env
+**/.env
+
+# Local app/runtime data
+*.db
+*.db-shm
+*.db-wal
+telegram-setup.json
+**/backups/
+**/updates/
+
+# IDE/user-specific files
+.vs/
+*.user
+*.suo
+*.log
