@@ -53,6 +53,7 @@ namespace CashTracker.App
 
         private async Task RefreshSummariesAsync()
         {
+            await RefreshActiveBusinessInfoAsync();
             var today = DateTime.Today;
 
             var sDaily = await _summaryService.GetSummaryAsync(today, today);
@@ -89,6 +90,25 @@ namespace CashTracker.App
             _lblYearIncome.Text = $"Gelir: {s.IncomeTotal:n2}";
             _lblYearExpense.Text = $"Gider: {s.ExpenseTotal:n2}";
             _lblYearNet.Text = $"Net: {s.Net:n2}";
+        }
+
+        private async Task RefreshActiveBusinessInfoAsync()
+        {
+            try
+            {
+                var active = await _isletmeService.GetActiveAsync();
+                var businessName = string.IsNullOrWhiteSpace(active.Ad)
+                    ? "Bilinmiyor"
+                    : active.Ad.Trim();
+
+                _lblActiveBusinessTop.Text = $"Aktif Isletme: {businessName}";
+                _lblActiveBusinessReport.Text = $"Raporlar Aktif Isletme: {businessName}";
+            }
+            catch
+            {
+                _lblActiveBusinessTop.Text = "Aktif Isletme: Bilinmiyor";
+                _lblActiveBusinessReport.Text = "Raporlar Aktif Isletme: Bilinmiyor";
+            }
         }
     }
 }

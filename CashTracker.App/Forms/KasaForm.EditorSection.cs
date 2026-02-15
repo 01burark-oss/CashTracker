@@ -30,8 +30,11 @@ namespace CashTracker.App.Forms
 
             AddTypeRow(form);
             AddAmountRow(form);
-            AddRow(form, "Gider T\u00FCr\u00FC", out _txtGiderTuru);
+            AddRow(form, "Kalem", out _cmbKalem);
+            AddKalemEmptyActionRow(form);
             AddRow(form, "A\u00E7\u0131klama", out _txtAciklama);
+
+            _btnKalemSettings.Click += async (_, __) => await OpenSettingsForKalemManagementAsync();
 
             var buttons = CreateButtonPanel();
             buttons.Controls.AddRange(new Control[] { _btnSave, _btnNew, _btnDelete, _btnRefresh });

@@ -11,19 +11,25 @@ namespace CashTracker.Infrastructure.Services
     public sealed class SummaryService : ISummaryService
     {
         private readonly IDbContextFactory<CashTrackerDbContext> _dbFactory;
+        private readonly IIsletmeService _isletmeService;
 
-        public SummaryService(IDbContextFactory<CashTrackerDbContext> dbFactory)
+        public SummaryService(
+            IDbContextFactory<CashTrackerDbContext> dbFactory,
+            IIsletmeService isletmeService)
         {
             _dbFactory = dbFactory;
+            _isletmeService = isletmeService;
         }
 
         public async Task<PeriodSummary> GetSummaryAsync(DateTime from, DateTime to)
         {
             var start = from.Date;
             var endExclusive = to.Date.AddDays(1);
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
 
             await using var db = await _dbFactory.CreateDbContextAsync();
             var query = db.Kasalar.AsNoTracking()
+                .Where(x => x.IsletmeId == activeIsletmeId)
                 .Where(x => x.Tarih >= start && x.Tarih < endExclusive);
 
             // SQLite decimal SUM translation is limited; aggregate on client for exactness.

@@ -126,16 +126,24 @@ namespace CashTracker.App
             navContainer.Controls.Add(navButtons, 0, 1);
 
             var btnGelirGider = CreateNavButton("Gelir / Gider Kayıtları", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnSettings = CreateNavButton("Ayarlar", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnChangeBot = CreateNavButton("Botu Değiştir", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnUpdate = CreateNavButton("Güncellemeleri Denetle", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
 
             navButtons.Controls.Add(btnGelirGider);
+            navButtons.Controls.Add(btnSettings);
             navButtons.Controls.Add(btnChangeBot);
             navButtons.Controls.Add(btnUpdate);
 
             btnGelirGider.Click += (_, __) =>
             {
-                using var form = new KasaForm(_kasaService);
+                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService);
+                form.ShowDialog(this);
+                _ = RefreshSummariesAsync();
+            };
+            btnSettings.Click += (_, __) =>
+            {
+                using var form = new SettingsForm(_isletmeService, _kalemTanimiService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
@@ -218,9 +226,10 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 1
+                RowCount = 2
             };
             titleStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             topLayout.Controls.Add(titleStack, 0, 0);
 
@@ -233,6 +242,16 @@ namespace CashTracker.App
                 Margin = new Padding(0, 2, 0, 4)
             };
             titleStack.Controls.Add(topTitle, 0, 0);
+
+            _lblActiveBusinessTop = new Label
+            {
+                Text = "Aktif Isletme: -",
+                Font = BrandTheme.CreateFont(9.6f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 74, 120),
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 0)
+            };
+            titleStack.Controls.Add(_lblActiveBusinessTop, 0, 1);
 
             var badgeFlow = new FlowLayoutPanel
             {
@@ -270,9 +289,10 @@ namespace CashTracker.App
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 1,
-                RowCount = 4
+                RowCount = 5
             };
             content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -299,6 +319,16 @@ namespace CashTracker.App
             };
             content.Controls.Add(sectionSubtitle, 0, 1);
 
+            _lblActiveBusinessReport = new Label
+            {
+                Text = "Raporlar Aktif Isletme: -",
+                Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(42, 89, 139),
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 14)
+            };
+            content.Controls.Add(_lblActiveBusinessReport, 0, 2);
+
             var cardsPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -308,7 +338,7 @@ namespace CashTracker.App
                 WrapContents = true,
                 Margin = new Padding(0, 0, 0, 12)
             };
-            content.Controls.Add(cardsPanel, 0, 2);
+            content.Controls.Add(cardsPanel, 0, 3);
 
             _cardDaily = CreateSummaryCard("Günlük", surface, BrandTheme.Teal, "Telegram'a Gönder", border);
             _card30 = CreateSummaryCard("Son 30 Gün", surface, BrandTheme.Navy, "Telegram'a Gönder", border);
@@ -337,7 +367,7 @@ namespace CashTracker.App
             reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.Controls.Add(reportGrid, 0, 3);
+            content.Controls.Add(reportGrid, 0, 4);
 
             var monthlyPanel = CreatePeriodReportPanel(
                 "Aylık Finans",
@@ -411,6 +441,7 @@ namespace CashTracker.App
             var navItems = new[]
             {
                 new { Button = btnGelirGider, ExpandedText = "Gelir / Gider Kayıtları", CollapsedText = "KG" },
+                new { Button = btnSettings, ExpandedText = "Ayarlar", CollapsedText = "SET" },
                 new { Button = btnChangeBot, ExpandedText = "Botu Değiştir", CollapsedText = "BOT" },
                 new { Button = btnUpdate, ExpandedText = "Güncellemeleri Denetle", CollapsedText = "UPD" }
             };

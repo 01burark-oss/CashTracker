@@ -11,19 +11,25 @@ namespace CashTracker.Infrastructure.Services
     public sealed class DailyReportService : IDailyReportService
     {
         private readonly IDbContextFactory<CashTrackerDbContext> _dbFactory;
+        private readonly IIsletmeService _isletmeService;
 
-        public DailyReportService(IDbContextFactory<CashTrackerDbContext> dbFactory)
+        public DailyReportService(
+            IDbContextFactory<CashTrackerDbContext> dbFactory,
+            IIsletmeService isletmeService)
         {
             _dbFactory = dbFactory;
+            _isletmeService = isletmeService;
         }
 
         public async Task<DailyReport> GetDailyReportAsync(DateTime date)
         {
             var from = date.Date;
             var to = date.Date.AddDays(1);
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
 
             await using var db = await _dbFactory.CreateDbContextAsync();
             var query = db.Kasalar.AsNoTracking()
+                .Where(x => x.IsletmeId == activeIsletmeId)
                 .Where(x => x.Tarih >= from && x.Tarih < to);
 
             // SQLite decimal SUM translation is limited; aggregate on client for exactness.

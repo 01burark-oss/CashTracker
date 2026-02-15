@@ -50,6 +50,14 @@ dotnet publish $projectPath `
     -p:DebugSymbols=false `
     -o $publishDir
 
+if ($LASTEXITCODE -ne 0) {
+    throw "dotnet publish failed with exit code $LASTEXITCODE."
+}
+
+if (-not (Test-Path $publishDir)) {
+    throw "Publish output directory not found: $publishDir"
+}
+
 if (-not (Test-Path $publishedExePath)) {
     $defaultPublishedExe = Join-Path $publishDir "CashTracker.App.exe"
     $fallbackExe = if (Test-Path $defaultPublishedExe) {

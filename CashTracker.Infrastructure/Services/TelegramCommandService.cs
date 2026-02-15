@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -17,6 +18,7 @@ namespace CashTracker.Infrastructure.Services
         private readonly TelegramBotService _telegram;
         private readonly TelegramSettings _settings;
         private readonly IKasaService _kasaService;
+        private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ISummaryService _summaryService;
         private readonly BackupReportService _backupReport;
 
@@ -24,12 +26,14 @@ namespace CashTracker.Infrastructure.Services
             TelegramBotService telegram,
             TelegramSettings settings,
             IKasaService kasaService,
+            IKalemTanimiService kalemTanimiService,
             ISummaryService summaryService,
             BackupReportService backupReport)
         {
             _telegram = telegram;
             _settings = settings;
             _kasaService = kasaService;
+            _kalemTanimiService = kalemTanimiService;
             _summaryService = summaryService;
             _backupReport = backupReport;
         }
@@ -154,10 +158,10 @@ namespace CashTracker.Infrastructure.Services
                 "/\u00F6zet [g\u00FCn] - Son N g\u00FCn \u00F6zeti (varsay\u0131lan 30)\n" +
                 "/rapor [g\u00FCn] - \u0130nsan okunur TXT rapor (varsay\u0131lan 30)\n" +
                 "/yedek - Veritaban\u0131 yede\u011Fi g\u00F6nder\n" +
-                "/ekle gelir <tutar> [a\u00E7\u0131klama]\n" +
-                "/ekle gider <tutar> <gider_turu> [a\u00E7\u0131klama]\n" +
-                "/gelir <tutar> [a\u00E7\u0131klama]\n" +
-                "/gider <tutar> <gider_turu> [a\u00E7\u0131klama]";
+                "/ekle gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
+                "/ekle gider <tutar> <kalem> [a\u00E7\u0131klama]\n" +
+                "/gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
+                "/gider <tutar> <kalem> [a\u00E7\u0131klama]";
 
             await _telegram.SendTextAsync(ToChatId(chatId), help, ct);
         }
@@ -228,9 +232,11 @@ namespace CashTracker.Infrastructure.Services
             {
                 foreach (var row in records.OrderBy(x => x.Tarih))
                 {
-                    var giderTuru = string.IsNullOrWhiteSpace(row.GiderTuru) ? "-" : row.GiderTuru;
+                    var kalem = !string.IsNullOrWhiteSpace(row.Kalem)
+                        ? row.Kalem
+                        : (string.IsNullOrWhiteSpace(row.GiderTuru) ? "-" : row.GiderTuru);
                     var aciklama = string.IsNullOrWhiteSpace(row.Aciklama) ? "-" : row.Aciklama;
-                    sb.AppendLine($"{row.Tarih:yyyy-MM-dd HH:mm} | {row.Tip} | {row.Tutar:n2} | {giderTuru} | {aciklama}");
+                    sb.AppendLine($"{row.Tarih:yyyy-MM-dd HH:mm} | {row.Tip} | {row.Tutar:n2} | {kalem} | {aciklama}");
                 }
             }
 
@@ -263,7 +269,7 @@ namespace CashTracker.Infrastructure.Services
         {
             if (args.Length < 2)
             {
-                await _telegram.SendTextAsync(ToChatId(chatId), "Kullanım: /ekle gelir|gider <tutar> [açıklama]", ct);
+                await _telegram.SendTextAsync(ToChatId(chatId), "Kullanim: /ekle gelir|gider <tutar> [kalem] [aciklama]", ct);
                 return;
             }
 
@@ -282,36 +288,26 @@ namespace CashTracker.Infrastructure.Services
             if (args.Length < 1)
             {
                 if (tip == "Gider")
-                    await _telegram.SendTextAsync(ToChatId(chatId), "Kullan\u0131m: /gider <tutar> <gider_turu> [a\u00E7\u0131klama]", ct);
+                    await _telegram.SendTextAsync(ToChatId(chatId), "Kullanim: /gider <tutar> <kalem> [aciklama]", ct);
                 else
-                    await _telegram.SendTextAsync(ToChatId(chatId), "Kullan\u0131m: /gelir <tutar> [a\u00E7\u0131klama]", ct);
+                    await _telegram.SendTextAsync(ToChatId(chatId), "Kullanim: /gelir <tutar> [kalem] [aciklama]", ct);
                 return;
             }
 
             if (!TryParseAmount(args[0], out var amount) || amount <= 0)
             {
-                await _telegram.SendTextAsync(ToChatId(chatId), "Tutar say\u0131sal ve s\u0131f\u0131rdan b\u00FCy\u00FCk olmal\u0131.", ct);
+                await _telegram.SendTextAsync(ToChatId(chatId), "Tutar sayisal ve sifirdan buyuk olmali.", ct);
                 return;
             }
 
             var remaining = args.Skip(1).ToArray();
-            string? giderTuru = null;
-            string? aciklama = null;
+            var kalemler = await _kalemTanimiService.GetByTipAsync(tip);
+            var kalemParse = ParseKalemAndAciklama(tip, remaining, kalemler);
 
-            if (tip == "Gider")
+            if (tip == "Gider" && string.IsNullOrWhiteSpace(kalemParse.Kalem))
             {
-                if (remaining.Length == 0)
-                {
-                    await _telegram.SendTextAsync(ToChatId(chatId), "Gider i\u00E7in gider t\u00FCr\u00FC zorunlu. \u00D6rnek: /gider 150 market", ct);
-                    return;
-                }
-
-                giderTuru = remaining[0];
-                aciklama = remaining.Length > 1 ? string.Join(' ', remaining.Skip(1)) : null;
-            }
-            else
-            {
-                aciklama = remaining.Length > 0 ? string.Join(' ', remaining) : null;
+                await _telegram.SendTextAsync(ToChatId(chatId), "Gider icin kalem zorunlu. Ornek: /gider 150 market", ct);
+                return;
             }
 
             var kasa = new Kasa
@@ -319,16 +315,129 @@ namespace CashTracker.Infrastructure.Services
                 Tarih = DateTime.Now,
                 Tip = tip,
                 Tutar = amount,
-                GiderTuru = giderTuru,
-                Aciklama = aciklama
+                Kalem = kalemParse.Kalem,
+                GiderTuru = tip == "Gider" ? kalemParse.Kalem : null,
+                Aciklama = kalemParse.Aciklama
             };
 
             var id = await _kasaService.CreateAsync(kasa);
+            var kalemText = string.IsNullOrWhiteSpace(kalemParse.Kalem)
+                ? GetDefaultKalem(tip, kalemler)
+                : kalemParse.Kalem;
 
             await _telegram.SendTextAsync(
                 ToChatId(chatId),
-                $"Kaydedildi. Id: {id}, Tip: {tip}, Tutar: {amount:n2}",
+                $"Kaydedildi. Id: {id}\nTip: {tip}\nKalem: {kalemText}\nTutar: {amount:n2}",
                 ct);
+        }
+
+        private static (string Kalem, string? Aciklama) ParseKalemAndAciklama(
+            string tip,
+            string[] remainingArgs,
+            IReadOnlyList<KalemTanimi> kalemler)
+        {
+            if (remainingArgs.Length == 0)
+                return (GetDefaultKalem(tip, kalemler), null);
+
+            if (TryMatchKalemPrefix(kalemler, remainingArgs, out var matchedKalem, out var consumedTokenCount))
+            {
+                var aciklama = remainingArgs.Length > consumedTokenCount
+                    ? string.Join(' ', remainingArgs.Skip(consumedTokenCount))
+                    : null;
+                return (matchedKalem, aciklama);
+            }
+
+            if (tip == "Gider")
+            {
+                var fallbackKalem = remainingArgs[0].Trim();
+                var aciklama = remainingArgs.Length > 1
+                    ? string.Join(' ', remainingArgs.Skip(1))
+                    : null;
+                return (fallbackKalem, aciklama);
+            }
+
+            var gelirAciklama = string.Join(' ', remainingArgs);
+            return (GetDefaultKalem(tip, kalemler), string.IsNullOrWhiteSpace(gelirAciklama) ? null : gelirAciklama);
+        }
+
+        private static bool TryMatchKalemPrefix(
+            IReadOnlyList<KalemTanimi> kalemler,
+            string[] remainingArgs,
+            out string kalem,
+            out int consumedTokenCount)
+        {
+            kalem = string.Empty;
+            consumedTokenCount = 0;
+
+            if (remainingArgs.Length == 0 || kalemler.Count == 0)
+                return false;
+
+            KalemTanimi? bestMatch = null;
+            var joinedArgs = string.Join(' ', remainingArgs);
+            var joinedArgsNormalized = NormalizeForMatch(joinedArgs);
+
+            foreach (var row in kalemler)
+            {
+                var ad = row.Ad?.Trim();
+                if (string.IsNullOrWhiteSpace(ad))
+                    continue;
+
+                var normalizedAd = NormalizeForMatch(ad);
+                var isExact = string.Equals(joinedArgsNormalized, normalizedAd, StringComparison.Ordinal);
+                var isPrefix = joinedArgsNormalized.StartsWith(normalizedAd + " ", StringComparison.Ordinal);
+                if (!isExact && !isPrefix)
+                    continue;
+
+                if (bestMatch == null || ad.Length > bestMatch.Ad.Length)
+                    bestMatch = row;
+            }
+
+            if (bestMatch == null)
+                return false;
+
+            kalem = bestMatch.Ad;
+            consumedTokenCount = bestMatch.Ad
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Length;
+            return true;
+        }
+
+        private static string GetDefaultKalem(string tip, IReadOnlyList<KalemTanimi> kalemler)
+        {
+            var preferred = tip == "Gider" ? "Genel Gider" : "Genel Gelir";
+            if (kalemler.Count == 0)
+                return preferred;
+
+            foreach (var row in kalemler)
+            {
+                if (string.Equals(row.Ad, preferred, StringComparison.OrdinalIgnoreCase))
+                    return row.Ad;
+            }
+
+            return kalemler[0].Ad;
+        }
+
+        private static string NormalizeForMatch(string value)
+        {
+            var normalized = (value ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant()
+                .Replace('ı', 'i')
+                .Replace('ş', 's')
+                .Replace('ğ', 'g')
+                .Replace('ü', 'u')
+                .Replace('ö', 'o')
+                .Replace('ç', 'c');
+
+            var builder = new StringBuilder(normalized.Length);
+            foreach (var ch in normalized.Normalize(NormalizationForm.FormD))
+            {
+                var category = CharUnicodeInfo.GetUnicodeCategory(ch);
+                if (category != UnicodeCategory.NonSpacingMark)
+                    builder.Append(ch);
+            }
+
+            return builder.ToString().Normalize(NormalizationForm.FormC);
         }
 
         private static bool TryParseAmount(string raw, out decimal amount)

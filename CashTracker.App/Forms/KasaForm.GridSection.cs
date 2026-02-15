@@ -24,7 +24,7 @@ namespace CashTracker.App.Forms
             layout.Controls.Add(header, 0, 0);
 
             _grid = CreateGrid();
-            _grid.SelectionChanged += (_, __) => GridToForm();
+            _grid.SelectionChanged += async (_, __) => await GridToFormAsync();
             _grid.CellFormatting += GridCellFormatting;
             layout.Controls.Add(_grid, 0, 1);
         }
@@ -71,7 +71,7 @@ namespace CashTracker.App.Forms
             grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tarih", HeaderText = "Tarih", FillWeight = 18, MinimumWidth = 120 });
             grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tip", HeaderText = "Tip", FillWeight = 10, MinimumWidth = 70 });
             grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tutar", HeaderText = "Tutar", FillWeight = 15, MinimumWidth = 90 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "GiderTuru", HeaderText = "Gider Türü", FillWeight = 20, MinimumWidth = 110 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Kalem", HeaderText = "Kalem", FillWeight = 20, MinimumWidth = 110 });
             grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Aciklama", HeaderText = "Açıklama", FillWeight = 37, MinimumWidth = 140 });
             grid.Columns[0].DefaultCellStyle = new DataGridViewCellStyle { Format = "dd.MM.yyyy HH:mm" };
             grid.Columns[2].DefaultCellStyle = new DataGridViewCellStyle

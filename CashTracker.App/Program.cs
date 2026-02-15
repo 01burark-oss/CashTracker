@@ -87,6 +87,8 @@ static class Program
         services.AddDbContextFactory<CashTrackerDbContext>(opt =>
             opt.UseSqlite($"Data Source={dbPath}"));
 
+        services.AddScoped<IIsletmeService, IsletmeService>();
+        services.AddScoped<IKalemTanimiService, KalemTanimiService>();
         services.AddScoped<IKasaService, KasaService>();
         services.AddScoped<ISummaryService, SummaryService>();
 

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -64,7 +65,7 @@ namespace CashTracker.App.Services
                 }
             }
 
-            var hasUpdate = !VersionEquals(currentVersionTag, latestTag);
+            var hasUpdate = HasNewerVersion(currentVersionTag, latestTag);
             return new UpdateCheckResult(
                 true,
                 hasUpdate,
@@ -184,19 +185,49 @@ namespace CashTracker.App.Services
             return fallback.ValueKind == JsonValueKind.Undefined ? null : fallback;
         }
 
-        private static bool VersionEquals(string current, string latest)
+        private static bool HasNewerVersion(string current, string latest)
         {
             var c = Normalize(current);
             var l = Normalize(latest);
 
-            if (Version.TryParse(c, out var currentVersion) && Version.TryParse(l, out var latestVersion))
-            {
-                var cText = $"{currentVersion.Major}.{currentVersion.Minor}.{Math.Max(currentVersion.Build, 0)}";
-                var lText = $"{latestVersion.Major}.{latestVersion.Minor}.{Math.Max(latestVersion.Build, 0)}";
-                return string.Equals(cText, lText, StringComparison.OrdinalIgnoreCase);
-            }
+            if (string.Equals(c, l, StringComparison.OrdinalIgnoreCase))
+                return false;
 
-            return string.Equals(c, l, StringComparison.OrdinalIgnoreCase);
+            if (!TryParseComparableVersion(c, out var currentVersion))
+                return !string.IsNullOrWhiteSpace(l);
+
+            if (!TryParseComparableVersion(l, out var latestVersion))
+                return false;
+
+            return latestVersion > currentVersion;
+        }
+
+        private static bool TryParseComparableVersion(string value, out Version version)
+        {
+            version = new Version(0, 0, 0, 0);
+
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            var match = Regex.Match(value, @"\d+(?:\.\d+){0,3}");
+            if (!match.Success)
+                return false;
+
+            var parts = match.Value
+                .Split('.', StringSplitOptions.RemoveEmptyEntries)
+                .Take(4)
+                .Select(p => int.TryParse(p, out var n) ? n : -1)
+                .ToArray();
+
+            if (parts.Length == 0 || parts.Any(p => p < 0))
+                return false;
+
+            var major = parts[0];
+            var minor = parts.Length > 1 ? parts[1] : 0;
+            var build = parts.Length > 2 ? parts[2] : 0;
+            var revision = parts.Length > 3 ? parts[3] : 0;
+            version = new Version(major, minor, build, revision);
+            return true;
         }
 
         private static string Normalize(string value)

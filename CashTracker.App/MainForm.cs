@@ -12,6 +12,8 @@ namespace CashTracker.App
     {
         private readonly IKasaService _kasaService;
         private readonly ISummaryService _summaryService;
+        private readonly IIsletmeService _isletmeService;
+        private readonly IKalemTanimiService _kalemTanimiService;
         private readonly BackupReportService _backupReport;
         private readonly TelegramSettings _telegramSettings;
         private readonly UpdateSettings _updateSettings;
@@ -31,6 +33,8 @@ namespace CashTracker.App
         private Label _lblYearIncome = null!;
         private Label _lblYearExpense = null!;
         private Label _lblYearNet = null!;
+        private Label _lblActiveBusinessTop = null!;
+        private Label _lblActiveBusinessReport = null!;
 
         private sealed class SummaryCard
         {
@@ -57,6 +61,8 @@ namespace CashTracker.App
         public MainForm(
             IKasaService kasaService,
             ISummaryService summaryService,
+            IIsletmeService isletmeService,
+            IKalemTanimiService kalemTanimiService,
             BackupReportService backupReport,
             TelegramSettings telegramSettings,
             UpdateSettings updateSettings,
@@ -65,6 +71,8 @@ namespace CashTracker.App
         {
             _kasaService = kasaService;
             _summaryService = summaryService;
+            _isletmeService = isletmeService;
+            _kalemTanimiService = kalemTanimiService;
             _backupReport = backupReport;
             _telegramSettings = telegramSettings;
             _updateSettings = updateSettings;

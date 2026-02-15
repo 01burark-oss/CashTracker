@@ -28,7 +28,7 @@ namespace CashTracker.App.Forms
         private void WireButtons()
         {
             _btnSave.Click += async (_, __) => await SaveAsync();
-            _btnNew.Click += (_, __) => ClearForm();
+            _btnNew.Click += async (_, __) => await ClearFormAsync();
             _btnDelete.Click += async (_, __) => await DeleteAsync();
             _btnRefresh.Click += async (_, __) => await LoadAllAsync();
         }

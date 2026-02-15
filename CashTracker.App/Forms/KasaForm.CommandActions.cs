@@ -10,19 +10,23 @@ namespace CashTracker.App.Forms
         private async Task SaveAsync()
         {
             var isNew = _selectedId == 0;
+            var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? "Gelir");
+            var kalem = NormalizeText(_cmbKalem.SelectedItem?.ToString() ?? _cmbKalem.Text);
+
             var kasa = new Kasa
             {
                 Id = _selectedId,
                 Tarih = isNew ? DateTime.Now : _dtTarih.Value,
-                Tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? "Gelir"),
+                Tip = tip,
                 Tutar = _numTutar.Value,
-                GiderTuru = NormalizeText(_txtGiderTuru.Text),
+                Kalem = kalem,
+                GiderTuru = tip == "Gider" ? kalem : null,
                 Aciklama = NormalizeText(_txtAciklama.Text)
             };
 
-            if (kasa.Tip == "Gider" && string.IsNullOrWhiteSpace(kasa.GiderTuru))
+            if (string.IsNullOrWhiteSpace(kasa.Kalem))
             {
-                MessageBox.Show("Gider türü zorunludur.");
+                MessageBox.Show("Gelir / gider kalemi zorunludur. Ayarlar ekranindan kalem ekleyebilirsin.");
                 return;
             }
 

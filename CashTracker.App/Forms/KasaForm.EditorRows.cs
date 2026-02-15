@@ -39,7 +39,7 @@ namespace CashTracker.App.Forms
 
             _cmbTip.Items.AddRange(new object[] { "Gelir", "Gider" });
             _cmbTip.SelectedIndex = 0;
-            _cmbTip.SelectedIndexChanged += (_, __) => ToggleGiderTuru();
+            _cmbTip.SelectedIndexChanged += async (_, __) => await LoadKalemlerForTipAsync();
             form.Controls.Add(label);
             form.Controls.Add(_cmbTip);
         }

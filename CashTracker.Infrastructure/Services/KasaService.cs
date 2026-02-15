@@ -12,16 +12,23 @@ namespace CashTracker.Infrastructure.Services
     public sealed class KasaService : IKasaService
     {
         private readonly IDbContextFactory<CashTrackerDbContext> _dbFactory;
+        private readonly IIsletmeService _isletmeService;
 
-        public KasaService(IDbContextFactory<CashTrackerDbContext> dbFactory)
+        public KasaService(
+            IDbContextFactory<CashTrackerDbContext> dbFactory,
+            IIsletmeService isletmeService)
         {
             _dbFactory = dbFactory;
+            _isletmeService = isletmeService;
         }
 
         public async Task<List<Kasa>> GetAllAsync(DateTime? from = null, DateTime? to = null)
         {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
             await using var db = await _dbFactory.CreateDbContextAsync();
-            var query = db.Kasalar.AsNoTracking();
+            var query = db.Kasalar
+                .AsNoTracking()
+                .Where(x => x.IsletmeId == activeIsletmeId);
 
             if (from.HasValue) query = query.Where(x => x.Tarih >= from.Value.Date);
             if (to.HasValue)
@@ -35,14 +42,22 @@ namespace CashTracker.Infrastructure.Services
 
         public async Task<Kasa?> GetByIdAsync(int id)
         {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
             await using var db = await _dbFactory.CreateDbContextAsync();
-            return await db.Kasalar.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            return await db.Kasalar
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsletmeId == activeIsletmeId);
         }
 
         public async Task<int> CreateAsync(Kasa kasa)
         {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
             await using var db = await _dbFactory.CreateDbContextAsync();
 
+            kasa.IsletmeId = activeIsletmeId;
+            kasa.Tip = NormalizeTip(kasa.Tip);
+            kasa.Kalem = NormalizeKalem(kasa.Tip, kasa.Kalem, kasa.GiderTuru);
+            kasa.GiderTuru = kasa.Tip == "Gider" ? kasa.Kalem : null;
             kasa.CreatedAt = DateTime.Now;
             db.Kasalar.Add(kasa);
             await db.SaveChangesAsync();
@@ -52,29 +67,58 @@ namespace CashTracker.Infrastructure.Services
 
         public async Task UpdateAsync(Kasa kasa)
         {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
             await using var db = await _dbFactory.CreateDbContextAsync();
-            var existing = await db.Kasalar.FirstOrDefaultAsync(x => x.Id == kasa.Id);
+            var existing = await db.Kasalar.FirstOrDefaultAsync(x => x.Id == kasa.Id && x.IsletmeId == activeIsletmeId);
             if (existing == null)
                 return;
 
             // Preserve CreatedAt while updating editable fields.
             existing.Tarih = kasa.Tarih;
-            existing.Tip = kasa.Tip;
+            existing.Tip = NormalizeTip(kasa.Tip);
             existing.Tutar = kasa.Tutar;
-            existing.GiderTuru = kasa.GiderTuru;
+            existing.Kalem = NormalizeKalem(existing.Tip, kasa.Kalem, kasa.GiderTuru);
+            existing.GiderTuru = existing.Tip == "Gider" ? existing.Kalem : null;
             existing.Aciklama = kasa.Aciklama;
             await db.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
             await using var db = await _dbFactory.CreateDbContextAsync();
 
-            var kasa = await db.Kasalar.FirstOrDefaultAsync(x => x.Id == id);
+            var kasa = await db.Kasalar.FirstOrDefaultAsync(x => x.Id == id && x.IsletmeId == activeIsletmeId);
             if (kasa == null) return;
 
             db.Kasalar.Remove(kasa);
             await db.SaveChangesAsync();
+        }
+
+        private static string NormalizeTip(string value)
+        {
+            return value switch
+            {
+                "Giris" => "Gelir",
+                "Cikis" => "Gider",
+                _ => value
+            };
+        }
+
+        private static string NormalizeKalem(string tip, string? kalem, string? legacyGiderTuru)
+        {
+            var normalizedKalem = string.IsNullOrWhiteSpace(kalem) ? null : kalem.Trim();
+            if (!string.IsNullOrWhiteSpace(normalizedKalem))
+                return normalizedKalem;
+
+            if (tip == "Gider")
+            {
+                if (!string.IsNullOrWhiteSpace(legacyGiderTuru))
+                    return legacyGiderTuru.Trim();
+                return "Genel Gider";
+            }
+
+            return "Genel Gelir";
         }
     }
 }
