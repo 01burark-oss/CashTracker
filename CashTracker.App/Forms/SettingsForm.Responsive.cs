@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Windows.Forms;
 
 namespace CashTracker.App.Forms
@@ -48,7 +49,7 @@ namespace CashTracker.App.Forms
 
             _rootLayout.ResumeLayout();
 
-            var actionWidth = narrow ? 126 : 146;
+            var actionWidth = narrow ? 160 : 176;
             SetActionRowButtonWidth(_rowActiveBusiness, actionWidth);
             SetActionRowButtonWidth(_rowRenameBusiness, actionWidth);
             SetActionRowButtonWidth(_rowNewBusiness, actionWidth);
@@ -61,7 +62,17 @@ namespace CashTracker.App.Forms
                 return;
 
             row.ColumnStyles[1].SizeType = SizeType.Absolute;
-            row.ColumnStyles[1].Width = width;
+            row.ColumnStyles[1].Width = ResolveRequiredButtonWidth(row, width);
+        }
+
+        private static int ResolveRequiredButtonWidth(TableLayoutPanel row, int fallbackWidth)
+        {
+            if (row.GetControlFromPosition(1, 0) is not Button button)
+                return fallbackWidth;
+
+            var measured = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width;
+            var required = measured + button.Padding.Horizontal + button.Margin.Horizontal + 24;
+            return Math.Max(fallbackWidth, required);
         }
     }
 }

@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CashTracker.Core.Entities;
 using CashTracker.Core.Models;
 
 namespace CashTracker.App
@@ -70,14 +73,23 @@ namespace CashTracker.App
 
             try
             {
+                var records = await _kasaService.GetAllAsync(from, to);
+                var activeBusiness = await _isletmeService.GetActiveAsync();
+                var businessName = string.IsNullOrWhiteSpace(activeBusiness.Ad)
+                    ? "Bilinmiyor"
+                    : activeBusiness.Ad.Trim();
+
                 var sb = new StringBuilder();
                 sb.AppendLine(title);
                 sb.AppendLine($"Aralık: {from:yyyy-MM-dd} - {to:yyyy-MM-dd}");
+                sb.AppendLine($"İşletme: {businessName}");
                 sb.AppendLine("--------------------------------");
                 sb.AppendLine($"Gelir: {summary.IncomeTotal:n2}");
                 sb.AppendLine($"Gider: {summary.ExpenseTotal:n2}");
                 sb.AppendLine($"Net: {summary.Net:n2}");
                 sb.AppendLine($"İşlem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})");
+                AppendKalemBreakdown(sb, records, "Gelir");
+                AppendKalemBreakdown(sb, records, "Gider");
 
                 await _backupReport.SendTextAsync(sb.ToString().Trim());
                 MessageBox.Show("Özet Telegram'a gönderildi.");
@@ -90,6 +102,56 @@ namespace CashTracker.App
             {
                 senderButton.Enabled = true;
             }
+        }
+
+        private static void AppendKalemBreakdown(StringBuilder sb, IReadOnlyCollection<Kasa> records, string tip)
+        {
+            var kalemRows = records
+                .Where(x => IsTip(x.Tip, tip))
+                .GroupBy(GetKalemName, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new
+                {
+                    Kalem = g.Key,
+                    Toplam = g.Sum(x => x.Tutar),
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Toplam)
+                .ThenBy(x => x.Kalem, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            sb.AppendLine();
+            sb.AppendLine($"{tip} Kalemleri:");
+            if (kalemRows.Count == 0)
+            {
+                sb.AppendLine("- Kayıt yok.");
+                return;
+            }
+
+            foreach (var row in kalemRows)
+                sb.AppendLine($"- {row.Kalem}: {row.Toplam:n2} ({row.Count} işlem)");
+        }
+
+        private static bool IsTip(string? rawTip, string tip)
+        {
+            var normalized = (rawTip ?? string.Empty).Trim().ToLowerInvariant();
+            if (tip == "Gelir")
+                return normalized is "gelir" or "giris" or "giriş";
+
+            if (tip == "Gider")
+                return normalized is "gider" or "cikis" or "çıkış";
+
+            return false;
+        }
+
+        private static string GetKalemName(Kasa row)
+        {
+            if (!string.IsNullOrWhiteSpace(row.Kalem))
+                return row.Kalem.Trim();
+
+            if (!string.IsNullOrWhiteSpace(row.GiderTuru))
+                return row.GiderTuru.Trim();
+
+            return IsTip(row.Tip, "Gider") ? "Genel Gider" : "Genel Gelir";
         }
     }
 }

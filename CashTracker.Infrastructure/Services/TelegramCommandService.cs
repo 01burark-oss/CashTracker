@@ -20,6 +20,7 @@ namespace CashTracker.Infrastructure.Services
         private readonly IKasaService _kasaService;
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ISummaryService _summaryService;
+        private readonly IIsletmeService _isletmeService;
         private readonly BackupReportService _backupReport;
 
         public TelegramCommandService(
@@ -28,6 +29,7 @@ namespace CashTracker.Infrastructure.Services
             IKasaService kasaService,
             IKalemTanimiService kalemTanimiService,
             ISummaryService summaryService,
+            IIsletmeService isletmeService,
             BackupReportService backupReport)
         {
             _telegram = telegram;
@@ -35,6 +37,7 @@ namespace CashTracker.Infrastructure.Services
             _kasaService = kasaService;
             _kalemTanimiService = kalemTanimiService;
             _summaryService = summaryService;
+            _isletmeService = isletmeService;
             _backupReport = backupReport;
         }
 
@@ -73,9 +76,11 @@ namespace CashTracker.Infrastructure.Services
                     case "/today":
                     case "/bugun":
                     case "/bug\u00FCn":
-                        await _backupReport.SendDailyReportAsync(DateTime.Today, "Telegram komutu");
+                    {
+                        var businessName = await GetActiveBusinessNameAsync();
+                        await _backupReport.SendDailyReportAsync(DateTime.Today, $"Telegram komutu | Isletme: {businessName}");
                         break;
-
+                    }
                     case "/summary":
                     case "/ozet":
                     case "/\u00F6zet":
@@ -89,10 +94,12 @@ namespace CashTracker.Infrastructure.Services
 
                     case "/backup":
                     case "/yedek":
-                        await _telegram.SendTextAsync(ToChatId(update.ChatId), "Yedek alınıyor, lütfen bekleyin.", ct);
-                        await _backupReport.SendBackupAsync("Telegram komutu");
+                    {
+                        var businessName = await GetActiveBusinessNameAsync();
+                        await _telegram.SendTextAsync(ToChatId(update.ChatId), $"Yedek aliniyor, lutfen bekleyin.\nIsletme: {businessName}", ct);
+                        await _backupReport.SendBackupAsync($"Telegram komutu | Isletme: {businessName}");
                         break;
-
+                    }
                     case "/add":
                     case "/ekle":
                         await AddTransactionWithTypeAsync(args, update.ChatId, ct);
@@ -183,15 +190,20 @@ namespace CashTracker.Infrastructure.Services
             var to = DateTime.Today;
             var from = to.AddDays(-(days - 1));
             var summary = await _summaryService.GetSummaryAsync(from, to);
+            var records = await _kasaService.GetAllAsync(from, to);
+            var businessName = await GetActiveBusinessNameAsync();
 
-            var text =
-                $"\u00D6zet ({from:yyyy-MM-dd} - {to:yyyy-MM-dd})\n" +
-                $"Gelir: {summary.IncomeTotal:n2}\n" +
-                $"Gider: {summary.ExpenseTotal:n2}\n" +
-                $"Net: {summary.Net:n2}\n" +
-                $"\u0130\u015Flem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})";
+            var sb = new StringBuilder();
+            sb.AppendLine($"\u00D6zet ({from:yyyy-MM-dd} - {to:yyyy-MM-dd})");
+            sb.AppendLine($"Isletme: {businessName}");
+            sb.AppendLine($"Gelir: {summary.IncomeTotal:n2}");
+            sb.AppendLine($"Gider: {summary.ExpenseTotal:n2}");
+            sb.AppendLine($"Net: {summary.Net:n2}");
+            sb.AppendLine($"\u0130\u015Flem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})");
+            AppendKalemBreakdown(sb, records, "Gelir");
+            AppendKalemBreakdown(sb, records, "Gider");
 
-            await _telegram.SendTextAsync(ToChatId(chatId), text, ct);
+            await _telegram.SendTextAsync(ToChatId(chatId), sb.ToString().Trim(), ct);
         }
 
         private async Task SendReadableReportAsync(string[] args, long chatId, CancellationToken ct)
@@ -212,10 +224,12 @@ namespace CashTracker.Infrastructure.Services
             var from = to.AddDays(-(days - 1));
             var summary = await _summaryService.GetSummaryAsync(from, to);
             var records = await _kasaService.GetAllAsync(from, to);
+            var businessName = await GetActiveBusinessNameAsync();
 
             var sb = new StringBuilder();
             sb.AppendLine("CashTracker Rapor");
             sb.AppendLine($"Aral\u0131k: {from:yyyy-MM-dd} - {to:yyyy-MM-dd}");
+            sb.AppendLine($"Isletme: {businessName}");
             sb.AppendLine();
             sb.AppendLine($"Gelir Toplam: {summary.IncomeTotal:n2}");
             sb.AppendLine($"Gider Toplam: {summary.ExpenseTotal:n2}");
@@ -249,7 +263,7 @@ namespace CashTracker.Infrastructure.Services
 
             try
             {
-                var caption = $"Rapor ({from:yyyy-MM-dd} - {to:yyyy-MM-dd})";
+                var caption = $"Rapor ({from:yyyy-MM-dd} - {to:yyyy-MM-dd}) | Isletme: {businessName}";
                 await _telegram.SendDocumentAsync(ToChatId(chatId), reportPath, caption, ct);
             }
             finally
@@ -324,10 +338,11 @@ namespace CashTracker.Infrastructure.Services
             var kalemText = string.IsNullOrWhiteSpace(kalemParse.Kalem)
                 ? GetDefaultKalem(tip, kalemler)
                 : kalemParse.Kalem;
+            var businessName = await GetActiveBusinessNameAsync();
 
             await _telegram.SendTextAsync(
                 ToChatId(chatId),
-                $"Kaydedildi. Id: {id}\nTip: {tip}\nKalem: {kalemText}\nTutar: {amount:n2}",
+                $"Kaydedildi. Id: {id}\nIsletme: {businessName}\nTip: {tip}\nKalem: {kalemText}\nTutar: {amount:n2}",
                 ct);
         }
 
@@ -372,7 +387,7 @@ namespace CashTracker.Infrastructure.Services
             if (remainingArgs.Length == 0 || kalemler.Count == 0)
                 return false;
 
-            KalemTanimi? bestMatch = null;
+            string? bestMatchName = null;
             var joinedArgs = string.Join(' ', remainingArgs);
             var joinedArgsNormalized = NormalizeForMatch(joinedArgs);
 
@@ -388,15 +403,15 @@ namespace CashTracker.Infrastructure.Services
                 if (!isExact && !isPrefix)
                     continue;
 
-                if (bestMatch == null || ad.Length > bestMatch.Ad.Length)
-                    bestMatch = row;
+                if (bestMatchName == null || ad.Length > bestMatchName.Length)
+                    bestMatchName = ad;
             }
 
-            if (bestMatch == null)
+            if (string.IsNullOrWhiteSpace(bestMatchName))
                 return false;
 
-            kalem = bestMatch.Ad;
-            consumedTokenCount = bestMatch.Ad
+            kalem = bestMatchName;
+            consumedTokenCount = bestMatchName
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries)
                 .Length;
             return true;
@@ -415,6 +430,56 @@ namespace CashTracker.Infrastructure.Services
             }
 
             return kalemler[0].Ad;
+        }
+
+        private static void AppendKalemBreakdown(StringBuilder sb, IReadOnlyCollection<Kasa> records, string tip)
+        {
+            var kalemRows = records
+                .Where(x => IsTip(x.Tip, tip))
+                .GroupBy(GetKalemName, StringComparer.OrdinalIgnoreCase)
+                .Select(g => new
+                {
+                    Kalem = g.Key,
+                    Toplam = g.Sum(x => x.Tutar),
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.Toplam)
+                .ThenBy(x => x.Kalem, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            sb.AppendLine();
+            sb.AppendLine($"{tip} Kalemleri:");
+            if (kalemRows.Count == 0)
+            {
+                sb.AppendLine("- Kayit yok.");
+                return;
+            }
+
+            foreach (var row in kalemRows)
+                sb.AppendLine($"- {row.Kalem}: {row.Toplam:n2} ({row.Count} islem)");
+        }
+
+        private static bool IsTip(string? rawTip, string tip)
+        {
+            var normalized = (rawTip ?? string.Empty).Trim().ToLowerInvariant();
+            if (tip == "Gelir")
+                return normalized is "gelir" or "giris" or "giriş" or "income";
+
+            if (tip == "Gider")
+                return normalized is "gider" or "cikis" or "çıkış" or "expense";
+
+            return false;
+        }
+
+        private static string GetKalemName(Kasa row)
+        {
+            if (!string.IsNullOrWhiteSpace(row.Kalem))
+                return row.Kalem.Trim();
+
+            if (!string.IsNullOrWhiteSpace(row.GiderTuru))
+                return row.GiderTuru.Trim();
+
+            return IsTip(row.Tip, "Gider") ? "Genel Gider" : "Genel Gelir";
         }
 
         private static string NormalizeForMatch(string value)
@@ -464,6 +529,19 @@ namespace CashTracker.Infrastructure.Services
                 "expense" => "Gider",
                 _ => null
             };
+        }
+
+        private async Task<string> GetActiveBusinessNameAsync()
+        {
+            try
+            {
+                var active = await _isletmeService.GetActiveAsync();
+                return string.IsNullOrWhiteSpace(active.Ad) ? "Bilinmiyor" : active.Ad.Trim();
+            }
+            catch
+            {
+                return "Bilinmiyor";
+            }
         }
 
         private static string ToChatId(long chatId)

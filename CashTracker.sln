@@ -9,13 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.Core", "CashTra
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.Infrastructure", "CashTracker.Infrastructure\CashTracker.Infrastructure.csproj", "{4C9D8F00-0306-4507-87EC-6C020782FF61}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.Tests", "CashTracker.Tests\CashTracker.Tests.csproj", "{A268999E-096B-4BCD-B4CB-380544125F3B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{4A87E5EE-668F-4593-9A4E-5C49E12D5449}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -30,5 +29,12 @@ Global
 		{4C9D8F00-0306-4507-87EC-6C020782FF61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C9D8F00-0306-4507-87EC-6C020782FF61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4C9D8F00-0306-4507-87EC-6C020782FF61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A268999E-096B-4BCD-B4CB-380544125F3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A268999E-096B-4BCD-B4CB-380544125F3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A268999E-096B-4BCD-B4CB-380544125F3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A268999E-096B-4BCD-B4CB-380544125F3B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
