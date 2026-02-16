@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -27,6 +28,7 @@ namespace CashTracker.App.Forms
             _dtTarih.Value = kasa.Tarih;
             _cmbTip.SelectedItem = MapTip(kasa.Tip);
             _numTutar.Value = kasa.Tutar;
+            SetSelectedOdemeYontemi(kasa.OdemeYontemi);
             _txtAciklama.Text = kasa.Aciklama ?? string.Empty;
             await LoadKalemlerForTipAsync(kasa.Kalem ?? kasa.GiderTuru);
         }
@@ -37,6 +39,7 @@ namespace CashTracker.App.Forms
             _dtTarih.Value = DateTime.Now;
             _cmbTip.SelectedIndex = 0;
             _numTutar.Value = 0;
+            SetSelectedOdemeYontemi("Nakit");
             _txtAciklama.Text = string.Empty;
             await LoadKalemlerForTipAsync();
         }
@@ -118,6 +121,33 @@ namespace CashTracker.App.Forms
                 _lblKalemEmptyHint.Text =
                     $"{tip} icin kalem tanimi bulunamadi. Ayarlar ekranindan once kalem eklemelisin.";
             }
+        }
+
+        private void SetSelectedOdemeYontemi(string? value)
+        {
+            _selectedOdemeYontemi = NormalizeOdemeYontemi(value);
+            ApplyOdemeYontemiButtonStyles();
+        }
+
+        private void ApplyOdemeYontemiButtonStyles()
+        {
+            ApplyOdemeYontemiButtonStyle(_btnOdemeNakit, "Nakit");
+            ApplyOdemeYontemiButtonStyle(_btnOdemeKrediKarti, "KrediKarti");
+            ApplyOdemeYontemiButtonStyle(_btnOdemeHavale, "Havale");
+        }
+
+        private void ApplyOdemeYontemiButtonStyle(Button button, string methodValue)
+        {
+            var isSelected = string.Equals(_selectedOdemeYontemi, methodValue, StringComparison.OrdinalIgnoreCase);
+            button.BackColor = isSelected
+                ? Color.FromArgb(217, 234, 252)
+                : Color.White;
+            button.ForeColor = isSelected
+                ? Color.FromArgb(18, 56, 98)
+                : Color.FromArgb(38, 53, 72);
+            button.FlatAppearance.BorderColor = isSelected
+                ? Color.FromArgb(51, 106, 174)
+                : Color.FromArgb(190, 202, 216);
         }
 
         private async Task RefreshActiveBusinessInfoAsync()

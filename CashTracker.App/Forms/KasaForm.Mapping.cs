@@ -13,5 +13,35 @@ namespace CashTracker.App.Forms
                 _ => value ?? "Gelir"
             };
         }
+
+        private static string NormalizeOdemeYontemi(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "nakit" => "Nakit",
+                "cash" => "Nakit",
+                "kredikarti" => "KrediKarti",
+                "kredi karti" => "KrediKarti",
+                "kredi kartı" => "KrediKarti",
+                "kart" => "KrediKarti",
+                "creditcard" => "KrediKarti",
+                "credit card" => "KrediKarti",
+                "havale" => "Havale",
+                "transfer" => "Havale",
+                "bank transfer" => "Havale",
+                _ => "Nakit"
+            };
+        }
+
+        private static string MapOdemeYontemiLabel(string? value)
+        {
+            return NormalizeOdemeYontemi(value) switch
+            {
+                "KrediKarti" => "Kredi Karti",
+                "Havale" => "Havale",
+                _ => "Nakit"
+            };
+        }
     }
 }

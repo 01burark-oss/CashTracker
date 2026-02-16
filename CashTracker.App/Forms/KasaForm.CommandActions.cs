@@ -16,9 +16,10 @@ namespace CashTracker.App.Forms
             var kasa = new Kasa
             {
                 Id = _selectedId,
-                Tarih = isNew ? DateTime.Now : _dtTarih.Value,
+                Tarih = _dtTarih.Value,
                 Tip = tip,
                 Tutar = _numTutar.Value,
+                OdemeYontemi = _selectedOdemeYontemi,
                 Kalem = kalem,
                 GiderTuru = tip == "Gider" ? kalem : null,
                 Aciklama = NormalizeText(_txtAciklama.Text)

@@ -14,11 +14,13 @@ namespace CashTracker.App
         private readonly ISummaryService _summaryService;
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
         private readonly TelegramSettings _telegramSettings;
         private readonly UpdateSettings _updateSettings;
         private readonly AppRuntimeOptions _runtimeOptions;
         private readonly GitHubUpdateService _updateService;
+        private bool _isAuthenticated;
 
         private SummaryCard _cardDaily = null!;
         private SummaryCard _card30 = null!;
@@ -35,6 +37,15 @@ namespace CashTracker.App
         private Label _lblYearNet = null!;
         private Label _lblActiveBusinessTop = null!;
         private Label _lblActiveBusinessReport = null!;
+        private Label _lblDailyOverviewIncome = null!;
+        private Label _lblDailyOverviewExpense = null!;
+        private Label _lblDailyOverviewNet = null!;
+        private Label _lblDailyNakitIncome = null!;
+        private Label _lblDailyNakitExpense = null!;
+        private Label _lblDailyKrediKartiIncome = null!;
+        private Label _lblDailyKrediKartiExpense = null!;
+        private Label _lblDailyHavaleIncome = null!;
+        private Label _lblDailyHavaleExpense = null!;
 
         private sealed class SummaryCard
         {
@@ -63,6 +74,7 @@ namespace CashTracker.App
             ISummaryService summaryService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
+            IAppSecurityService appSecurityService,
             BackupReportService backupReport,
             TelegramSettings telegramSettings,
             UpdateSettings updateSettings,
@@ -73,6 +85,7 @@ namespace CashTracker.App
             _summaryService = summaryService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _appSecurityService = appSecurityService;
             _backupReport = backupReport;
             _telegramSettings = telegramSettings;
             _updateSettings = updateSettings;
@@ -90,7 +103,7 @@ namespace CashTracker.App
                 Icon = appIcon;
 
             BuildUi();
-            Shown += async (_, __) => await RefreshSummariesAsync();
+            Shown += async (_, __) => await InitializeAfterLoginAsync();
         }
     }
 }

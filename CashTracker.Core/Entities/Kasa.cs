@@ -9,6 +9,7 @@ namespace CashTracker.Core.Entities
         public DateTime Tarih { get; set; } = DateTime.Now;
         public string Tip { get; set; } = "Gelir"; // Gelir | Gider
         public decimal Tutar { get; set; }
+        public string OdemeYontemi { get; set; } = "Nakit"; // Nakit | KrediKarti | Havale
         public string? Kalem { get; set; }
         public string? GiderTuru { get; set; }
         public string? Aciklama { get; set; }

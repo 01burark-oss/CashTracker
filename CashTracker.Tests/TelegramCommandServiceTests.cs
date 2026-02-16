@@ -19,9 +19,9 @@ namespace CashTracker.Tests
             var now = DateTime.Now;
             var kasa = new FakeKasaService(new[]
             {
-                new Kasa { Id = 1, Tarih = now.AddDays(-1), Tip = "Gelir", Tutar = 120m, Kalem = "Nakit Satis" },
-                new Kasa { Id = 2, Tarih = now.AddDays(-1), Tip = "Gelir", Tutar = 80m, Kalem = "Nakit Satis" },
-                new Kasa { Id = 3, Tarih = now.AddDays(-1), Tip = "Gider", Tutar = 50m, Kalem = "Kira", GiderTuru = "Kira" }
+                new Kasa { Id = 1, Tarih = now.AddDays(-1), Tip = "Gelir", Tutar = 120m, OdemeYontemi = "Nakit", Kalem = "Nakit Satis" },
+                new Kasa { Id = 2, Tarih = now.AddDays(-1), Tip = "Gelir", Tutar = 80m, OdemeYontemi = "KrediKarti", Kalem = "Nakit Satis" },
+                new Kasa { Id = 3, Tarih = now.AddDays(-1), Tip = "Gider", Tutar = 50m, OdemeYontemi = "Havale", Kalem = "Kira", GiderTuru = "Kira" }
             });
 
             var summary = new FakeSummaryService
@@ -41,7 +41,7 @@ namespace CashTracker.Tests
                 Active = new Isletme { Id = 7, Ad = "Demo Isletme", IsAktif = true }
             };
 
-            var (_, handler, service) = BuildService(kasa, kalem, summary, isletme);
+            var (_, handler, service, _) = BuildService(kasa, kalem, summary, isletme);
 
             await service.ProcessUpdateAsync(new TelegramUpdate
             {
@@ -54,6 +54,10 @@ namespace CashTracker.Tests
             var text = handler.GetLastFormFieldValue("/sendMessage", "text");
             Assert.False(string.IsNullOrWhiteSpace(text));
             Assert.Contains("Isletme: Demo Isletme", text!);
+            Assert.Contains("Odeme Yontemleri:", text!);
+            Assert.Contains("- Nakit:", text!);
+            Assert.Contains("- Kredi Karti:", text!);
+            Assert.Contains("- Havale:", text!);
             Assert.Contains("Gelir Kalemleri:", text!);
             Assert.Contains("Gider Kalemleri:", text!);
             Assert.Contains("- Nakit Satis:", text!);
@@ -74,7 +78,7 @@ namespace CashTracker.Tests
                 Active = new Isletme { Id = 7, Ad = "Demo Isletme", IsAktif = true }
             };
 
-            var (_, handler, service) = BuildService(kasa, kalem, summary, isletme);
+            var (_, handler, service, _) = BuildService(kasa, kalem, summary, isletme);
 
             await service.ProcessUpdateAsync(new TelegramUpdate
             {
@@ -96,7 +100,33 @@ namespace CashTracker.Tests
             Assert.Equal("Genel Gelir", kasa.LastCreated.Kalem);
         }
 
-        private static (TelegramBotService Bot, RecordingHttpMessageHandler Handler, TelegramCommandService Service) BuildService(
+        [Fact]
+        public async Task ProcessUpdateAsync_SifreCommand_UpdatesPin()
+        {
+            var kasa = new FakeKasaService();
+            var kalem = new FakeKalemTanimiService();
+            var summary = new FakeSummaryService();
+            var isletme = new FakeIsletmeService
+            {
+                Active = new Isletme { Id = 7, Ad = "Demo Isletme", IsAktif = true }
+            };
+
+            var (_, handler, service, security) = BuildService(kasa, kalem, summary, isletme);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 3,
+                ChatId = 123,
+                UserId = 42,
+                Text = "/sifre 2468"
+            });
+
+            var text = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Equal("2468", security.Pin);
+            Assert.Contains("Uygulama sifresi guncellendi.", text!);
+        }
+
+        private static (TelegramBotService Bot, RecordingHttpMessageHandler Handler, TelegramCommandService Service, FakeAppSecurityService Security) BuildService(
             FakeKasaService kasa,
             FakeKalemTanimiService kalem,
             FakeSummaryService summary,
@@ -121,6 +151,8 @@ namespace CashTracker.Tests
                     Path.GetTempPath(),
                     $"cashtracker_tests_{Guid.NewGuid():N}.db"))));
 
+            var security = new FakeAppSecurityService();
+
             var service = new TelegramCommandService(
                 bot,
                 settings,
@@ -128,9 +160,10 @@ namespace CashTracker.Tests
                 kalem,
                 summary,
                 isletme,
+                security,
                 backup);
 
-            return (bot, handler, service);
+            return (bot, handler, service, security);
         }
     }
 }

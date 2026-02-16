@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS Kasa (
     Tarih TEXT NOT NULL,
     Tip TEXT NOT NULL,
     Tutar NUMERIC NOT NULL DEFAULT 0,
+    OdemeYontemi TEXT NOT NULL DEFAULT 'Nakit',
     Kalem TEXT,
     GiderTuru TEXT,
     Aciklama TEXT,
@@ -47,6 +48,18 @@ CREATE TABLE IF NOT EXISTS KalemTanimi (
 );");
         }
 
+        private static partial void EnsureAppSettingTable(CashTrackerDbContext db)
+        {
+            db.Database.ExecuteSqlRaw(@"
+CREATE TABLE IF NOT EXISTS AppSetting (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Key TEXT NOT NULL,
+    Value TEXT NOT NULL,
+    CreatedAt TEXT NOT NULL,
+    UpdatedAt TEXT NOT NULL
+);");
+        }
+
         private static partial void EnsureKasaColumns(CashTrackerDbContext db, DbConnection conn)
         {
             if (!ColumnExists(conn, "Kasa", "GiderTuru"))
@@ -57,6 +70,9 @@ CREATE TABLE IF NOT EXISTS KalemTanimi (
 
             if (!ColumnExists(conn, "Kasa", "Kalem"))
                 db.Database.ExecuteSqlRaw("ALTER TABLE Kasa ADD COLUMN Kalem TEXT");
+
+            if (!ColumnExists(conn, "Kasa", "OdemeYontemi"))
+                db.Database.ExecuteSqlRaw("ALTER TABLE Kasa ADD COLUMN OdemeYontemi TEXT NOT NULL DEFAULT 'Nakit'");
         }
 
         private static partial void EnsureIndexes(CashTrackerDbContext db)
@@ -66,6 +82,7 @@ CREATE TABLE IF NOT EXISTS KalemTanimi (
             db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_Isletme_IsAktif ON Isletme(IsAktif);");
             db.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS IX_KalemTanimi_IsletmeId ON KalemTanimi(IsletmeId);");
             db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_KalemTanimi_IsletmeId_Tip_Ad ON KalemTanimi(IsletmeId, Tip, Ad);");
+            db.Database.ExecuteSqlRaw("CREATE UNIQUE INDEX IF NOT EXISTS IX_AppSetting_Key ON AppSetting(Key);");
         }
     }
 }

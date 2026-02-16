@@ -313,6 +313,7 @@ namespace CashTracker.Tests
                 kalem,
                 summary,
                 isletme,
+                new FakeAppSecurityService(),
                 backup);
 
             return (bot, handler, service);

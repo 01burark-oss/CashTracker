@@ -26,10 +26,11 @@ namespace CashTracker.App.Forms
             layout.Controls.Add(form, 0, 1);
 
             AddRow(form, "Tarih", out _dtTarih);
-            _dtTarih.Enabled = false;
+            _dtTarih.Enabled = true;
 
             AddTypeRow(form);
             AddAmountRow(form);
+            AddPaymentMethodRow(form);
             AddRow(form, "Kalem", out _cmbKalem);
             AddKalemEmptyActionRow(form);
             AddRow(form, "A\u00E7\u0131klama", out _txtAciklama);

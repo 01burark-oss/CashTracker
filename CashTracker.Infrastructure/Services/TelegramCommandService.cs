@@ -21,6 +21,7 @@ namespace CashTracker.Infrastructure.Services
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ISummaryService _summaryService;
         private readonly IIsletmeService _isletmeService;
+        private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
 
         public TelegramCommandService(
@@ -30,6 +31,7 @@ namespace CashTracker.Infrastructure.Services
             IKalemTanimiService kalemTanimiService,
             ISummaryService summaryService,
             IIsletmeService isletmeService,
+            IAppSecurityService appSecurityService,
             BackupReportService backupReport)
         {
             _telegram = telegram;
@@ -38,6 +40,7 @@ namespace CashTracker.Infrastructure.Services
             _kalemTanimiService = kalemTanimiService;
             _summaryService = summaryService;
             _isletmeService = isletmeService;
+            _appSecurityService = appSecurityService;
             _backupReport = backupReport;
         }
 
@@ -113,6 +116,11 @@ namespace CashTracker.Infrastructure.Services
                         await AddTransactionAsync("Gider", args, update.ChatId, ct);
                         break;
 
+                    case "/sifre":
+                    case "/pin":
+                        await SetAppPinAsync(args, update.ChatId, ct);
+                        break;
+
                     default:
                         await _telegram.SendTextAsync(
                             ToChatId(update.ChatId),
@@ -165,6 +173,7 @@ namespace CashTracker.Infrastructure.Services
                 "/\u00F6zet [g\u00FCn] - Son N g\u00FCn \u00F6zeti (varsay\u0131lan 30)\n" +
                 "/rapor [g\u00FCn] - \u0130nsan okunur TXT rapor (varsay\u0131lan 30)\n" +
                 "/yedek - Veritaban\u0131 yede\u011Fi g\u00F6nder\n" +
+                "/sifre <4-haneli-pin> - Uygulama giris sifresini degistir\n" +
                 "/ekle gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
                 "/ekle gider <tutar> <kalem> [a\u00E7\u0131klama]\n" +
                 "/gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
@@ -200,10 +209,36 @@ namespace CashTracker.Infrastructure.Services
             sb.AppendLine($"Gider: {summary.ExpenseTotal:n2}");
             sb.AppendLine($"Net: {summary.Net:n2}");
             sb.AppendLine($"\u0130\u015Flem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})");
+            AppendOdemeYontemiBreakdown(sb, records);
             AppendKalemBreakdown(sb, records, "Gelir");
             AppendKalemBreakdown(sb, records, "Gider");
 
             await _telegram.SendTextAsync(ToChatId(chatId), sb.ToString().Trim(), ct);
+        }
+
+        private async Task SetAppPinAsync(string[] args, long chatId, CancellationToken ct)
+        {
+            if (args.Length == 0)
+            {
+                await _telegram.SendTextAsync(ToChatId(chatId), "Kullanim: /sifre <4 haneli pin>", ct);
+                return;
+            }
+
+            var raw = (args[0] ?? string.Empty).Trim();
+            if (string.Equals(raw, "default", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(raw, "varsayilan", StringComparison.OrdinalIgnoreCase))
+            {
+                raw = "0000";
+            }
+
+            if (!IsValidPin(raw))
+            {
+                await _telegram.SendTextAsync(ToChatId(chatId), "Sifre 4 haneli sayisal olmalidir. Ornek: /sifre 2468", ct);
+                return;
+            }
+
+            await _appSecurityService.SetPinAsync(raw);
+            await _telegram.SendTextAsync(ToChatId(chatId), "Uygulama sifresi guncellendi.", ct);
         }
 
         private async Task SendReadableReportAsync(string[] args, long chatId, CancellationToken ct)
@@ -235,6 +270,7 @@ namespace CashTracker.Infrastructure.Services
             sb.AppendLine($"Gider Toplam: {summary.ExpenseTotal:n2}");
             sb.AppendLine($"Net: {summary.Net:n2}");
             sb.AppendLine($"\u0130\u015Flem Say\u0131s\u0131: {summary.IncomeCount + summary.ExpenseCount}");
+            AppendOdemeYontemiBreakdown(sb, records);
             sb.AppendLine();
             sb.AppendLine("Hareketler:");
 
@@ -459,6 +495,29 @@ namespace CashTracker.Infrastructure.Services
                 sb.AppendLine($"- {row.Kalem}: {row.Toplam:n2} ({row.Count} islem)");
         }
 
+        private static void AppendOdemeYontemiBreakdown(StringBuilder sb, IReadOnlyCollection<Kasa> records)
+        {
+            var byMethod = records
+                .GroupBy(x => NormalizeOdemeYontemi(x.OdemeYontemi), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        Income = g.Where(x => IsTip(x.Tip, "Gelir")).Sum(x => x.Tutar),
+                        Expense = g.Where(x => IsTip(x.Tip, "Gider")).Sum(x => x.Tutar)
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
+            sb.AppendLine();
+            sb.AppendLine("Odeme Yontemleri:");
+            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            {
+                var income = byMethod.TryGetValue(method, out var values) ? values.Income : 0m;
+                var expense = byMethod.TryGetValue(method, out values) ? values.Expense : 0m;
+                sb.AppendLine($"- {GetOdemeYontemiLabel(method)}: Gelir {income:n2} | Gider {expense:n2} | Net {(income - expense):n2}");
+            }
+        }
+
         private static bool IsTip(string? rawTip, string tip)
         {
             var normalized = (rawTip ?? string.Empty).Trim().ToLowerInvariant();
@@ -514,6 +573,11 @@ namespace CashTracker.Infrastructure.Services
             return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
         }
 
+        private static bool IsValidPin(string value)
+        {
+            return value.Length == 4 && value.All(char.IsDigit);
+        }
+
         private static string? NormalizeTip(string value)
         {
             var normalized = value.Trim().ToLowerInvariant();
@@ -529,6 +593,31 @@ namespace CashTracker.Infrastructure.Services
                 "expense" => "Gider",
                 _ => null
             };
+        }
+
+        private static string NormalizeOdemeYontemi(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "nakit" => "Nakit",
+                "cash" => "Nakit",
+                "kredikarti" => "KrediKarti",
+                "kredi karti" => "KrediKarti",
+                "kredi kart\u0131" => "KrediKarti",
+                "kart" => "KrediKarti",
+                "creditcard" => "KrediKarti",
+                "credit card" => "KrediKarti",
+                "havale" => "Havale",
+                "transfer" => "Havale",
+                "bank transfer" => "Havale",
+                _ => "Nakit"
+            };
+        }
+
+        private static string GetOdemeYontemiLabel(string method)
+        {
+            return method == "KrediKarti" ? "Kredi Karti" : method;
         }
 
         private async Task<string> GetActiveBusinessNameAsync()

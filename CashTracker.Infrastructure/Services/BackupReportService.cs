@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CashTracker.Core.Models;
@@ -72,9 +73,25 @@ namespace CashTracker.Infrastructure.Services
             sb.AppendLine($"Gelir: {r.IncomeTotal:n2}");
             sb.AppendLine($"Gider: {r.ExpenseTotal:n2}");
             sb.AppendLine($"Net: {(r.IncomeTotal - r.ExpenseTotal):n2}");
-            sb.AppendLine($"\u0130\u015Flem: {r.IncomeCount + r.ExpenseCount} (Gelir {r.IncomeCount}, Gider {r.ExpenseCount})");
+            sb.AppendLine($"Islem: {r.IncomeCount + r.ExpenseCount} (Gelir {r.IncomeCount}, Gider {r.ExpenseCount})");
+            sb.AppendLine();
+            sb.AppendLine("Odeme Yontemleri:");
+
+            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            {
+                var row = r.PaymentMethodBreakdowns
+                    .FirstOrDefault(x => string.Equals(x.Method, method, StringComparison.OrdinalIgnoreCase));
+                var income = row?.IncomeTotal ?? 0m;
+                var expense = row?.ExpenseTotal ?? 0m;
+                sb.AppendLine($"- {GetMethodLabel(method)}: Gelir {income:n2} | Gider {expense:n2} | Net {(income - expense):n2}");
+            }
 
             return sb.ToString().Trim();
+        }
+
+        private static string GetMethodLabel(string method)
+        {
+            return method == "KrediKarti" ? "Kredi Karti" : method;
         }
     }
 }

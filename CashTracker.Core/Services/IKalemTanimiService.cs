@@ -9,6 +9,7 @@ namespace CashTracker.Core.Services
         Task<List<KalemTanimi>> GetAllAsync();
         Task<List<KalemTanimi>> GetByTipAsync(string tip);
         Task<int> CreateAsync(string tip, string ad);
+        Task UpdateAsync(int id, string ad);
         Task DeleteAsync(int id);
     }
 }

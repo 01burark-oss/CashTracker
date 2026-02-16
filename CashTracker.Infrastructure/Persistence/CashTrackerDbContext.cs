@@ -10,6 +10,7 @@ namespace CashTracker.Infrastructure.Persistence
         public DbSet<Kasa> Kasalar => Set<Kasa>();
         public DbSet<Isletme> Isletmeler => Set<Isletme>();
         public DbSet<KalemTanimi> KalemTanimlari => Set<KalemTanimi>();
+        public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -18,6 +19,7 @@ namespace CashTracker.Infrastructure.Persistence
                 e.ToTable("Kasa");
                 e.HasKey(x => x.Id);
                 e.Property(x => x.Tip).IsRequired();
+                e.Property(x => x.OdemeYontemi).IsRequired();
                 e.Property(x => x.Tutar).HasColumnType("NUMERIC");
                 e.HasIndex(x => x.IsletmeId);
                 e.HasIndex(x => new { x.IsletmeId, x.Tarih });
@@ -39,6 +41,15 @@ namespace CashTracker.Infrastructure.Persistence
                 e.Property(x => x.Ad).IsRequired();
                 e.HasIndex(x => x.IsletmeId);
                 e.HasIndex(x => new { x.IsletmeId, x.Tip, x.Ad }).IsUnique();
+            });
+
+            modelBuilder.Entity<AppSetting>(e =>
+            {
+                e.ToTable("AppSetting");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Key).IsRequired();
+                e.Property(x => x.Value).IsRequired();
+                e.HasIndex(x => x.Key).IsUnique();
             });
         }
     }

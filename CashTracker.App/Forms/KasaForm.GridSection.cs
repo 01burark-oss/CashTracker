@@ -68,13 +68,14 @@ namespace CashTracker.App.Forms
                 BackColor = Color.FromArgb(250, 251, 253)
             };
 
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tarih", HeaderText = "Tarih", FillWeight = 18, MinimumWidth = 120 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tip", HeaderText = "Tip", FillWeight = 10, MinimumWidth = 70 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tutar", HeaderText = "Tutar", FillWeight = 15, MinimumWidth = 90 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Kalem", HeaderText = "Kalem", FillWeight = 20, MinimumWidth = 110 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Aciklama", HeaderText = "Açıklama", FillWeight = 37, MinimumWidth = 140 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tarih", HeaderText = "Tarih", FillWeight = 16, MinimumWidth = 120 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tip", HeaderText = "Tip", FillWeight = 9, MinimumWidth = 70 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OdemeYontemi", HeaderText = "Yontem", FillWeight = 14, MinimumWidth = 100 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tutar", HeaderText = "Tutar", FillWeight = 14, MinimumWidth = 90 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Kalem", HeaderText = "Kalem", FillWeight = 18, MinimumWidth = 110 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Aciklama", HeaderText = "Açıklama", FillWeight = 29, MinimumWidth = 140 });
             grid.Columns[0].DefaultCellStyle = new DataGridViewCellStyle { Format = "dd.MM.yyyy HH:mm" };
-            grid.Columns[2].DefaultCellStyle = new DataGridViewCellStyle
+            grid.Columns[3].DefaultCellStyle = new DataGridViewCellStyle
             {
                 Format = "N2",
                 Alignment = DataGridViewContentAlignment.MiddleRight
@@ -85,7 +86,17 @@ namespace CashTracker.App.Forms
 
         private void GridCellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
-            if (e.RowIndex < 0 || e.ColumnIndex != 2)
+            if (e.RowIndex < 0)
+                return;
+
+            if (e.ColumnIndex == 2)
+            {
+                e.Value = MapOdemeYontemiLabel(e.Value?.ToString());
+                e.FormattingApplied = true;
+                return;
+            }
+
+            if (e.ColumnIndex != 3)
                 return;
 
             var row = _grid.Rows[e.RowIndex];

@@ -16,6 +16,9 @@ namespace CashTracker.App.Forms
         private DateTimePicker _dtTarih = null!;
         private NumericUpDown _numTutar = null!;
         private ComboBox _cmbKalem = null!;
+        private Button _btnOdemeNakit = null!;
+        private Button _btnOdemeKrediKarti = null!;
+        private Button _btnOdemeHavale = null!;
         private Label _lblKalemEmptyHint = null!;
         private Button _btnKalemSettings = null!;
         private TextBox _txtAciklama = null!;
@@ -30,6 +33,7 @@ namespace CashTracker.App.Forms
 
         private int _selectedId;
         private bool _isLoadingKalemler;
+        private string _selectedOdemeYontemi = "Nakit";
 
         public KasaForm(
             IKasaService kasaService,

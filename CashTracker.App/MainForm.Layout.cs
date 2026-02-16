@@ -289,9 +289,10 @@ namespace CashTracker.App
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 1,
-                RowCount = 5
+                RowCount = 6
             };
             content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -329,6 +330,9 @@ namespace CashTracker.App
             };
             content.Controls.Add(_lblActiveBusinessReport, 0, 2);
 
+            var dailyOverviewPanel = CreateDailyOverviewPanel(surface, border);
+            content.Controls.Add(dailyOverviewPanel, 0, 3);
+
             var cardsPanel = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
@@ -338,7 +342,7 @@ namespace CashTracker.App
                 WrapContents = true,
                 Margin = new Padding(0, 0, 0, 12)
             };
-            content.Controls.Add(cardsPanel, 0, 3);
+            content.Controls.Add(cardsPanel, 0, 4);
 
             _cardDaily = CreateSummaryCard("Günlük", surface, BrandTheme.Teal, "Telegram'a Gönder", border);
             _card30 = CreateSummaryCard("Son 30 Gün", surface, BrandTheme.Navy, "Telegram'a Gönder", border);
@@ -367,7 +371,7 @@ namespace CashTracker.App
             reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
             reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.Controls.Add(reportGrid, 0, 4);
+            content.Controls.Add(reportGrid, 0, 5);
 
             var monthlyPanel = CreatePeriodReportPanel(
                 "Aylık Finans",

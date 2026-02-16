@@ -17,6 +17,7 @@ namespace CashTracker.Infrastructure.Persistence
             EnsureKasaTable(db, conn);
             EnsureIsletmeTable(db);
             EnsureKalemTanimiTable(db);
+            EnsureAppSettingTable(db);
 
             EnsureKasaColumns(db, conn);
             EnsureIndexes(db);
@@ -68,6 +69,7 @@ namespace CashTracker.Infrastructure.Persistence
         private static partial void EnsureKasaTable(CashTrackerDbContext db, DbConnection conn);
         private static partial void EnsureIsletmeTable(CashTrackerDbContext db);
         private static partial void EnsureKalemTanimiTable(CashTrackerDbContext db);
+        private static partial void EnsureAppSettingTable(CashTrackerDbContext db);
         private static partial void EnsureKasaColumns(CashTrackerDbContext db, DbConnection conn);
         private static partial void EnsureIndexes(CashTrackerDbContext db);
         private static partial int EnsureActiveBusiness(CashTrackerDbContext db, DbConnection conn);

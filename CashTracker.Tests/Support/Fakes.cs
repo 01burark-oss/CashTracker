@@ -100,6 +100,15 @@ namespace CashTracker.Tests.Support
             return Task.FromResult(row.Id);
         }
 
+        public Task UpdateAsync(int id, string ad)
+        {
+            var row = _rows.FirstOrDefault(x => x.Id == id);
+            if (row != null)
+                row.Ad = ad;
+
+            return Task.CompletedTask;
+        }
+
         public Task DeleteAsync(int id)
         {
             _rows.RemoveAll(x => x.Id == id);
@@ -197,6 +206,22 @@ namespace CashTracker.Tests.Support
                 IncomeCount = 0,
                 ExpenseCount = 0
             });
+        }
+    }
+
+    internal sealed class FakeAppSecurityService : IAppSecurityService
+    {
+        public string Pin { get; private set; } = "0000";
+
+        public Task<string> GetPinAsync()
+        {
+            return Task.FromResult(Pin);
+        }
+
+        public Task SetPinAsync(string pin)
+        {
+            Pin = pin;
+            return Task.CompletedTask;
         }
     }
 }

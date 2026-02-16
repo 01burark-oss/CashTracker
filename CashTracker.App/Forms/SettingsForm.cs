@@ -18,6 +18,7 @@ namespace CashTracker.App.Forms
         private TableLayoutPanel _rowActiveBusiness = null!;
         private TableLayoutPanel _rowRenameBusiness = null!;
         private TableLayoutPanel _rowNewBusiness = null!;
+        private TableLayoutPanel _rowEditKalem = null!;
         private TableLayoutPanel _rowAddKalem = null!;
 
         private ComboBox _cmbBusinesses = null!;
@@ -30,7 +31,9 @@ namespace CashTracker.App.Forms
 
         private ComboBox _cmbKalemTip = null!;
         private ListBox _lstKalemler = null!;
+        private TextBox _txtEditKalem = null!;
         private TextBox _txtNewKalem = null!;
+        private Button _btnUpdateKalem = null!;
         private Button _btnAddKalem = null!;
         private Button _btnDeleteKalem = null!;
         private Label _lblCategoryHint = null!;

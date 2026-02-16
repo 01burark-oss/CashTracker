@@ -91,6 +91,7 @@ static class Program
         services.AddScoped<IKalemTanimiService, KalemTanimiService>();
         services.AddScoped<IKasaService, KasaService>();
         services.AddScoped<ISummaryService, SummaryService>();
+        services.AddSingleton<IAppSecurityService, AppSecurityService>();
 
         services.AddSingleton(telegramSettings);
         services.AddSingleton(updateSettings);

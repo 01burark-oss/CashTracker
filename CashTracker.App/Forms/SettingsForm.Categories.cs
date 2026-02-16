@@ -8,13 +8,15 @@ namespace CashTracker.App.Forms
 {
     public sealed partial class SettingsForm
     {
-        private async Task LoadKalemlerAsync()
+        private async Task LoadKalemlerAsync(int? preferredKalemId = null)
         {
             if (_isLoadingKalemler)
                 return;
 
             _isLoadingKalemler = true;
             _btnDeleteKalem.Enabled = false;
+            _btnUpdateKalem.Enabled = false;
+            _txtEditKalem.Enabled = false;
             SetCategoryHint("Kalemler yukleniyor...");
 
             try
@@ -33,6 +35,18 @@ namespace CashTracker.App.Forms
                 _lstKalemler.DisplayMember = nameof(KalemItem.Ad);
                 _lstKalemler.ValueMember = nameof(KalemItem.Id);
 
+                if (items.Count > 0)
+                {
+                    var selectedIndex = preferredKalemId.HasValue
+                        ? items.FindIndex(x => x.Id == preferredKalemId.Value)
+                        : -1;
+                    _lstKalemler.SelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
+                }
+                else
+                {
+                    _txtEditKalem.Text = string.Empty;
+                }
+
                 if (items.Count == 0)
                 {
                     SetCategoryHint(
@@ -44,7 +58,7 @@ namespace CashTracker.App.Forms
                     SetCategoryHint($"{tip} icin {items.Count} kalem var.", HintTone.Success);
                 }
 
-                UpdateDeleteKalemState();
+                SyncSelectedKalemToEditor();
             }
             catch (Exception ex)
             {
@@ -58,6 +72,7 @@ namespace CashTracker.App.Forms
             finally
             {
                 _isLoadingKalemler = false;
+                UpdateKalemActionStates();
             }
         }
 
@@ -92,9 +107,9 @@ namespace CashTracker.App.Forms
 
             try
             {
-                await _kalemTanimiService.CreateAsync(tip, ad);
+                var id = await _kalemTanimiService.CreateAsync(tip, ad);
                 _txtNewKalem.Text = string.Empty;
-                await LoadKalemlerAsync();
+                await LoadKalemlerAsync(id);
                 SetCategoryHint($"{tip} kalemi eklendi: {ad}", HintTone.Success);
             }
             catch (Exception ex)
@@ -109,6 +124,62 @@ namespace CashTracker.App.Forms
             finally
             {
                 _btnAddKalem.Enabled = true;
+            }
+        }
+
+        private async Task UpdateSelectedKalemAsync()
+        {
+            if (_lstKalemler.SelectedItem is not KalemItem item)
+            {
+                SetCategoryHint("Duzenlemek icin listeden bir kalem sec.", HintTone.Warning);
+                return;
+            }
+
+            var yeniAd = NormalizeText(_txtEditKalem.Text);
+            if (string.IsNullOrWhiteSpace(yeniAd))
+            {
+                SetCategoryHint("Kalem adi bos birakilamaz.", HintTone.Warning);
+                return;
+            }
+
+            if (yeniAd.Length < 2)
+            {
+                SetCategoryHint("Kalem adi en az 2 karakter olmalidir.", HintTone.Warning);
+                return;
+            }
+
+            if (string.Equals(item.Ad, yeniAd, StringComparison.OrdinalIgnoreCase))
+            {
+                SetCategoryHint("Yeni ad mevcut ad ile ayni.", HintTone.Neutral);
+                return;
+            }
+
+            if (HasKalemWithName(yeniAd, exceptKalemId: item.Id))
+            {
+                SetCategoryHint("Bu kalem zaten listede var.", HintTone.Warning);
+                return;
+            }
+
+            _btnUpdateKalem.Enabled = false;
+
+            try
+            {
+                await _kalemTanimiService.UpdateAsync(item.Id, yeniAd);
+                await LoadKalemlerAsync(item.Id);
+                SetCategoryHint($"Kalem guncellendi: {item.Ad} -> {yeniAd}", HintTone.Success);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Kalem guncellenemedi: " + ex.Message,
+                    "Ayarlar",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                SetCategoryHint("Kalem guncellenemedi.", HintTone.Error);
+            }
+            finally
+            {
+                UpdateKalemActionStates();
             }
         }
 
@@ -135,6 +206,7 @@ namespace CashTracker.App.Forms
                 return;
 
             _btnDeleteKalem.Enabled = false;
+            _btnUpdateKalem.Enabled = false;
 
             try
             {
@@ -154,6 +226,7 @@ namespace CashTracker.App.Forms
             finally
             {
                 _btnDeleteKalem.Enabled = true;
+                UpdateKalemActionStates();
             }
         }
 
@@ -162,17 +235,45 @@ namespace CashTracker.App.Forms
             return _cmbKalemTip.SelectedItem?.ToString() == "Gelir" ? "Gelir" : "Gider";
         }
 
-        private void UpdateDeleteKalemState()
+        private void SyncSelectedKalemToEditor()
         {
-            _btnDeleteKalem.Enabled = _lstKalemler.SelectedItem is KalemItem;
+            if (_lstKalemler.SelectedItem is KalemItem item)
+            {
+                _txtEditKalem.Text = item.Ad;
+                _txtEditKalem.SelectionStart = _txtEditKalem.Text.Length;
+                _txtEditKalem.SelectionLength = 0;
+            }
+            else
+            {
+                _txtEditKalem.Text = string.Empty;
+            }
+
+            UpdateKalemActionStates();
         }
 
-        private bool HasKalemWithName(string name)
+        private void UpdateKalemActionStates()
+        {
+            var selected = _lstKalemler.SelectedItem as KalemItem;
+            var hasSelection = selected is not null;
+            var hasName = !string.IsNullOrWhiteSpace(NormalizeText(_txtEditKalem.Text));
+            var hasChanged = hasSelection && !string.Equals(
+                selected!.Ad,
+                NormalizeText(_txtEditKalem.Text),
+                StringComparison.OrdinalIgnoreCase);
+
+            _btnDeleteKalem.Enabled = !_isLoadingKalemler && hasSelection;
+            _txtEditKalem.Enabled = !_isLoadingKalemler && hasSelection;
+            _btnUpdateKalem.Enabled = !_isLoadingKalemler && hasSelection && hasName && hasChanged;
+        }
+
+        private bool HasKalemWithName(string name, int? exceptKalemId = null)
         {
             if (_lstKalemler.DataSource is not IEnumerable<KalemItem> items)
                 return false;
 
-            return items.Any(x => string.Equals(x.Ad, name, StringComparison.OrdinalIgnoreCase));
+            return items.Any(x =>
+                (!exceptKalemId.HasValue || x.Id != exceptKalemId.Value) &&
+                string.Equals(x.Ad, name, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

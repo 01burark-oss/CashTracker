@@ -107,7 +107,9 @@ namespace CashTracker.App.Forms
             dtp = new DateTimePicker
             {
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
-                Margin = new Padding(0, 8, 0, 8)
+                Margin = new Padding(0, 8, 0, 8),
+                Format = DateTimePickerFormat.Custom,
+                CustomFormat = "dd.MM.yyyy HH:mm"
             };
             panel.Controls.Add(lbl);
             panel.Controls.Add(dtp);

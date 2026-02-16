@@ -76,6 +76,34 @@ namespace CashTracker.Infrastructure.Services
             return entity.Id;
         }
 
+        public async Task UpdateAsync(int id, string ad)
+        {
+            var normalizedAd = NormalizeName(ad);
+            var normalizedAdLower = normalizedAd.ToLowerInvariant();
+            var activeId = await _isletmeService.GetActiveIdAsync();
+
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var row = await db.KalemTanimlari
+                .FirstOrDefaultAsync(x => x.Id == id && x.IsletmeId == activeId);
+
+            if (row == null)
+                return;
+
+            var isSameName = string.Equals(row.Ad, normalizedAd, StringComparison.OrdinalIgnoreCase);
+            if (isSameName)
+                return;
+
+            var duplicateExists = await db.KalemTanimlari
+                .Where(x => x.IsletmeId == activeId && x.Tip == row.Tip && x.Id != id)
+                .AnyAsync(x => x.Ad.ToLower() == normalizedAdLower);
+
+            if (duplicateExists)
+                throw new InvalidOperationException("Bu kalem zaten tanimli.");
+
+            row.Ad = normalizedAd;
+            await db.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(int id)
         {
             var activeId = await _isletmeService.GetActiveIdAsync();

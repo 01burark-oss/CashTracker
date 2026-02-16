@@ -88,6 +88,7 @@ namespace CashTracker.App
                 sb.AppendLine($"Gider: {summary.ExpenseTotal:n2}");
                 sb.AppendLine($"Net: {summary.Net:n2}");
                 sb.AppendLine($"İşlem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})");
+                AppendOdemeYontemiBreakdown(sb, records);
                 AppendKalemBreakdown(sb, records, "Gelir");
                 AppendKalemBreakdown(sb, records, "Gider");
 
@@ -131,6 +132,29 @@ namespace CashTracker.App
                 sb.AppendLine($"- {row.Kalem}: {row.Toplam:n2} ({row.Count} işlem)");
         }
 
+        private static void AppendOdemeYontemiBreakdown(StringBuilder sb, IReadOnlyCollection<Kasa> records)
+        {
+            var byMethod = records
+                .GroupBy(x => NormalizeOdemeYontemi(x.OdemeYontemi), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        Income = g.Where(x => IsTip(x.Tip, "Gelir")).Sum(x => x.Tutar),
+                        Expense = g.Where(x => IsTip(x.Tip, "Gider")).Sum(x => x.Tutar)
+                    },
+                    StringComparer.OrdinalIgnoreCase);
+
+            sb.AppendLine();
+            sb.AppendLine("Odeme Yontemleri:");
+            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            {
+                var income = byMethod.TryGetValue(method, out var values) ? values.Income : 0m;
+                var expense = byMethod.TryGetValue(method, out values) ? values.Expense : 0m;
+                sb.AppendLine($"- {GetOdemeYontemiLabel(method)}: Gelir {income:n2} | Gider {expense:n2} | Net {(income - expense):n2}");
+            }
+        }
+
         private static bool IsTip(string? rawTip, string tip)
         {
             var normalized = (rawTip ?? string.Empty).Trim().ToLowerInvariant();
@@ -152,6 +176,11 @@ namespace CashTracker.App
                 return row.GiderTuru.Trim();
 
             return IsTip(row.Tip, "Gider") ? "Genel Gider" : "Genel Gelir";
+        }
+
+        private static string GetOdemeYontemiLabel(string method)
+        {
+            return method == "KrediKarti" ? "Kredi Karti" : method;
         }
     }
 }

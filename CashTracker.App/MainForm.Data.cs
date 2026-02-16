@@ -59,10 +59,12 @@ namespace CashTracker.App
             var sDaily = await _summaryService.GetSummaryAsync(today, today);
             var s30 = await _summaryService.GetSummaryAsync(today.AddDays(-29), today);
             var s365 = await _summaryService.GetSummaryAsync(today.AddDays(-364), today);
+            var dailyRecords = await _kasaService.GetAllAsync(today, today);
 
             ApplySummary(_cardDaily, sDaily);
             ApplySummary(_card30, s30);
             ApplySummary(_card365, s365);
+            ApplyDailyOverview(sDaily, dailyRecords);
 
             await RefreshMonthlyAsync();
             await RefreshYearlyAsync();

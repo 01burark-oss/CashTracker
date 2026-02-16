@@ -129,12 +129,13 @@ namespace CashTracker.App.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 6
+                RowCount = 7
             };
             _categorySectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -163,12 +164,22 @@ namespace CashTracker.App.Forms
             };
             _categorySectionLayout.Controls.Add(_lstKalemler, 0, 2);
 
+            _rowEditKalem = CreateTwoColumnRow(100, 146);
+            _rowEditKalem.Margin = new Padding(0, 0, 0, 8);
+            _txtEditKalem = CreateInputBox();
+            _txtEditKalem.Enabled = false;
+            _btnUpdateKalem = CreateActionButton("Seciliyi Guncelle", BrandTheme.Navy, Color.White);
+            _btnUpdateKalem.Enabled = false;
+            _rowEditKalem.Controls.Add(_txtEditKalem, 0, 0);
+            _rowEditKalem.Controls.Add(_btnUpdateKalem, 1, 0);
+            _categorySectionLayout.Controls.Add(_rowEditKalem, 0, 3);
+
             _rowAddKalem = CreateTwoColumnRow(100, 146);
             _txtNewKalem = CreateInputBox();
             _btnAddKalem = CreateActionButton("Kalem Ekle", BrandTheme.Teal, Color.White);
             _rowAddKalem.Controls.Add(_txtNewKalem, 0, 0);
             _rowAddKalem.Controls.Add(_btnAddKalem, 1, 0);
-            _categorySectionLayout.Controls.Add(_rowAddKalem, 0, 3);
+            _categorySectionLayout.Controls.Add(_rowAddKalem, 0, 4);
 
             var deleteRow = new FlowLayoutPanel
             {
@@ -181,7 +192,7 @@ namespace CashTracker.App.Forms
             _btnDeleteKalem = CreateActionButton("Secili Kalemi Sil", BrandTheme.Navy, Color.White);
             _btnDeleteKalem.Enabled = false;
             deleteRow.Controls.Add(_btnDeleteKalem);
-            _categorySectionLayout.Controls.Add(deleteRow, 0, 4);
+            _categorySectionLayout.Controls.Add(deleteRow, 0, 5);
 
             _lblCategoryHint = new Label
             {
@@ -192,12 +203,14 @@ namespace CashTracker.App.Forms
                 Margin = new Padding(2, 10, 2, 0),
                 AutoSize = true
             };
-            _categorySectionLayout.Controls.Add(_lblCategoryHint, 0, 5);
+            _categorySectionLayout.Controls.Add(_lblCategoryHint, 0, 6);
 
             _cmbKalemTip.SelectedIndexChanged += async (_, __) => await LoadKalemlerAsync();
-            _lstKalemler.SelectedIndexChanged += (_, __) => UpdateDeleteKalemState();
+            _lstKalemler.SelectedIndexChanged += (_, __) => SyncSelectedKalemToEditor();
             _btnAddKalem.Click += async (_, __) => await AddKalemAsync();
+            _btnUpdateKalem.Click += async (_, __) => await UpdateSelectedKalemAsync();
             _btnDeleteKalem.Click += async (_, __) => await DeleteSelectedKalemAsync();
+            _txtEditKalem.TextChanged += (_, __) => UpdateKalemActionStates();
             _txtNewKalem.KeyDown += async (_, e) =>
             {
                 if (e.KeyCode != Keys.Enter)
@@ -205,6 +218,14 @@ namespace CashTracker.App.Forms
 
                 e.SuppressKeyPress = true;
                 await AddKalemAsync();
+            };
+            _txtEditKalem.KeyDown += async (_, e) =>
+            {
+                if (e.KeyCode != Keys.Enter)
+                    return;
+
+                e.SuppressKeyPress = true;
+                await UpdateSelectedKalemAsync();
             };
         }
     }

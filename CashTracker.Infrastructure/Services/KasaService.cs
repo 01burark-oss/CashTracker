@@ -56,6 +56,7 @@ namespace CashTracker.Infrastructure.Services
 
             kasa.IsletmeId = activeIsletmeId;
             kasa.Tip = NormalizeTip(kasa.Tip);
+            kasa.OdemeYontemi = NormalizeOdemeYontemi(kasa.OdemeYontemi);
             kasa.Kalem = NormalizeKalem(kasa.Tip, kasa.Kalem, kasa.GiderTuru);
             kasa.GiderTuru = kasa.Tip == "Gider" ? kasa.Kalem : null;
             kasa.CreatedAt = DateTime.Now;
@@ -77,6 +78,7 @@ namespace CashTracker.Infrastructure.Services
             existing.Tarih = kasa.Tarih;
             existing.Tip = NormalizeTip(kasa.Tip);
             existing.Tutar = kasa.Tutar;
+            existing.OdemeYontemi = NormalizeOdemeYontemi(kasa.OdemeYontemi);
             existing.Kalem = NormalizeKalem(existing.Tip, kasa.Kalem, kasa.GiderTuru);
             existing.GiderTuru = existing.Tip == "Gider" ? existing.Kalem : null;
             existing.Aciklama = kasa.Aciklama;
@@ -102,6 +104,26 @@ namespace CashTracker.Infrastructure.Services
                 "Giris" => "Gelir",
                 "Cikis" => "Gider",
                 _ => value
+            };
+        }
+
+        private static string NormalizeOdemeYontemi(string? value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "nakit" => "Nakit",
+                "cash" => "Nakit",
+                "kredikarti" => "KrediKarti",
+                "kredi karti" => "KrediKarti",
+                "kredi kartı" => "KrediKarti",
+                "kart" => "KrediKarti",
+                "creditcard" => "KrediKarti",
+                "credit card" => "KrediKarti",
+                "havale" => "Havale",
+                "transfer" => "Havale",
+                "bank transfer" => "Havale",
+                _ => "Nakit"
             };
         }
 
