@@ -21,7 +21,7 @@ Create local release artifact:
 Optional:
 
 ```powershell
-.\scripts\publish-release.ps1 -Version 1.0.5
+.\scripts\publish-release.ps1 -Version 1.0.6
 ```
 
 Publish a new GitHub release (automatic):
@@ -31,8 +31,8 @@ Publish a new GitHub release (automatic):
 3. Create and push tag:
 
 ```powershell
-git tag v1.0.5
-git push origin v1.0.5
+git tag v1.0.6
+git push origin v1.0.6
 ```
 
 Tag push triggers `.github/workflows/release.yml` and uploads:
