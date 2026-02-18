@@ -108,6 +108,47 @@ namespace CashTracker.Infrastructure.Services
             await EnsureDefaultKalemlerAsync(db, id);
         }
 
+        public async Task DeleteAsync(int id)
+        {
+            await using var db = await _dbFactory.CreateDbContextAsync();
+            var target = await db.Isletmeler.FirstOrDefaultAsync(x => x.Id == id);
+            if (target == null)
+                return;
+
+            var total = await db.Isletmeler.CountAsync();
+            if (total <= 1)
+                throw new InvalidOperationException("En az bir isletme kalmali.");
+
+            var wasActive = target.IsAktif;
+
+            var kasalar = db.Kasalar.Where(x => x.IsletmeId == id);
+            var kalemler = db.KalemTanimlari.Where(x => x.IsletmeId == id);
+
+            db.Kasalar.RemoveRange(kasalar);
+            db.KalemTanimlari.RemoveRange(kalemler);
+            db.Isletmeler.Remove(target);
+
+            int? newActiveId = null;
+            if (wasActive)
+            {
+                var newActive = await db.Isletmeler
+                    .Where(x => x.Id != id)
+                    .OrderBy(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (newActive != null)
+                {
+                    newActive.IsAktif = true;
+                    newActiveId = newActive.Id;
+                }
+            }
+
+            await db.SaveChangesAsync();
+
+            if (newActiveId.HasValue)
+                await EnsureDefaultKalemlerAsync(db, newActiveId.Value);
+        }
+
         private static string NormalizeBusinessName(string value)
         {
             var normalized = value?.Trim() ?? string.Empty;

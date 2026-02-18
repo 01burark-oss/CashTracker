@@ -7,7 +7,7 @@ namespace CashTracker.App.Forms
         // Frontend butonu eklendiginde bu metod dogrudan cagrilacak.
         private async Task OpenSettingsForKalemManagementAsync()
         {
-            using var form = new SettingsForm(_isletmeService, _kalemTanimiService);
+            using var form = new SettingsForm(_isletmeService, _kalemTanimiService, _telegramApprovalService);
             form.ShowDialog(this);
 
             await LoadKalemlerForTipAsync();

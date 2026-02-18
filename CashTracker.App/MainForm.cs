@@ -14,6 +14,7 @@ namespace CashTracker.App
         private readonly ISummaryService _summaryService;
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
         private readonly TelegramSettings _telegramSettings;
@@ -74,6 +75,7 @@ namespace CashTracker.App
             ISummaryService summaryService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
+            ITelegramApprovalService telegramApprovalService,
             IAppSecurityService appSecurityService,
             BackupReportService backupReport,
             TelegramSettings telegramSettings,
@@ -85,6 +87,7 @@ namespace CashTracker.App
             _summaryService = summaryService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _telegramApprovalService = telegramApprovalService;
             _appSecurityService = appSecurityService;
             _backupReport = backupReport;
             _telegramSettings = telegramSettings;

@@ -1,7 +1,9 @@
 using System;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.App.UI;
+using CashTracker.Core.Services;
 
 namespace CashTracker.App.Forms
 {
@@ -163,6 +165,51 @@ namespace CashTracker.App.Forms
 
             _lblCategoryHint.Text = text;
             _lblCategoryHint.ForeColor = ResolveHintColor(tone);
+        }
+
+        private async Task<bool> RequireTelegramApprovalAsync(
+            string title,
+            string details,
+            System.Action<string, HintTone> setHint)
+        {
+            if (_telegramApprovalService is null)
+                return false;
+
+            setHint("Telegram onayi bekleniyor...", HintTone.Neutral);
+
+            var result = await _telegramApprovalService.RequestApprovalAsync(
+                new TelegramApprovalRequest(title, details, TimeSpan.FromMinutes(2)));
+
+            switch (result.Status)
+            {
+                case TelegramApprovalStatus.Approved:
+                    return true;
+                case TelegramApprovalStatus.Rejected:
+                    setHint("Telegram onayi reddedildi.", HintTone.Warning);
+                    return false;
+                case TelegramApprovalStatus.TimedOut:
+                    setHint("Telegram onayi suresi doldu.", HintTone.Warning);
+                    return false;
+                case TelegramApprovalStatus.NotConfigured:
+                    MessageBox.Show(
+                        "Telegram ayarlari eksik veya komutlar kapali. Silme islemi icin Telegram onayi gerekli.",
+                        "Ayarlar",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    setHint("Telegram onayi alinmadi.", HintTone.Warning);
+                    return false;
+                case TelegramApprovalStatus.Failed:
+                    MessageBox.Show(
+                        "Telegram onayi alinamadi: " + (result.Message ?? "Bilinmeyen hata."),
+                        "Ayarlar",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    setHint("Telegram onayi alinamadi.", HintTone.Error);
+                    return false;
+                default:
+                    setHint("Telegram onayi alinamadi.", HintTone.Error);
+                    return false;
+            }
         }
 
         private static Color ResolveHintColor(HintTone tone)

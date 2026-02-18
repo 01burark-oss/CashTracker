@@ -68,12 +68,36 @@ namespace CashTracker.App.Forms
 
         private static int ResolveRequiredButtonWidth(TableLayoutPanel row, int fallbackWidth)
         {
-            if (row.GetControlFromPosition(1, 0) is not Button button)
+            if (row.GetControlFromPosition(1, 0) is not Control control)
                 return fallbackWidth;
 
-            var measured = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width;
-            var required = measured + button.Padding.Horizontal + button.Margin.Horizontal + 24;
-            return Math.Max(fallbackWidth, required);
+            if (control is Button button)
+            {
+                var measured = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width;
+                var required = measured + button.Padding.Horizontal + button.Margin.Horizontal + 24;
+                return Math.Max(fallbackWidth, required);
+            }
+
+            if (control is FlowLayoutPanel flow)
+            {
+                var required = flow.Padding.Horizontal;
+                foreach (Control child in flow.Controls)
+                {
+                    if (child is Button childButton)
+                    {
+                        var measured = TextRenderer.MeasureText(childButton.Text ?? string.Empty, childButton.Font).Width;
+                        required += measured + childButton.Padding.Horizontal + childButton.Margin.Horizontal + 24;
+                    }
+                    else
+                    {
+                        required += child.Width + child.Margin.Horizontal;
+                    }
+                }
+
+                return Math.Max(fallbackWidth, required);
+            }
+
+            return fallbackWidth;
         }
     }
 }

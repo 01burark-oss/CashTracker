@@ -23,6 +23,7 @@ namespace CashTracker.Infrastructure.Services
         private readonly IIsletmeService _isletmeService;
         private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
+        private readonly ITelegramApprovalService _telegramApprovalService;
 
         public TelegramCommandService(
             TelegramBotService telegram,
@@ -32,7 +33,8 @@ namespace CashTracker.Infrastructure.Services
             ISummaryService summaryService,
             IIsletmeService isletmeService,
             IAppSecurityService appSecurityService,
-            BackupReportService backupReport)
+            BackupReportService backupReport,
+            ITelegramApprovalService telegramApprovalService)
         {
             _telegram = telegram;
             _settings = settings;
@@ -42,6 +44,7 @@ namespace CashTracker.Infrastructure.Services
             _isletmeService = isletmeService;
             _appSecurityService = appSecurityService;
             _backupReport = backupReport;
+            _telegramApprovalService = telegramApprovalService;
         }
 
         public async Task ProcessUpdateAsync(TelegramUpdate update, CancellationToken ct = default)
@@ -121,6 +124,17 @@ namespace CashTracker.Infrastructure.Services
                         await SetAppPinAsync(args, update.ChatId, ct);
                         break;
 
+                    case "/onay":
+                    case "/approve":
+                        await ResolveApprovalAsync(args, update.ChatId, true, ct);
+                        break;
+
+                    case "/iptal":
+                    case "/red":
+                    case "/cancel":
+                        await ResolveApprovalAsync(args, update.ChatId, false, ct);
+                        break;
+
                     default:
                         await _telegram.SendTextAsync(
                             ToChatId(update.ChatId),
@@ -177,9 +191,46 @@ namespace CashTracker.Infrastructure.Services
                 "/ekle gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
                 "/ekle gider <tutar> <kalem> [a\u00E7\u0131klama]\n" +
                 "/gelir <tutar> [kalem] [a\u00E7\u0131klama]\n" +
-                "/gider <tutar> <kalem> [a\u00E7\u0131klama]";
+                "/gider <tutar> <kalem> [a\u00E7\u0131klama]\n" +
+                "/onay <kod> - Silme onayini verir\n" +
+                "/iptal <kod> - Silme onayini reddeder";
 
             await _telegram.SendTextAsync(ToChatId(chatId), help, ct);
+        }
+
+        private async Task ResolveApprovalAsync(string[] args, long chatId, bool approve, CancellationToken ct)
+        {
+            if (args.Length == 0)
+            {
+                await _telegram.SendTextAsync(
+                    ToChatId(chatId),
+                    approve ? "Kullanim: /onay <kod>" : "Kullanim: /iptal <kod>",
+                    ct);
+                return;
+            }
+
+            var code = args[0]?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                await _telegram.SendTextAsync(
+                    ToChatId(chatId),
+                    "Onay kodu bos olamaz.",
+                    ct);
+                return;
+            }
+
+            if (!_telegramApprovalService.TryResolve(code, approve, out var title))
+            {
+                await _telegram.SendTextAsync(
+                    ToChatId(chatId),
+                    "Kod bulunamadi veya suresi doldu.",
+                    ct);
+                return;
+            }
+
+            var resultText = approve ? "Onaylandi" : "Reddedildi";
+            var titleText = string.IsNullOrWhiteSpace(title) ? string.Empty : $" | {title}";
+            await _telegram.SendTextAsync(ToChatId(chatId), $"{resultText}{titleText}", ct);
         }
 
         private async Task SendSummaryAsync(string[] args, long chatId, CancellationToken ct)

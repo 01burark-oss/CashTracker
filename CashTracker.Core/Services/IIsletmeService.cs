@@ -13,5 +13,6 @@ namespace CashTracker.Core.Services
         Task<int> CreateAsync(string ad, bool makeActive = false);
         Task RenameAsync(int id, string ad);
         Task SetActiveAsync(int id);
+        Task DeleteAsync(int id);
     }
 }

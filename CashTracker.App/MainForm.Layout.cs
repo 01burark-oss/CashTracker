@@ -137,13 +137,13 @@ namespace CashTracker.App
 
             btnGelirGider.Click += (_, __) =>
             {
-                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService);
+                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService, _telegramApprovalService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
             btnSettings.Click += (_, __) =>
             {
-                using var form = new SettingsForm(_isletmeService, _kalemTanimiService);
+                using var form = new SettingsForm(_isletmeService, _kalemTanimiService, _telegramApprovalService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };

@@ -10,6 +10,7 @@ namespace CashTracker.App.Forms
         private readonly IKasaService _kasaService;
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly ITelegramApprovalService _telegramApprovalService;
 
         private DataGridView _grid = null!;
         private ComboBox _cmbTip = null!;
@@ -38,11 +39,13 @@ namespace CashTracker.App.Forms
         public KasaForm(
             IKasaService kasaService,
             IIsletmeService isletmeService,
-            IKalemTanimiService kalemTanimiService)
+            IKalemTanimiService kalemTanimiService,
+            ITelegramApprovalService telegramApprovalService)
         {
             _kasaService = kasaService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _telegramApprovalService = telegramApprovalService;
 
             Text = "Gelir / Gider";
             Width = 1080;

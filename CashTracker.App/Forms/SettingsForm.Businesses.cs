@@ -22,6 +22,7 @@ namespace CashTracker.App.Forms
             _cmbBusinesses.Enabled = false;
             _btnSetActiveBusiness.Enabled = false;
             _btnRenameBusiness.Enabled = false;
+            _btnDeleteBusiness.Enabled = false;
             _btnAddBusiness.Enabled = false;
 
             try
@@ -47,6 +48,7 @@ namespace CashTracker.App.Forms
                     _txtRenameBusiness.Enabled = false;
                     _btnSetActiveBusiness.Enabled = false;
                     _btnRenameBusiness.Enabled = false;
+                    _btnDeleteBusiness.Enabled = false;
                     _btnAddBusiness.Enabled = true;
                     SetBusinessHint(
                         "Isletme bulunamadi. Yeni isletme ekleyerek baslayabilirsin.",
@@ -73,6 +75,7 @@ namespace CashTracker.App.Forms
                 _txtRenameBusiness.Enabled = false;
                 _btnSetActiveBusiness.Enabled = false;
                 _btnRenameBusiness.Enabled = false;
+                _btnDeleteBusiness.Enabled = false;
                 SetBusinessHint("Isletme listesi yuklenemedi.", HintTone.Error);
             }
             finally
@@ -96,6 +99,7 @@ namespace CashTracker.App.Forms
             _txtRenameBusiness.Text = item.Ad;
             _btnSetActiveBusiness.Enabled = !item.IsAktif;
             _btnRenameBusiness.Enabled = true;
+            _btnDeleteBusiness.Enabled = CanDeleteBusiness();
             SetBusinessHint(
                 item.IsAktif
                     ? "Bu isletme aktif. Ozetler ve kayitlar bu isletmeye gore listelenir."
@@ -255,6 +259,122 @@ namespace CashTracker.App.Forms
             return items.Any(x =>
                 (!exceptBusinessId.HasValue || x.Id != exceptBusinessId.Value) &&
                 string.Equals(x.Ad, name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool CanDeleteBusiness()
+        {
+            if (_isLoadingBusinesses)
+                return false;
+
+            if (_cmbBusinesses.SelectedItem is not IsletmeItem)
+                return false;
+
+            if (_cmbBusinesses.DataSource is not IEnumerable<IsletmeItem> items)
+                return false;
+
+            return items.Count() > 1;
+        }
+
+        private async Task DeleteSelectedBusinessAsync()
+        {
+            if (_cmbBusinesses.SelectedItem is not IsletmeItem item)
+                return;
+
+            if (!CanDeleteBusiness())
+            {
+                SetBusinessHint("En az bir isletme kalmali. Bu isletme silinemez.", HintTone.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"'{item.Ad}' isletmesini silmek istiyor musun?",
+                "Isletme Sil",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning);
+
+            if (confirm != DialogResult.Yes)
+                return;
+
+            _btnDeleteBusiness.Enabled = false;
+            _btnRenameBusiness.Enabled = false;
+            _btnSetActiveBusiness.Enabled = false;
+
+            var approved = await RequireTelegramApprovalAsync(
+                "Isletme silme",
+                BuildBusinessApprovalDetails(item),
+                SetBusinessHint);
+
+            if (!approved)
+            {
+                UpdateBusinessActionStates();
+                return;
+            }
+
+            try
+            {
+                await _isletmeService.DeleteAsync(item.Id);
+                await LoadBusinessesAsync();
+                await LoadKalemlerAsync();
+                SetBusinessHint($"Isletme silindi: {item.Ad}", HintTone.Success);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "Isletme silinemedi: " + ex.Message,
+                    "Ayarlar",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                SetBusinessHint("Isletme silinemedi.", HintTone.Error);
+            }
+            finally
+            {
+                UpdateBusinessActionStates();
+            }
+        }
+
+        private void UpdateBusinessActionStates()
+        {
+            if (_cmbBusinesses.SelectedItem is not IsletmeItem item)
+            {
+                _btnSetActiveBusiness.Enabled = false;
+                _btnRenameBusiness.Enabled = false;
+                _btnDeleteBusiness.Enabled = false;
+                return;
+            }
+
+            _btnSetActiveBusiness.Enabled = !item.IsAktif;
+            _btnRenameBusiness.Enabled = true;
+            _btnDeleteBusiness.Enabled = CanDeleteBusiness();
+        }
+
+        private string BuildBusinessApprovalDetails(IsletmeItem item)
+        {
+            var activeText = item.IsAktif ? "Aktif" : "Pasif";
+            var total = 0;
+
+            if (_cmbBusinesses.DataSource is IEnumerable<IsletmeItem> items)
+                total = items.Count();
+
+            var businessLine = $"Isletme: {item.Ad} ({activeText})";
+            var countLine = total > 0 ? $"Toplam isletme: {total}" : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(countLine))
+                return businessLine;
+
+            return $"{businessLine}\n{countLine}";
+        }
+
+        private async Task<string> GetActiveBusinessNameAsync()
+        {
+            try
+            {
+                var active = await _isletmeService.GetActiveAsync();
+                return string.IsNullOrWhiteSpace(active.Ad) ? "Bilinmiyor" : active.Ad.Trim();
+            }
+            catch
+            {
+                return "Bilinmiyor";
+            }
         }
     }
 }

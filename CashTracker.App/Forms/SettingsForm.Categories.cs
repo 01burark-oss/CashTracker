@@ -208,6 +208,17 @@ namespace CashTracker.App.Forms
             _btnDeleteKalem.Enabled = false;
             _btnUpdateKalem.Enabled = false;
 
+            var approved = await RequireTelegramApprovalAsync(
+                "Kalem silme",
+                await BuildKalemApprovalDetailsAsync(item),
+                SetCategoryHint);
+
+            if (!approved)
+            {
+                UpdateKalemActionStates();
+                return;
+            }
+
             try
             {
                 await _kalemTanimiService.DeleteAsync(item.Id);
@@ -228,6 +239,13 @@ namespace CashTracker.App.Forms
                 _btnDeleteKalem.Enabled = true;
                 UpdateKalemActionStates();
             }
+        }
+
+        private async Task<string> BuildKalemApprovalDetailsAsync(KalemItem item)
+        {
+            var tip = GetSelectedTip();
+            var businessName = await GetActiveBusinessNameAsync();
+            return $"Isletme: {businessName}\nTip: {tip}\nKalem: {item.Ad}";
         }
 
         private string GetSelectedTip()

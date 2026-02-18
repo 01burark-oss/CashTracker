@@ -102,6 +102,7 @@ static class Program
         services.AddSingleton<GitHubUpdateService>();
         services.AddSingleton<TelegramBotService>(sp =>
             new TelegramBotService(sp.GetRequiredService<HttpClient>(), telegramSettings.BotToken));
+        services.AddSingleton<ITelegramApprovalService, TelegramApprovalService>();
 
         services.AddSingleton<IDailyReportService, DailyReportService>();
         services.AddSingleton<DatabaseBackupService>();

@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.App.Forms;
+using CashTracker.App.Services;
 
 namespace CashTracker.App
 {
@@ -115,9 +116,16 @@ namespace CashTracker.App
                     return;
                 }
 
+                if (string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    DesktopExeReplaceService.TryScheduleReplace(
+                        downloadedPath,
+                        Path.GetFileName(Application.ExecutablePath));
+                }
+
                 Process.Start(new ProcessStartInfo(downloadedPath) { UseShellExecute = true });
                 MessageBox.Show(
-                    "Güncelleme paketi çalıştırıldı. Kurulumdan sonra uygulamayı yeniden aç.",
+                    "Güncelleme paketi çalıştırıldı. Kurulumdan sonra uygulamayı yeniden aç.\nMasaüstündeki exe güncellenecek.",
                     "Güncelleme Başlatıldı",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
@@ -177,8 +185,14 @@ namespace CashTracker.App
                 WorkingDirectory = Path.GetDirectoryName(launchPath) ?? targetDir
             });
 
+            var desktopReplaceScheduled = DesktopExeReplaceService.TryScheduleReplace(
+                launchPath,
+                Path.GetFileName(Application.ExecutablePath));
+
             MessageBox.Show(
-                "Güncelleme yüklendi. Yeni sürüm başlatıldı.",
+                desktopReplaceScheduled
+                    ? "Güncelleme yüklendi. Yeni sürüm başlatıldı.\nMasaüstündeki exe güncellenecek."
+                    : "Güncelleme yüklendi. Yeni sürüm başlatıldı.",
                 "Güncelleme Tamamlandı",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);

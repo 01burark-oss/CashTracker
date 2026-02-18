@@ -77,8 +77,32 @@ namespace CashTracker.App.Forms
             _rowRenameBusiness = CreateTwoColumnRow(100, 146);
             _txtRenameBusiness = CreateInputBox();
             _btnRenameBusiness = CreateActionButton("Yeniden Adlandir", BrandTheme.Navy, Color.White);
+            _btnDeleteBusiness = CreateActionButton("Isletmeyi Sil", BrandTheme.Navy, Color.White);
+            _btnDeleteBusiness.Enabled = false;
+            _btnRenameBusiness.AutoSize = true;
+            _btnRenameBusiness.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnRenameBusiness.Dock = DockStyle.None;
+            _btnRenameBusiness.MinimumSize = new Size(0, 34);
+            _btnDeleteBusiness.AutoSize = true;
+            _btnDeleteBusiness.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnDeleteBusiness.Dock = DockStyle.None;
+            _btnDeleteBusiness.MinimumSize = new Size(0, 34);
+
+            var renameActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            _btnRenameBusiness.Margin = new Padding(0);
+            _btnDeleteBusiness.Margin = new Padding(8, 0, 0, 0);
+            renameActions.Controls.Add(_btnRenameBusiness);
+            renameActions.Controls.Add(_btnDeleteBusiness);
+
             _rowRenameBusiness.Controls.Add(_txtRenameBusiness, 0, 0);
-            _rowRenameBusiness.Controls.Add(_btnRenameBusiness, 1, 0);
+            _rowRenameBusiness.Controls.Add(renameActions, 1, 0);
             _businessSectionLayout.Controls.Add(_rowRenameBusiness, 0, 4);
 
             _businessSectionLayout.Controls.Add(CreateFieldLabel("Yeni Isletme"), 0, 5);
@@ -105,6 +129,7 @@ namespace CashTracker.App.Forms
             _btnSetActiveBusiness.Click += async (_, __) => await SetActiveBusinessAsync();
             _btnRenameBusiness.Click += async (_, __) => await RenameSelectedBusinessAsync();
             _btnAddBusiness.Click += async (_, __) => await AddBusinessAsync();
+            _btnDeleteBusiness.Click += async (_, __) => await DeleteSelectedBusinessAsync();
             _txtNewBusiness.KeyDown += async (_, e) =>
             {
                 if (e.KeyCode != Keys.Enter)
@@ -129,13 +154,12 @@ namespace CashTracker.App.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 7
+                RowCount = 6
             };
             _categorySectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _categorySectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -170,8 +194,32 @@ namespace CashTracker.App.Forms
             _txtEditKalem.Enabled = false;
             _btnUpdateKalem = CreateActionButton("Seciliyi Guncelle", BrandTheme.Navy, Color.White);
             _btnUpdateKalem.Enabled = false;
+            _btnDeleteKalem = CreateActionButton("Secili Kalemi Sil", BrandTheme.Navy, Color.White);
+            _btnDeleteKalem.Enabled = false;
+            _btnUpdateKalem.AutoSize = true;
+            _btnUpdateKalem.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnUpdateKalem.Dock = DockStyle.None;
+            _btnUpdateKalem.MinimumSize = new Size(0, 34);
+            _btnDeleteKalem.AutoSize = true;
+            _btnDeleteKalem.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnDeleteKalem.Dock = DockStyle.None;
+            _btnDeleteKalem.MinimumSize = new Size(0, 34);
+
+            var editActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
+            };
+            _btnUpdateKalem.Margin = new Padding(0);
+            _btnDeleteKalem.Margin = new Padding(8, 0, 0, 0);
+            editActions.Controls.Add(_btnUpdateKalem);
+            editActions.Controls.Add(_btnDeleteKalem);
+
             _rowEditKalem.Controls.Add(_txtEditKalem, 0, 0);
-            _rowEditKalem.Controls.Add(_btnUpdateKalem, 1, 0);
+            _rowEditKalem.Controls.Add(editActions, 1, 0);
             _categorySectionLayout.Controls.Add(_rowEditKalem, 0, 3);
 
             _rowAddKalem = CreateTwoColumnRow(100, 146);
@@ -180,19 +228,6 @@ namespace CashTracker.App.Forms
             _rowAddKalem.Controls.Add(_txtNewKalem, 0, 0);
             _rowAddKalem.Controls.Add(_btnAddKalem, 1, 0);
             _categorySectionLayout.Controls.Add(_rowAddKalem, 0, 4);
-
-            var deleteRow = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                AutoSize = true,
-                Margin = new Padding(0, 8, 0, 0)
-            };
-            _btnDeleteKalem = CreateActionButton("Secili Kalemi Sil", BrandTheme.Navy, Color.White);
-            _btnDeleteKalem.Enabled = false;
-            deleteRow.Controls.Add(_btnDeleteKalem);
-            _categorySectionLayout.Controls.Add(deleteRow, 0, 5);
 
             _lblCategoryHint = new Label
             {
@@ -203,7 +238,7 @@ namespace CashTracker.App.Forms
                 Margin = new Padding(2, 10, 2, 0),
                 AutoSize = true
             };
-            _categorySectionLayout.Controls.Add(_lblCategoryHint, 0, 6);
+            _categorySectionLayout.Controls.Add(_lblCategoryHint, 0, 5);
 
             _cmbKalemTip.SelectedIndexChanged += async (_, __) => await LoadKalemlerAsync();
             _lstKalemler.SelectedIndexChanged += (_, __) => SyncSelectedKalemToEditor();

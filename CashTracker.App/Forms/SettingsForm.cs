@@ -9,6 +9,7 @@ namespace CashTracker.App.Forms
     {
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly ITelegramApprovalService _telegramApprovalService;
 
         private TableLayoutPanel _rootLayout = null!;
         private Panel _businessPanel = null!;
@@ -27,6 +28,7 @@ namespace CashTracker.App.Forms
         private Button _btnSetActiveBusiness = null!;
         private Button _btnRenameBusiness = null!;
         private Button _btnAddBusiness = null!;
+        private Button _btnDeleteBusiness = null!;
         private Label _lblBusinessHint = null!;
 
         private ComboBox _cmbKalemTip = null!;
@@ -57,10 +59,12 @@ namespace CashTracker.App.Forms
 
         public SettingsForm(
             IIsletmeService isletmeService,
-            IKalemTanimiService kalemTanimiService)
+            IKalemTanimiService kalemTanimiService,
+            ITelegramApprovalService telegramApprovalService)
         {
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _telegramApprovalService = telegramApprovalService;
 
             Text = "Ayarlar";
             Width = 1120;
