@@ -226,10 +226,9 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2
+                RowCount = 1
             };
             titleStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             topLayout.Controls.Add(titleStack, 0, 0);
 
@@ -242,16 +241,6 @@ namespace CashTracker.App
                 Margin = new Padding(0, 2, 0, 4)
             };
             titleStack.Controls.Add(topTitle, 0, 0);
-
-            _lblActiveBusinessTop = new Label
-            {
-                Text = "Aktif Isletme: -",
-                Font = BrandTheme.CreateFont(9.6f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(30, 74, 120),
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 0)
-            };
-            titleStack.Controls.Add(_lblActiveBusinessTop, 0, 1);
 
             var badgeFlow = new FlowLayoutPanel
             {

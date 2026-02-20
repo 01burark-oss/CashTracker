@@ -314,7 +314,8 @@ namespace CashTracker.Tests
                 summary,
                 isletme,
                 new FakeAppSecurityService(),
-                backup);
+                backup,
+                new FakeTelegramApprovalService());
 
             return (bot, handler, service);
         }

@@ -57,6 +57,7 @@ namespace CashTracker.Tests
             Assert.Contains("Odeme Yontemleri:", text!);
             Assert.Contains("- Nakit:", text!);
             Assert.Contains("- Kredi Karti:", text!);
+            Assert.Contains("- Online Odeme:", text!);
             Assert.Contains("- Havale:", text!);
             Assert.Contains("Gelir Kalemleri:", text!);
             Assert.Contains("Gider Kalemleri:", text!);
@@ -152,6 +153,7 @@ namespace CashTracker.Tests
                     $"cashtracker_tests_{Guid.NewGuid():N}.db"))));
 
             var security = new FakeAppSecurityService();
+            var approvals = new FakeTelegramApprovalService();
 
             var service = new TelegramCommandService(
                 bot,
@@ -161,7 +163,8 @@ namespace CashTracker.Tests
                 summary,
                 isletme,
                 security,
-                backup);
+                backup,
+                approvals);
 
             return (bot, handler, service, security);
         }

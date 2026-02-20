@@ -147,7 +147,7 @@ namespace CashTracker.App
 
             sb.AppendLine();
             sb.AppendLine("Odeme Yontemleri:");
-            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            foreach (var method in new[] { "Nakit", "KrediKarti", "OnlineOdeme", "Havale" })
             {
                 var income = byMethod.TryGetValue(method, out var values) ? values.Income : 0m;
                 var expense = byMethod.TryGetValue(method, out values) ? values.Expense : 0m;
@@ -180,7 +180,12 @@ namespace CashTracker.App
 
         private static string GetOdemeYontemiLabel(string method)
         {
-            return method == "KrediKarti" ? "Kredi Karti" : method;
+            return method switch
+            {
+                "KrediKarti" => "Kredi Karti",
+                "OnlineOdeme" => "Online Odeme",
+                _ => method
+            };
         }
     }
 }

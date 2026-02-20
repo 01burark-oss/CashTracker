@@ -77,7 +77,7 @@ namespace CashTracker.Infrastructure.Services
             sb.AppendLine();
             sb.AppendLine("Odeme Yontemleri:");
 
-            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            foreach (var method in new[] { "Nakit", "KrediKarti", "OnlineOdeme", "Havale" })
             {
                 var row = r.PaymentMethodBreakdowns
                     .FirstOrDefault(x => string.Equals(x.Method, method, StringComparison.OrdinalIgnoreCase));
@@ -91,7 +91,12 @@ namespace CashTracker.Infrastructure.Services
 
         private static string GetMethodLabel(string method)
         {
-            return method == "KrediKarti" ? "Kredi Karti" : method;
+            return method switch
+            {
+                "KrediKarti" => "Kredi Karti",
+                "OnlineOdeme" => "Online Odeme",
+                _ => method
+            };
         }
     }
 }

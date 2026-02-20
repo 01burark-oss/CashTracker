@@ -78,7 +78,7 @@ namespace CashTracker.Infrastructure.Services
                     },
                     StringComparer.OrdinalIgnoreCase);
 
-            var methods = new[] { "Nakit", "KrediKarti", "Havale" };
+            var methods = new[] { "Nakit", "KrediKarti", "OnlineOdeme", "Havale" };
             var result = new List<DailyPaymentMethodBreakdown>(methods.Length);
             foreach (var method in methods)
             {
@@ -119,6 +119,10 @@ namespace CashTracker.Infrastructure.Services
                 "kart" => "KrediKarti",
                 "creditcard" => "KrediKarti",
                 "credit card" => "KrediKarti",
+                "online" => "OnlineOdeme",
+                "onlineodeme" => "OnlineOdeme",
+                "online odeme" => "OnlineOdeme",
+                "online payment" => "OnlineOdeme",
                 "havale" => "Havale",
                 "transfer" => "Havale",
                 "bank transfer" => "Havale",

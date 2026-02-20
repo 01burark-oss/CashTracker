@@ -7,6 +7,11 @@ namespace CashTracker.App.Forms
 {
     public sealed partial class KasaForm
     {
+        private const int OdemeButtonWidth = 150;
+        private const int OdemeButtonHeight = 38;
+        private const int OdemeButtonGapX = 12;
+        private const int OdemeButtonGapY = 8;
+
         private static TableLayoutPanel CreateEditorForm()
         {
             var form = new TableLayoutPanel
@@ -69,20 +74,43 @@ namespace CashTracker.App.Forms
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
 
-            var methodsPanel = new FlowLayoutPanel
+            var methodsPanel = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true,
+                ColumnCount = 3,
+                RowCount = 3,
                 AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
                 Margin = new Padding(0, 6, 0, 10),
                 Padding = new Padding(0)
             };
+            methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonWidth));
+            methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonGapX));
+            methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonWidth));
+            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonHeight));
+            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonGapY));
+            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonHeight));
 
             _btnOdemeNakit = CreateOdemeYontemiButton("Nakit", "Nakit");
             _btnOdemeKrediKarti = CreateOdemeYontemiButton("Kredi Karti", "KrediKarti");
+            _btnOdemeOnlineOdeme = CreateOdemeYontemiButton("Online Odeme", "OnlineOdeme");
             _btnOdemeHavale = CreateOdemeYontemiButton("Havale", "Havale");
-            methodsPanel.Controls.AddRange(new Control[] { _btnOdemeNakit, _btnOdemeKrediKarti, _btnOdemeHavale });
+
+            _btnOdemeNakit.Margin = Padding.Empty;
+            _btnOdemeKrediKarti.Margin = Padding.Empty;
+            _btnOdemeOnlineOdeme.Margin = Padding.Empty;
+            _btnOdemeHavale.Margin = Padding.Empty;
+
+            _btnOdemeNakit.Dock = DockStyle.Fill;
+            _btnOdemeKrediKarti.Dock = DockStyle.Fill;
+            _btnOdemeOnlineOdeme.Dock = DockStyle.Fill;
+            _btnOdemeHavale.Dock = DockStyle.Fill;
+
+            methodsPanel.Controls.Add(_btnOdemeNakit, 0, 0);
+            methodsPanel.Controls.Add(_btnOdemeKrediKarti, 2, 0);
+            methodsPanel.Controls.Add(_btnOdemeOnlineOdeme, 0, 2);
+            methodsPanel.Controls.Add(_btnOdemeHavale, 2, 2);
 
             form.Controls.Add(label);
             form.Controls.Add(methodsPanel);
@@ -95,9 +123,13 @@ namespace CashTracker.App.Forms
             var button = new Button
             {
                 Text = text,
-                Width = 122,
-                Height = 38,
-                Margin = new Padding(0, 0, 8, 8),
+                Width = OdemeButtonWidth,
+                Height = OdemeButtonHeight,
+                MinimumSize = new Size(OdemeButtonWidth, OdemeButtonHeight),
+                MaximumSize = new Size(OdemeButtonWidth, OdemeButtonHeight),
+                AutoSize = false,
+                AutoEllipsis = true,
+                Margin = Padding.Empty,
                 Cursor = Cursors.Hand,
                 FlatStyle = FlatStyle.Flat,
                 Font = BrandTheme.CreateHeadingFont(8.9f, FontStyle.Bold),
@@ -146,6 +178,16 @@ namespace CashTracker.App.Forms
                 g.DrawPath(pen, path);
                 g.DrawLine(pen, 2, 6, 14, 6);
                 g.FillRectangle(accent, 3, 9, 4, 2);
+                return icon;
+            }
+
+            if (normalized == "OnlineOdeme")
+            {
+                var globe = new Rectangle(2, 2, 12, 12);
+                g.FillEllipse(fill, globe);
+                g.DrawEllipse(pen, globe);
+                g.DrawLine(pen, 4, 8, 12, 8);
+                g.FillEllipse(accent, 7, 7, 2, 2);
                 return icon;
             }
 

@@ -21,7 +21,7 @@ namespace CashTracker.App.Forms
                 _rootLayout.ColumnCount = 1;
                 _rootLayout.RowCount = 3;
                 _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-                _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
                 _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
                 _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
                 _rootLayout.SetColumn(_lblActiveBusiness, 0);
@@ -40,7 +40,7 @@ namespace CashTracker.App.Forms
                 _rootLayout.RowCount = 2;
                 _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62));
                 _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
-                _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                _rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
                 _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
                 _rootLayout.SetColumn(_lblActiveBusiness, 0);
                 _rootLayout.SetRow(_lblActiveBusiness, 0);

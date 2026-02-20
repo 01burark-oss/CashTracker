@@ -103,12 +103,10 @@ namespace CashTracker.App
                     ? "Bilinmiyor"
                     : active.Ad.Trim();
 
-                _lblActiveBusinessTop.Text = $"Aktif Isletme: {businessName}";
                 _lblActiveBusinessReport.Text = $"Raporlar Aktif Isletme: {businessName}";
             }
             catch
             {
-                _lblActiveBusinessTop.Text = "Aktif Isletme: Bilinmiyor";
                 _lblActiveBusinessReport.Text = "Raporlar Aktif Isletme: Bilinmiyor";
             }
         }

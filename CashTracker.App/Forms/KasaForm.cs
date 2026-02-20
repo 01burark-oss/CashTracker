@@ -19,6 +19,7 @@ namespace CashTracker.App.Forms
         private ComboBox _cmbKalem = null!;
         private Button _btnOdemeNakit = null!;
         private Button _btnOdemeKrediKarti = null!;
+        private Button _btnOdemeOnlineOdeme = null!;
         private Button _btnOdemeHavale = null!;
         private Label _lblKalemEmptyHint = null!;
         private Button _btnKalemSettings = null!;

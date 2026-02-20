@@ -16,7 +16,15 @@ namespace CashTracker.App.Forms
 
         private static string NormalizeOdemeYontemi(string? value)
         {
-            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            var normalized = (value ?? string.Empty)
+                .Trim()
+                .ToLowerInvariant()
+                .Replace('\u0131', 'i')
+                .Replace('\u015f', 's')
+                .Replace('\u011f', 'g')
+                .Replace('\u00fc', 'u')
+                .Replace('\u00f6', 'o')
+                .Replace('\u00e7', 'c');
             return normalized switch
             {
                 "nakit" => "Nakit",
@@ -27,6 +35,10 @@ namespace CashTracker.App.Forms
                 "kart" => "KrediKarti",
                 "creditcard" => "KrediKarti",
                 "credit card" => "KrediKarti",
+                "online" => "OnlineOdeme",
+                "onlineodeme" => "OnlineOdeme",
+                "online odeme" => "OnlineOdeme",
+                "online payment" => "OnlineOdeme",
                 "havale" => "Havale",
                 "transfer" => "Havale",
                 "bank transfer" => "Havale",
@@ -39,6 +51,7 @@ namespace CashTracker.App.Forms
             return NormalizeOdemeYontemi(value) switch
             {
                 "KrediKarti" => "Kredi Karti",
+                "OnlineOdeme" => "Online Odeme",
                 "Havale" => "Havale",
                 _ => "Nakit"
             };

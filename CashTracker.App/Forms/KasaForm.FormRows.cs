@@ -104,15 +104,22 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateHeadingFont(9.4f),
                 Margin = new Padding(0, 8, 10, 8)
             };
+            var wrapper = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 8, 0, 8),
+                Padding = new Padding(8, 0, 0, 0)
+            };
             dtp = new DateTimePicker
             {
-                Anchor = AnchorStyles.Left | AnchorStyles.Right,
-                Margin = new Padding(0, 8, 0, 8),
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
                 Format = DateTimePickerFormat.Custom,
                 CustomFormat = "dd.MM.yyyy HH:mm"
             };
+            wrapper.Controls.Add(dtp);
             panel.Controls.Add(lbl);
-            panel.Controls.Add(dtp);
+            panel.Controls.Add(wrapper);
         }
     }
 }

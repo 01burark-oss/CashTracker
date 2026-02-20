@@ -192,6 +192,13 @@ namespace CashTracker.Tests.Support
             Active.IsAktif = true;
             return Task.CompletedTask;
         }
+
+        public Task DeleteAsync(int id)
+        {
+            if (id == Active.Id)
+                Active.IsAktif = false;
+            return Task.CompletedTask;
+        }
     }
 
     internal sealed class FakeDailyReportService : IDailyReportService
@@ -222,6 +229,25 @@ namespace CashTracker.Tests.Support
         {
             Pin = pin;
             return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class FakeTelegramApprovalService : ITelegramApprovalService
+    {
+        public TelegramApprovalStatus NextStatus { get; set; } = TelegramApprovalStatus.NotConfigured;
+        public string? NextMessage { get; set; }
+
+        public Task<TelegramApprovalResult> RequestApprovalAsync(
+            TelegramApprovalRequest request,
+            System.Threading.CancellationToken ct = default)
+        {
+            return Task.FromResult(new TelegramApprovalResult(NextStatus, NextMessage));
+        }
+
+        public bool TryResolve(string code, bool approved, out string? title)
+        {
+            title = null;
+            return false;
         }
     }
 }

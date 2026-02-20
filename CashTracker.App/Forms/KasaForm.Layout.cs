@@ -40,7 +40,7 @@ namespace CashTracker.App.Forms
 
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             return root;
         }
@@ -50,13 +50,17 @@ namespace CashTracker.App.Forms
             return new Label
             {
                 Dock = DockStyle.Top,
-                AutoSize = true,
+                AutoSize = false,
+                Height = 40,
+                MinimumSize = new Size(0, 40),
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 74, 120),
                 BackColor = Color.FromArgb(231, 241, 251),
                 BorderStyle = BorderStyle.FixedSingle,
-                Padding = new Padding(10, 7, 10, 7),
-                Margin = new Padding(0, 0, 0, 10),
+                Padding = new Padding(10, 8, 10, 8),
+                Margin = new Padding(0),
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
                 Text = "Aktif Isletme: -"
             };
         }

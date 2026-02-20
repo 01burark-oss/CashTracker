@@ -36,7 +36,6 @@ namespace CashTracker.App
         private Label _lblYearIncome = null!;
         private Label _lblYearExpense = null!;
         private Label _lblYearNet = null!;
-        private Label _lblActiveBusinessTop = null!;
         private Label _lblActiveBusinessReport = null!;
         private Label _lblDailyOverviewIncome = null!;
         private Label _lblDailyOverviewExpense = null!;
@@ -45,6 +44,8 @@ namespace CashTracker.App
         private Label _lblDailyNakitExpense = null!;
         private Label _lblDailyKrediKartiIncome = null!;
         private Label _lblDailyKrediKartiExpense = null!;
+        private Label _lblDailyOnlineOdemeIncome = null!;
+        private Label _lblDailyOnlineOdemeExpense = null!;
         private Label _lblDailyHavaleIncome = null!;
         private Label _lblDailyHavaleExpense = null!;
 

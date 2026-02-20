@@ -133,6 +133,7 @@ namespace CashTracker.App.Forms
         {
             ApplyOdemeYontemiButtonStyle(_btnOdemeNakit, "Nakit");
             ApplyOdemeYontemiButtonStyle(_btnOdemeKrediKarti, "KrediKarti");
+            ApplyOdemeYontemiButtonStyle(_btnOdemeOnlineOdeme, "OnlineOdeme");
             ApplyOdemeYontemiButtonStyle(_btnOdemeHavale, "Havale");
         }
 

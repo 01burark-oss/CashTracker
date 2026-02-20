@@ -131,13 +131,14 @@ namespace CashTracker.App
                 Dock = DockStyle.Top,
                 AutoSize = true,
                 ColumnCount = 3,
-                RowCount = 4,
+                RowCount = 5,
                 BackColor = Color.White,
                 Margin = new Padding(0)
             };
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31));
+            table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -149,7 +150,8 @@ namespace CashTracker.App
 
             AddMethodRow(table, 1, "Nakit", out _lblDailyNakitIncome, out _lblDailyNakitExpense);
             AddMethodRow(table, 2, "Kredi Karti", out _lblDailyKrediKartiIncome, out _lblDailyKrediKartiExpense);
-            AddMethodRow(table, 3, "Havale", out _lblDailyHavaleIncome, out _lblDailyHavaleExpense);
+            AddMethodRow(table, 3, "Online Odeme", out _lblDailyOnlineOdemeIncome, out _lblDailyOnlineOdemeExpense);
+            AddMethodRow(table, 4, "Havale", out _lblDailyHavaleIncome, out _lblDailyHavaleExpense);
 
             table.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, table.ClientRectangle, Color.FromArgb(214, 223, 235), ButtonBorderStyle.Solid);
             return table;
@@ -160,10 +162,12 @@ namespace CashTracker.App
             var header = new Label
             {
                 Text = text,
-                AutoSize = true,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(83, 95, 112),
-                Margin = new Padding(8, 8, 8, 6)
+                Margin = new Padding(8, 6, 8, 6),
+                TextAlign = column == 0 ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleRight
             };
             table.Controls.Add(header, column, 0);
         }
@@ -178,30 +182,36 @@ namespace CashTracker.App
             var method = new Label
             {
                 Text = methodName,
-                AutoSize = true,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.6f, FontStyle.Bold),
                 ForeColor = BrandTheme.Heading,
-                Margin = new Padding(8, 8, 8, 8)
+                Margin = new Padding(8, 6, 8, 6),
+                TextAlign = ContentAlignment.MiddleLeft
             };
             table.Controls.Add(method, 0, rowIndex);
 
             income = new Label
             {
                 Text = "0.00",
-                AutoSize = true,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 121, 85),
-                Margin = new Padding(8, 8, 8, 8)
+                Margin = new Padding(8, 6, 8, 6),
+                TextAlign = ContentAlignment.MiddleRight
             };
             table.Controls.Add(income, 1, rowIndex);
 
             expense = new Label
             {
                 Text = "0.00",
-                AutoSize = true,
+                AutoSize = false,
+                Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(173, 59, 56),
-                Margin = new Padding(8, 8, 8, 8)
+                Margin = new Padding(8, 6, 8, 6),
+                TextAlign = ContentAlignment.MiddleRight
             };
             table.Controls.Add(expense, 2, rowIndex);
         }
@@ -226,6 +236,7 @@ namespace CashTracker.App
 
             ApplyDailyMethodValues("Nakit", byMethod, _lblDailyNakitIncome, _lblDailyNakitExpense);
             ApplyDailyMethodValues("KrediKarti", byMethod, _lblDailyKrediKartiIncome, _lblDailyKrediKartiExpense);
+            ApplyDailyMethodValues("OnlineOdeme", byMethod, _lblDailyOnlineOdemeIncome, _lblDailyOnlineOdemeExpense);
             ApplyDailyMethodValues("Havale", byMethod, _lblDailyHavaleIncome, _lblDailyHavaleExpense);
         }
 
@@ -385,6 +396,10 @@ namespace CashTracker.App
                 "kart" => "KrediKarti",
                 "creditcard" => "KrediKarti",
                 "credit card" => "KrediKarti",
+                "online" => "OnlineOdeme",
+                "onlineodeme" => "OnlineOdeme",
+                "online odeme" => "OnlineOdeme",
+                "online payment" => "OnlineOdeme",
                 "havale" => "Havale",
                 "transfer" => "Havale",
                 "bank transfer" => "Havale",

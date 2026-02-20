@@ -561,7 +561,7 @@ namespace CashTracker.Infrastructure.Services
 
             sb.AppendLine();
             sb.AppendLine("Odeme Yontemleri:");
-            foreach (var method in new[] { "Nakit", "KrediKarti", "Havale" })
+            foreach (var method in new[] { "Nakit", "KrediKarti", "OnlineOdeme", "Havale" })
             {
                 var income = byMethod.TryGetValue(method, out var values) ? values.Income : 0m;
                 var expense = byMethod.TryGetValue(method, out values) ? values.Expense : 0m;
@@ -659,6 +659,11 @@ namespace CashTracker.Infrastructure.Services
                 "kart" => "KrediKarti",
                 "creditcard" => "KrediKarti",
                 "credit card" => "KrediKarti",
+                "online" => "OnlineOdeme",
+                "onlineodeme" => "OnlineOdeme",
+                "online odeme" => "OnlineOdeme",
+                "online \u00f6deme" => "OnlineOdeme",
+                "online payment" => "OnlineOdeme",
                 "havale" => "Havale",
                 "transfer" => "Havale",
                 "bank transfer" => "Havale",
@@ -668,7 +673,12 @@ namespace CashTracker.Infrastructure.Services
 
         private static string GetOdemeYontemiLabel(string method)
         {
-            return method == "KrediKarti" ? "Kredi Karti" : method;
+            return method switch
+            {
+                "KrediKarti" => "Kredi Karti",
+                "OnlineOdeme" => "Online Odeme",
+                _ => method
+            };
         }
 
         private async Task<string> GetActiveBusinessNameAsync()
