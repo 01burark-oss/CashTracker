@@ -175,7 +175,7 @@ namespace CashTracker.App.Forms
             if (_telegramApprovalService is null)
                 return false;
 
-            setHint("Telegram onayi bekleniyor...", HintTone.Neutral);
+            setHint(AppLocalization.T("settings.approval.wait"), HintTone.Neutral);
 
             var result = await _telegramApprovalService.RequestApprovalAsync(
                 new TelegramApprovalRequest(title, details, TimeSpan.FromMinutes(2)));
@@ -185,29 +185,29 @@ namespace CashTracker.App.Forms
                 case TelegramApprovalStatus.Approved:
                     return true;
                 case TelegramApprovalStatus.Rejected:
-                    setHint("Telegram onayi reddedildi.", HintTone.Warning);
+                    setHint(AppLocalization.T("settings.approval.rejected"), HintTone.Warning);
                     return false;
                 case TelegramApprovalStatus.TimedOut:
-                    setHint("Telegram onayi suresi doldu.", HintTone.Warning);
+                    setHint(AppLocalization.T("settings.approval.timeout"), HintTone.Warning);
                     return false;
                 case TelegramApprovalStatus.NotConfigured:
                     MessageBox.Show(
-                        "Telegram ayarlari eksik veya komutlar kapali. Silme islemi icin Telegram onayi gerekli.",
-                        "Ayarlar",
+                        AppLocalization.T("settings.approval.notConfiguredBody"),
+                        AppLocalization.T("settings.title"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
-                    setHint("Telegram onayi alinmadi.", HintTone.Warning);
+                    setHint(AppLocalization.T("settings.approval.notConfiguredHint"), HintTone.Warning);
                     return false;
                 case TelegramApprovalStatus.Failed:
                     MessageBox.Show(
-                        "Telegram onayi alinamadi: " + (result.Message ?? "Bilinmeyen hata."),
-                        "Ayarlar",
+                        AppLocalization.F("settings.approval.failedBody", result.Message ?? AppLocalization.T("settings.approval.failedDefault")),
+                        AppLocalization.T("settings.title"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Error);
-                    setHint("Telegram onayi alinamadi.", HintTone.Error);
+                    setHint(AppLocalization.T("settings.approval.failedHint"), HintTone.Error);
                     return false;
                 default:
-                    setHint("Telegram onayi alinamadi.", HintTone.Error);
+                    setHint(AppLocalization.T("settings.approval.failedHint"), HintTone.Error);
                     return false;
             }
         }

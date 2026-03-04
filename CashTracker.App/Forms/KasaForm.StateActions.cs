@@ -26,8 +26,8 @@ namespace CashTracker.App.Forms
 
             _selectedId = kasa.Id;
             _dtTarih.Value = kasa.Tarih;
-            _cmbTip.SelectedItem = MapTip(kasa.Tip);
-            _numTutar.Value = kasa.Tutar;
+            _cmbTip.SelectedItem = AppLocalization.GetTipDisplay(MapTip(kasa.Tip));
+            _txtTutar.Text = kasa.Tutar.ToString("0.##", AppLocalization.CurrentCulture);
             SetSelectedOdemeYontemi(kasa.OdemeYontemi);
             _txtAciklama.Text = kasa.Aciklama ?? string.Empty;
             await LoadKalemlerForTipAsync(kasa.Kalem ?? kasa.GiderTuru);
@@ -38,7 +38,7 @@ namespace CashTracker.App.Forms
             _selectedId = 0;
             _dtTarih.Value = DateTime.Now;
             _cmbTip.SelectedIndex = 0;
-            _numTutar.Value = 0;
+            _txtTutar.Text = string.Empty;
             SetSelectedOdemeYontemi("Nakit");
             _txtAciklama.Text = string.Empty;
             await LoadKalemlerForTipAsync();
@@ -54,7 +54,7 @@ namespace CashTracker.App.Forms
 
             try
             {
-                var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? "Gelir");
+                var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? AppLocalization.T("tip.income"));
                 var rows = await _kalemTanimiService.GetByTipAsync(tip);
                 var kalemler = rows
                     .Select(x => x.Ad)
@@ -94,8 +94,8 @@ namespace CashTracker.App.Forms
                 _cmbKalem.DataSource = null;
                 _cmbKalem.Items.Clear();
                 MessageBox.Show(
-                    "Kalemler yuklenirken hata olustu: " + ex.Message,
-                    "Gelir / Gider",
+                    AppLocalization.F("kasa.error.categoryLoad", ex.Message),
+                    AppLocalization.T("kasa.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -110,7 +110,7 @@ namespace CashTracker.App.Forms
         private void UpdateKalemAvailabilityUi()
         {
             var hasKalem = _cmbKalem.Items.Count > 0;
-            var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? "Gelir");
+            var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? AppLocalization.T("tip.income"));
 
             _btnSave.Enabled = hasKalem;
             _lblKalemEmptyHint.Visible = !hasKalem;
@@ -119,7 +119,7 @@ namespace CashTracker.App.Forms
             if (!hasKalem)
             {
                 _lblKalemEmptyHint.Text =
-                    $"{tip} icin kalem tanimi bulunamadi. Ayarlar ekranindan once kalem eklemelisin.";
+                    AppLocalization.F("kasa.hint.noCategory", AppLocalization.GetTipDisplay(tip));
             }
         }
 
@@ -157,16 +157,16 @@ namespace CashTracker.App.Forms
             {
                 var active = await _isletmeService.GetActiveAsync();
                 var businessName = string.IsNullOrWhiteSpace(active.Ad)
-                    ? "Bilinmiyor"
+                    ? AppLocalization.T("common.unknown")
                     : active.Ad.Trim();
 
-                _lblActiveBusiness.Text = $"Aktif Isletme: {businessName}";
-                Text = $"Gelir / Gider - {businessName}";
+                _lblActiveBusiness.Text = AppLocalization.F("kasa.activeBusiness", businessName);
+                Text = AppLocalization.F("kasa.titleWithBusiness", businessName);
             }
             catch
             {
-                _lblActiveBusiness.Text = "Aktif Isletme: Bilinmiyor";
-                Text = "Gelir / Gider";
+                _lblActiveBusiness.Text = AppLocalization.F("kasa.activeBusiness", AppLocalization.T("common.unknown"));
+                Text = AppLocalization.T("kasa.title");
             }
         }
     }

@@ -107,7 +107,7 @@ namespace CashTracker.App
 
             var navCaption = new Label
             {
-                Text = "MENÜ",
+                Text = AppLocalization.T("main.menu"),
                 ForeColor = Color.FromArgb(157, 180, 207),
                 Font = BrandTheme.CreateFont(8.8f, FontStyle.Bold),
                 AutoSize = true,
@@ -125,10 +125,10 @@ namespace CashTracker.App
             };
             navContainer.Controls.Add(navButtons, 0, 1);
 
-            var btnGelirGider = CreateNavButton("Gelir / Gider Kayıtları", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnSettings = CreateNavButton("Ayarlar", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnChangeBot = CreateNavButton("Botu Değiştir", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnUpdate = CreateNavButton("Güncellemeleri Denetle", sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnGelirGider = CreateNavButton(AppLocalization.T("main.nav.records"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnSettings = CreateNavButton(AppLocalization.T("main.nav.settings"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnChangeBot = CreateNavButton(AppLocalization.T("main.nav.bot"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnUpdate = CreateNavButton(AppLocalization.T("main.nav.update"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
 
             navButtons.Controls.Add(btnGelirGider);
             navButtons.Controls.Add(btnSettings);
@@ -137,13 +137,13 @@ namespace CashTracker.App
 
             btnGelirGider.Click += (_, __) =>
             {
-                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService, _telegramApprovalService);
+                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService, _telegramApprovalService, _runtimeOptions);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
             btnSettings.Click += (_, __) =>
             {
-                using var form = new SettingsForm(_isletmeService, _kalemTanimiService, _telegramApprovalService);
+                using var form = new SettingsForm(_isletmeService, _kalemTanimiService, _telegramApprovalService, _runtimeOptions);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
@@ -152,7 +152,7 @@ namespace CashTracker.App
 
             var footerCredit = new Label
             {
-                Text = "Burak Özmen",
+                Text = AppLocalization.T("main.footer.credit"),
                 ForeColor = Color.FromArgb(159, 182, 208),
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Regular),
                 AutoSize = true,
@@ -234,7 +234,7 @@ namespace CashTracker.App
 
             var topTitle = new Label
             {
-                Text = "Komut Paneli",
+                Text = AppLocalization.T("main.top.commandPanel"),
                 Font = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
                 ForeColor = heading,
                 AutoSize = true,
@@ -254,10 +254,10 @@ namespace CashTracker.App
 
             var dateBadge = CreateTopBadge(DateTime.Now.ToString("yyyy-MM-dd"), BrandTheme.Navy, Color.FromArgb(229, 239, 251));
             var telegramBadge = CreateTopBadge(
-                _telegramSettings.IsEnabled ? "Telegram Aktif" : "Telegram Pasif",
+                _telegramSettings.IsEnabled ? AppLocalization.T("main.badge.telegramActive") : AppLocalization.T("main.badge.telegramInactive"),
                 _telegramSettings.IsEnabled ? Color.FromArgb(22, 122, 87) : Color.FromArgb(166, 57, 54),
                 _telegramSettings.IsEnabled ? Color.FromArgb(229, 246, 239) : Color.FromArgb(251, 237, 236));
-            var localBadge = CreateTopBadge("Yerel Veri", Color.FromArgb(39, 75, 120), Color.FromArgb(229, 239, 251));
+            var localBadge = CreateTopBadge(AppLocalization.T("main.badge.localData"), Color.FromArgb(39, 75, 120), Color.FromArgb(229, 239, 251));
 
             badgeFlow.Controls.Add(dateBadge);
             badgeFlow.Controls.Add(telegramBadge);
@@ -291,7 +291,7 @@ namespace CashTracker.App
 
             var sectionTitle = new Label
             {
-                Text = "Finans Snapshot",
+                Text = AppLocalization.T("main.section.snapshotTitle"),
                 Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
                 ForeColor = heading,
                 AutoSize = true,
@@ -301,7 +301,7 @@ namespace CashTracker.App
 
             var sectionSubtitle = new Label
             {
-                Text = "Kritik KPI kartları ve rapor panelleri",
+                Text = AppLocalization.T("main.section.snapshotSubtitle"),
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Regular),
                 ForeColor = textMuted,
                 AutoSize = true,
@@ -311,7 +311,7 @@ namespace CashTracker.App
 
             _lblActiveBusinessReport = new Label
             {
-                Text = "Raporlar Aktif Isletme: -",
+                Text = AppLocalization.F("main.activeBusiness", "-"),
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(42, 89, 139),
                 AutoSize = true,
@@ -333,9 +333,9 @@ namespace CashTracker.App
             };
             content.Controls.Add(cardsPanel, 0, 4);
 
-            _cardDaily = CreateSummaryCard("Günlük", surface, BrandTheme.Teal, "Telegram'a Gönder", border);
-            _card30 = CreateSummaryCard("Son 30 Gün", surface, BrandTheme.Navy, "Telegram'a Gönder", border);
-            _card365 = CreateSummaryCard("Son 365 Gün", surface, Color.FromArgb(88, 101, 178), "Telegram'a Gönder", border);
+            _cardDaily = CreateSummaryCard(AppLocalization.T("main.summary.daily"), surface, BrandTheme.Teal, AppLocalization.T("main.summary.sendTelegram"), border);
+            _card30 = CreateSummaryCard(AppLocalization.T("main.summary.last30"), surface, BrandTheme.Navy, AppLocalization.T("main.summary.sendTelegram"), border);
+            _card365 = CreateSummaryCard(AppLocalization.T("main.summary.last365"), surface, Color.FromArgb(88, 101, 178), AppLocalization.T("main.summary.sendTelegram"), border);
 
             _cardDaily.SendButton.Click += async (_, __) => await SendDailySummaryAsync(_cardDaily.SendButton);
             _card30.SendButton.Click += async (_, __) => await SendLast30SummaryAsync(_card30.SendButton);
@@ -363,9 +363,9 @@ namespace CashTracker.App
             content.Controls.Add(reportGrid, 0, 5);
 
             var monthlyPanel = CreatePeriodReportPanel(
-                "Aylık Finans",
-                "Seçili ay özeti",
-                "Aylığı Gönder",
+                AppLocalization.T("main.period.monthlyTitle"),
+                AppLocalization.T("main.period.monthlySubtitle"),
+                AppLocalization.T("main.period.monthlySend"),
                 BrandTheme.Navy,
                 out _cmbMonth,
                 out _lblMonthIncome,
@@ -374,9 +374,9 @@ namespace CashTracker.App
                 out var btnSendMonth);
 
             var yearlyPanel = CreatePeriodReportPanel(
-                "Yıllık Finans",
-                "Seçili yıl özeti",
-                "Yıllığı Gönder",
+                AppLocalization.T("main.period.yearlyTitle"),
+                AppLocalization.T("main.period.yearlySubtitle"),
+                AppLocalization.T("main.period.yearlySend"),
                 Color.FromArgb(80, 96, 174),
                 out _cmbYear,
                 out _lblYearIncome,
@@ -433,10 +433,10 @@ namespace CashTracker.App
 
             var navItems = new[]
             {
-                new { Button = btnGelirGider, ExpandedText = "Gelir / Gider Kayıtları", CollapsedText = "KG" },
-                new { Button = btnSettings, ExpandedText = "Ayarlar", CollapsedText = "SET" },
-                new { Button = btnChangeBot, ExpandedText = "Botu Değiştir", CollapsedText = "BOT" },
-                new { Button = btnUpdate, ExpandedText = "Güncellemeleri Denetle", CollapsedText = "UPD" }
+                new { Button = btnGelirGider, ExpandedText = AppLocalization.T("main.nav.records"), CollapsedText = AppLocalization.T("main.nav.short.records") },
+                new { Button = btnSettings, ExpandedText = AppLocalization.T("main.nav.settings"), CollapsedText = AppLocalization.T("main.nav.short.settings") },
+                new { Button = btnChangeBot, ExpandedText = AppLocalization.T("main.nav.bot"), CollapsedText = AppLocalization.T("main.nav.short.bot") },
+                new { Button = btnUpdate, ExpandedText = AppLocalization.T("main.nav.update"), CollapsedText = AppLocalization.T("main.nav.short.update") }
             };
 
             void ApplySidebarState()

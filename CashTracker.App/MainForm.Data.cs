@@ -10,9 +10,9 @@ namespace CashTracker.App
     {
         private void LoadMonths()
         {
-            var tr = CultureInfo.GetCultureInfo("tr-TR");
             var list = new List<MonthItem>();
             var now = DateTime.Now;
+            var culture = AppLocalization.CurrentCulture;
 
             for (int i = 0; i < 24; i++)
             {
@@ -21,7 +21,7 @@ namespace CashTracker.App
                 {
                     Year = d.Year,
                     Month = d.Month,
-                    Display = d.ToString("MMMM yyyy", tr)
+                    Display = d.ToString("MMMM yyyy", culture)
                 });
             }
 
@@ -76,9 +76,9 @@ namespace CashTracker.App
 
             var s = await _summaryService.GetMonthlySummaryAsync(item.Year, item.Month);
 
-            _lblMonthIncome.Text = $"Gelir: {s.IncomeTotal:n2}";
-            _lblMonthExpense.Text = $"Gider: {s.ExpenseTotal:n2}";
-            _lblMonthNet.Text = $"Net: {s.Net:n2}";
+            _lblMonthIncome.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
+            _lblMonthExpense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
+            _lblMonthNet.Text = AppLocalization.F("main.summary.net", s.Net);
         }
 
         private async Task RefreshYearlyAsync()
@@ -89,9 +89,9 @@ namespace CashTracker.App
             var to = new DateTime(item.Year, 12, 31);
             var s = await _summaryService.GetSummaryAsync(from, to);
 
-            _lblYearIncome.Text = $"Gelir: {s.IncomeTotal:n2}";
-            _lblYearExpense.Text = $"Gider: {s.ExpenseTotal:n2}";
-            _lblYearNet.Text = $"Net: {s.Net:n2}";
+            _lblYearIncome.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
+            _lblYearExpense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
+            _lblYearNet.Text = AppLocalization.F("main.summary.net", s.Net);
         }
 
         private async Task RefreshActiveBusinessInfoAsync()
@@ -100,14 +100,14 @@ namespace CashTracker.App
             {
                 var active = await _isletmeService.GetActiveAsync();
                 var businessName = string.IsNullOrWhiteSpace(active.Ad)
-                    ? "Bilinmiyor"
+                    ? AppLocalization.T("common.unknown")
                     : active.Ad.Trim();
 
-                _lblActiveBusinessReport.Text = $"Raporlar Aktif Isletme: {businessName}";
+                _lblActiveBusinessReport.Text = AppLocalization.F("main.activeBusiness", businessName);
             }
             catch
             {
-                _lblActiveBusinessReport.Text = "Raporlar Aktif Isletme: Bilinmiyor";
+                _lblActiveBusinessReport.Text = AppLocalization.F("main.activeBusiness", AppLocalization.T("common.unknown"));
             }
         }
     }

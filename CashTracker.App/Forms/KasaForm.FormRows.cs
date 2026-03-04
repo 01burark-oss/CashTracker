@@ -80,7 +80,7 @@ namespace CashTracker.App.Forms
                 Visible = false
             };
 
-            _btnKalemSettings = CreateButton("Kalemleri Yonet", BrandTheme.Teal, Color.White);
+            _btnKalemSettings = CreateButton(AppLocalization.T("kasa.manageCategories"), BrandTheme.Teal, Color.White);
             _btnKalemSettings.Width = 146;
             _btnKalemSettings.Height = 34;
             _btnKalemSettings.Margin = new Padding(0);

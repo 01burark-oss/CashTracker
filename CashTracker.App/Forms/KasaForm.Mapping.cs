@@ -4,13 +4,11 @@ namespace CashTracker.App.Forms
     {
         private static string MapTip(string? value)
         {
-            return value switch
+            var normalized = AppLocalization.NormalizeTip(value);
+            return normalized switch
             {
-                "Giris" => "Gelir",
-                "Giri\u015F" => "Gelir",
-                "Cikis" => "Gider",
-                "\u00C7\u0131k\u0131\u015F" => "Gider",
-                _ => value ?? "Gelir"
+                "Gider" => "Gider",
+                _ => "Gelir"
             };
         }
 
@@ -50,10 +48,10 @@ namespace CashTracker.App.Forms
         {
             return NormalizeOdemeYontemi(value) switch
             {
-                "KrediKarti" => "Kredi Karti",
-                "OnlineOdeme" => "Online Odeme",
-                "Havale" => "Havale",
-                _ => "Nakit"
+                "KrediKarti" => AppLocalization.T("payment.card"),
+                "OnlineOdeme" => AppLocalization.T("payment.online"),
+                "Havale" => AppLocalization.T("payment.transfer"),
+                _ => AppLocalization.T("payment.cash")
             };
         }
     }

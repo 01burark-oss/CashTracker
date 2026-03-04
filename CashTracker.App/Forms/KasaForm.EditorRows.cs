@@ -31,7 +31,7 @@ namespace CashTracker.App.Forms
 
         private void AddTypeRow(TableLayoutPanel form)
         {
-            var label = new Label { Text = "Tip", AutoSize = true, Anchor = AnchorStyles.Left };
+            var label = new Label { Text = AppLocalization.T("common.type"), AutoSize = true, Anchor = AnchorStyles.Left };
             _cmbTip = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
@@ -43,7 +43,11 @@ namespace CashTracker.App.Forms
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
 
-            _cmbTip.Items.AddRange(new object[] { "Gelir", "Gider" });
+            _cmbTip.Items.AddRange(new object[]
+            {
+                AppLocalization.T("tip.income"),
+                AppLocalization.T("tip.expense")
+            });
             _cmbTip.SelectedIndex = 0;
             _cmbTip.SelectedIndexChanged += async (_, __) => await LoadKalemlerForTipAsync();
             form.Controls.Add(label);
@@ -52,25 +56,26 @@ namespace CashTracker.App.Forms
 
         private void AddAmountRow(TableLayoutPanel form)
         {
-            var label = new Label { Text = "Tutar", AutoSize = true, Anchor = AnchorStyles.Left };
-            _numTutar = new NumericUpDown
+            var label = new Label { Text = AppLocalization.T("common.amount"), AutoSize = true, Anchor = AnchorStyles.Left };
+            _txtTutar = new TextBox
             {
-                DecimalPlaces = 2,
-                Maximum = 100000000,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
                 Margin = new Padding(0, 8, 0, 8),
-                ThousandsSeparator = true
+                BorderStyle = BorderStyle.FixedSingle,
+                PlaceholderText = AppLocalization.T("kasa.amount.placeholder")
             };
+            _txtTutar.KeyPress += AmountTextBoxKeyPress;
+
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
 
             form.Controls.Add(label);
-            form.Controls.Add(_numTutar);
+            form.Controls.Add(_txtTutar);
         }
 
         private void AddPaymentMethodRow(TableLayoutPanel form)
         {
-            var label = new Label { Text = "Yontem", AutoSize = true, Anchor = AnchorStyles.Left };
+            var label = new Label { Text = AppLocalization.T("common.method"), AutoSize = true, Anchor = AnchorStyles.Left };
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
 
@@ -92,10 +97,10 @@ namespace CashTracker.App.Forms
             methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonGapY));
             methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonHeight));
 
-            _btnOdemeNakit = CreateOdemeYontemiButton("Nakit", "Nakit");
-            _btnOdemeKrediKarti = CreateOdemeYontemiButton("Kredi Karti", "KrediKarti");
-            _btnOdemeOnlineOdeme = CreateOdemeYontemiButton("Online Odeme", "OnlineOdeme");
-            _btnOdemeHavale = CreateOdemeYontemiButton("Havale", "Havale");
+            _btnOdemeNakit = CreateOdemeYontemiButton(AppLocalization.T("payment.cash"), "Nakit");
+            _btnOdemeKrediKarti = CreateOdemeYontemiButton(AppLocalization.T("payment.card"), "KrediKarti");
+            _btnOdemeOnlineOdeme = CreateOdemeYontemiButton(AppLocalization.T("payment.online"), "OnlineOdeme");
+            _btnOdemeHavale = CreateOdemeYontemiButton(AppLocalization.T("payment.transfer"), "Havale");
 
             _btnOdemeNakit.Margin = Padding.Empty;
             _btnOdemeKrediKarti.Margin = Padding.Empty;
@@ -116,6 +121,25 @@ namespace CashTracker.App.Forms
             form.Controls.Add(methodsPanel);
 
             SetSelectedOdemeYontemi("Nakit");
+        }
+
+        private static void AmountTextBoxKeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar))
+                return;
+
+            if (char.IsDigit(e.KeyChar))
+                return;
+
+            if ((e.KeyChar == ',' || e.KeyChar == '.') &&
+                sender is TextBox textBox &&
+                !textBox.Text.Contains(',') &&
+                !textBox.Text.Contains('.'))
+            {
+                return;
+            }
+
+            e.Handled = true;
         }
 
         private static Button CreateOdemeYontemiBaseButton(string text)

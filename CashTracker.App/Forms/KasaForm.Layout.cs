@@ -61,7 +61,7 @@ namespace CashTracker.App.Forms
                 Margin = new Padding(0),
                 AutoEllipsis = true,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Text = "Aktif Isletme: -"
+                Text = AppLocalization.F("kasa.activeBusiness", "-")
             };
         }
 

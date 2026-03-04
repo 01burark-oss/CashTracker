@@ -12,9 +12,9 @@ namespace CashTracker.App
         {
             if (!_isAuthenticated)
             {
-                using var loginForm = new PinLoginForm(_appSecurityService);
+                using var loginForm = new PinLoginForm(_appSecurityService, _backupReport, _telegramSettings);
                 var loginResult = loginForm.ShowDialog(this);
-                if (loginResult != System.Windows.Forms.DialogResult.OK)
+                if (loginResult != DialogResult.OK)
                 {
                     BeginInvoke(new Action(Close));
                     return;
@@ -38,12 +38,12 @@ namespace CashTracker.App
                 return;
 
             var result = MessageBox.Show(
-                "Yeni sürüm açıldı. Masaüstüne kısayol oluşturmak ister misiniz?",
-                "Masaüstü Kısayolu",
+                AppLocalization.T("main.shortcut.promptBody"),
+                AppLocalization.T("main.shortcut.promptTitle"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
-            if (result == System.Windows.Forms.DialogResult.Yes)
+            if (result == DialogResult.Yes)
             {
                 var created = DesktopShortcutService.TryCreateShortcut(
                     Application.ExecutablePath,
@@ -52,8 +52,8 @@ namespace CashTracker.App
                 if (!created)
                 {
                     MessageBox.Show(
-                        "Kısayol oluşturulamadı. Masaüstü erişimini kontrol edebilirsiniz.",
-                        "Kısayol Oluşturma",
+                        AppLocalization.T("main.shortcut.errorBody"),
+                        AppLocalization.T("main.shortcut.errorTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -700,3 +700,4 @@ namespace CashTracker.Infrastructure.Services
         }
     }
 }
+

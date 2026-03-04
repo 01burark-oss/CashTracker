@@ -7,6 +7,7 @@ namespace CashTracker.App
     internal sealed class AppState
     {
         public string LastShortcutPromptVersion { get; set; } = string.Empty;
+        public string LanguageCode { get; set; } = "tr";
     }
 
     internal static class AppStateStore

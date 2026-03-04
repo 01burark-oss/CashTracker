@@ -27,8 +27,8 @@ namespace CashTracker.App
             });
 
             MessageBox.Show(
-                "Bot ayarları kaydedildi. Değişiklikler için uygulama yeniden başlatılacak.",
-                "Ayarlar Kaydedildi",
+                AppLocalization.T("main.bot.savedBody"),
+                AppLocalization.T("main.bot.savedTitle"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
@@ -41,8 +41,8 @@ namespace CashTracker.App
             if (!_updateSettings.IsConfigured)
             {
                 MessageBox.Show(
-                    "Güncelleme ayarları eksik. appsettings.json içine Update:RepoOwner ve Update:RepoName gir.",
-                    "Güncelleme Ayarı Eksik",
+                    AppLocalization.T("main.update.missingConfigBody"),
+                    AppLocalization.T("main.update.missingConfigTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
                 return;
@@ -50,7 +50,7 @@ namespace CashTracker.App
 
             var originalText = triggerButton.Text;
             triggerButton.Enabled = false;
-            triggerButton.Text = "Denetleniyor, lütfen bekleyin";
+            triggerButton.Text = AppLocalization.T("main.update.checkingButton");
 
             try
             {
@@ -60,8 +60,8 @@ namespace CashTracker.App
                 if (!result.HasUpdate)
                 {
                     MessageBox.Show(
-                        $"Uygulama güncel.\nSürüm: {currentVersion}",
-                        "Güncelleme",
+                        AppLocalization.F("main.update.upToDateBody", currentVersion),
+                        AppLocalization.T("main.update.upToDateTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                     return;
@@ -70,8 +70,8 @@ namespace CashTracker.App
                 if (string.IsNullOrWhiteSpace(result.AssetDownloadUrl))
                 {
                     var askOpenRelease = MessageBox.Show(
-                        $"Yeni sürüm bulundu: {result.LatestTag}\nFakat indirilebilir dosya bulunamadı. Release sayfası açılsın mı?",
-                        "Güncelleme Hazır",
+                        AppLocalization.F("main.update.assetMissingBody", result.LatestTag),
+                        AppLocalization.T("main.update.availableTitle"),
                         MessageBoxButtons.YesNo,
                         MessageBoxIcon.Question);
 
@@ -84,8 +84,8 @@ namespace CashTracker.App
                 }
 
                 var confirm = MessageBox.Show(
-                    $"Yeni sürüm bulundu: {result.LatestTag}\n\nGüncelleme paketi indirilsin mi?",
-                    "Güncelleme Hazır",
+                    AppLocalization.F("main.update.confirmDownloadBody", result.LatestTag),
+                    AppLocalization.T("main.update.availableTitle"),
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
                 if (confirm != DialogResult.Yes)
@@ -99,8 +99,8 @@ namespace CashTracker.App
                 if (string.IsNullOrWhiteSpace(result.ChecksumAssetDownloadUrl))
                 {
                     MessageBox.Show(
-                        "Güvenli doğrulama dosyası (.sha256) bulunamadı. Güncelleme iptal edildi.",
-                        "Güncelleme Doğrulanamadı",
+                        AppLocalization.T("main.update.checksumMissingBody"),
+                        AppLocalization.T("main.update.checksumMissingTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                     return;
@@ -125,16 +125,16 @@ namespace CashTracker.App
 
                 Process.Start(new ProcessStartInfo(downloadedPath) { UseShellExecute = true });
                 MessageBox.Show(
-                    "Güncelleme paketi çalıştırıldı. Kurulumdan sonra uygulamayı yeniden aç.\nMasaüstündeki exe güncellenecek.",
-                    "Güncelleme Başlatıldı",
+                    AppLocalization.T("main.update.startedBody"),
+                    AppLocalization.T("main.update.startedTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Güncelleme denetleme hatası: " + ex.Message,
-                    "Güncelleme Hatası",
+                    AppLocalization.F("main.update.errorBody", ex.Message),
+                    AppLocalization.T("main.update.errorTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -148,7 +148,7 @@ namespace CashTracker.App
         private void ApplyZipUpdateAndRestart(string zipPath, string latestTag)
         {
             if (!File.Exists(zipPath))
-                throw new FileNotFoundException("Güncelleme paketi bulunamadı.", zipPath);
+                throw new FileNotFoundException(AppLocalization.T("main.update.packageMissing"), zipPath);
 
             var cleanedTag = new string((latestTag ?? string.Empty)
                 .Where(ch => char.IsLetterOrDigit(ch) || ch == '-' || ch == '_')
@@ -176,7 +176,7 @@ namespace CashTracker.App
             if (string.IsNullOrWhiteSpace(launchPath) || !File.Exists(launchPath))
             {
                 throw new InvalidOperationException(
-                    $"Güncelleme içinde '{currentExeName}' bulunamadı. Asset içeriğini kontrol et.");
+                    AppLocalization.F("main.update.assetMissingInZip", currentExeName));
             }
 
             Process.Start(new ProcessStartInfo(launchPath)
@@ -191,9 +191,9 @@ namespace CashTracker.App
 
             MessageBox.Show(
                 desktopReplaceScheduled
-                    ? "Güncelleme yüklendi. Yeni sürüm başlatıldı.\nMasaüstündeki exe güncellenecek."
-                    : "Güncelleme yüklendi. Yeni sürüm başlatıldı.",
-                "Güncelleme Tamamlandı",
+                    ? AppLocalization.T("main.update.completedBodyWithDesktop")
+                    : AppLocalization.T("main.update.completedBody"),
+                AppLocalization.T("main.update.completedTitle"),
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Information);
 
@@ -205,14 +205,14 @@ namespace CashTracker.App
             var fileName = Path.GetFileName(downloadedPath);
             if (!TryReadExpectedSha256(checksumText, fileName, out var expectedHash))
             {
-                throw new InvalidOperationException("Checksum dosyası geçersiz veya hedef dosya hash'i bulunamadı.");
+                throw new InvalidOperationException(AppLocalization.T("main.update.invalidChecksumFile"));
             }
 
             var actualHash = ComputeSha256(downloadedPath);
             if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
-                    "İndirilen dosyanın checksum doğrulaması başarısız oldu. Güncelleme güvenlik nedeniyle durduruldu.");
+                    AppLocalization.T("main.update.checksumMismatch"));
             }
         }
 

@@ -17,11 +17,12 @@ namespace CashTracker.App.Forms
             _btnDeleteKalem.Enabled = false;
             _btnUpdateKalem.Enabled = false;
             _txtEditKalem.Enabled = false;
-            SetCategoryHint("Kalemler yukleniyor...");
+            SetCategoryHint(AppLocalization.T("settings.hint.categoriesLoading"));
 
             try
             {
                 var tip = GetSelectedTip();
+                var tipDisplay = AppLocalization.GetTipDisplay(tip);
                 var rows = await _kalemTanimiService.GetByTipAsync(tip);
                 var items = rows
                     .Select(x => new KalemItem
@@ -50,12 +51,12 @@ namespace CashTracker.App.Forms
                 if (items.Count == 0)
                 {
                     SetCategoryHint(
-                        $"{tip} icin tanimli kalem yok. Asagidan yeni kalem ekleyebilirsin.",
+                        AppLocalization.F("settings.hint.noCategoryForType", tipDisplay),
                         HintTone.Warning);
                 }
                 else
                 {
-                    SetCategoryHint($"{tip} icin {items.Count} kalem var.", HintTone.Success);
+                    SetCategoryHint(AppLocalization.F("settings.hint.categoryCountForType", tipDisplay, items.Count), HintTone.Success);
                 }
 
                 SyncSelectedKalemToEditor();
@@ -63,11 +64,11 @@ namespace CashTracker.App.Forms
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Kalem listesi yuklenemedi: " + ex.Message,
-                    "Ayarlar",
+                    AppLocalization.F("settings.error.categoryLoad", ex.Message),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                SetCategoryHint("Kalem listesi yuklenemedi.", HintTone.Error);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryLoadFail"), HintTone.Error);
             }
             finally
             {
@@ -79,27 +80,28 @@ namespace CashTracker.App.Forms
         private async Task AddKalemAsync()
         {
             var tip = GetSelectedTip();
+            var tipDisplay = AppLocalization.GetTipDisplay(tip);
             var ad = NormalizeText(_txtNewKalem.Text);
             if (string.IsNullOrWhiteSpace(ad))
             {
                 MessageBox.Show(
-                    "Kalem adi bos birakilamaz.",
-                    "Ayarlar",
+                    AppLocalization.T("settings.error.categoryNameRequired"),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
-                SetCategoryHint("Kalem adi bos birakilamaz.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameRequired"), HintTone.Warning);
                 return;
             }
 
             if (ad.Length < 2)
             {
-                SetCategoryHint("Kalem adi en az 2 karakter olmalidir.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameMin"), HintTone.Warning);
                 return;
             }
 
             if (HasKalemWithName(ad))
             {
-                SetCategoryHint("Bu kalem zaten listede var.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameExists"), HintTone.Warning);
                 return;
             }
 
@@ -110,16 +112,16 @@ namespace CashTracker.App.Forms
                 var id = await _kalemTanimiService.CreateAsync(tip, ad);
                 _txtNewKalem.Text = string.Empty;
                 await LoadKalemlerAsync(id);
-                SetCategoryHint($"{tip} kalemi eklendi: {ad}", HintTone.Success);
+                SetCategoryHint(AppLocalization.F("settings.hint.categoryAdded", tipDisplay, ad), HintTone.Success);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Kalem eklenemedi: " + ex.Message,
-                    "Ayarlar",
+                    AppLocalization.F("settings.error.categoryAdd", ex.Message),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                SetCategoryHint("Kalem eklenemedi.", HintTone.Error);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryAddFail"), HintTone.Error);
             }
             finally
             {
@@ -131,32 +133,32 @@ namespace CashTracker.App.Forms
         {
             if (_lstKalemler.SelectedItem is not KalemItem item)
             {
-                SetCategoryHint("Duzenlemek icin listeden bir kalem sec.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.selectCategoryToEdit"), HintTone.Warning);
                 return;
             }
 
             var yeniAd = NormalizeText(_txtEditKalem.Text);
             if (string.IsNullOrWhiteSpace(yeniAd))
             {
-                SetCategoryHint("Kalem adi bos birakilamaz.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameRequired"), HintTone.Warning);
                 return;
             }
 
             if (yeniAd.Length < 2)
             {
-                SetCategoryHint("Kalem adi en az 2 karakter olmalidir.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameMin"), HintTone.Warning);
                 return;
             }
 
             if (string.Equals(item.Ad, yeniAd, StringComparison.OrdinalIgnoreCase))
             {
-                SetCategoryHint("Yeni ad mevcut ad ile ayni.", HintTone.Neutral);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameSame"), HintTone.Neutral);
                 return;
             }
 
             if (HasKalemWithName(yeniAd, exceptKalemId: item.Id))
             {
-                SetCategoryHint("Bu kalem zaten listede var.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryNameExists"), HintTone.Warning);
                 return;
             }
 
@@ -166,16 +168,16 @@ namespace CashTracker.App.Forms
             {
                 await _kalemTanimiService.UpdateAsync(item.Id, yeniAd);
                 await LoadKalemlerAsync(item.Id);
-                SetCategoryHint($"Kalem guncellendi: {item.Ad} -> {yeniAd}", HintTone.Success);
+                SetCategoryHint(AppLocalization.F("settings.hint.categoryUpdated", item.Ad, yeniAd), HintTone.Success);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Kalem guncellenemedi: " + ex.Message,
-                    "Ayarlar",
+                    AppLocalization.F("settings.error.categoryUpdate", ex.Message),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                SetCategoryHint("Kalem guncellenemedi.", HintTone.Error);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryUpdateFail"), HintTone.Error);
             }
             finally
             {
@@ -188,17 +190,17 @@ namespace CashTracker.App.Forms
             if (_lstKalemler.SelectedItem is not KalemItem item)
             {
                 MessageBox.Show(
-                    "Lutfen silmek icin bir kalem sec.",
-                    "Ayarlar",
+                    AppLocalization.T("settings.error.selectCategoryToDelete"),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
-                SetCategoryHint("Silmek icin listeden bir kalem sec.", HintTone.Warning);
+                SetCategoryHint(AppLocalization.T("settings.hint.selectCategoryToDelete"), HintTone.Warning);
                 return;
             }
 
             var confirm = MessageBox.Show(
-                $"'{item.Ad}' kalemini silmek istiyor musun?",
-                "Kalem Sil",
+                AppLocalization.F("settings.confirm.categoryDeleteBody", item.Ad),
+                AppLocalization.T("settings.confirm.categoryDeleteTitle"),
                 MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question);
 
@@ -209,7 +211,7 @@ namespace CashTracker.App.Forms
             _btnUpdateKalem.Enabled = false;
 
             var approved = await RequireTelegramApprovalAsync(
-                "Kalem silme",
+                AppLocalization.T("settings.approval.categoryDeleteTitle"),
                 await BuildKalemApprovalDetailsAsync(item),
                 SetCategoryHint);
 
@@ -223,16 +225,16 @@ namespace CashTracker.App.Forms
             {
                 await _kalemTanimiService.DeleteAsync(item.Id);
                 await LoadKalemlerAsync();
-                SetCategoryHint($"Kalem silindi: {item.Ad}", HintTone.Success);
+                SetCategoryHint(AppLocalization.F("settings.hint.categoryDeleted", item.Ad), HintTone.Success);
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Kalem silinemedi: " + ex.Message,
-                    "Ayarlar",
+                    AppLocalization.F("settings.error.categoryDelete", ex.Message),
+                    AppLocalization.T("settings.title"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
-                SetCategoryHint("Kalem silinemedi.", HintTone.Error);
+                SetCategoryHint(AppLocalization.T("settings.hint.categoryDeleteFail"), HintTone.Error);
             }
             finally
             {
@@ -245,12 +247,14 @@ namespace CashTracker.App.Forms
         {
             var tip = GetSelectedTip();
             var businessName = await GetActiveBusinessNameAsync();
-            return $"Isletme: {businessName}\nTip: {tip}\nKalem: {item.Ad}";
+            return AppLocalization.F("settings.approval.categoryDetails", businessName, AppLocalization.GetTipDisplay(tip), item.Ad);
         }
 
         private string GetSelectedTip()
         {
-            return _cmbKalemTip.SelectedItem?.ToString() == "Gelir" ? "Gelir" : "Gider";
+            return AppLocalization.NormalizeTip(_cmbKalemTip.SelectedItem?.ToString()) == "Gider"
+                ? "Gider"
+                : "Gelir";
         }
 
         private void SyncSelectedKalemToEditor()

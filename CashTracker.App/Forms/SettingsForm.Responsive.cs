@@ -50,6 +50,7 @@ namespace CashTracker.App.Forms
             _rootLayout.ResumeLayout();
 
             var actionWidth = narrow ? 160 : 176;
+            SetActionRowButtonWidth(_rowLanguage, actionWidth);
             SetActionRowButtonWidth(_rowActiveBusiness, actionWidth);
             SetActionRowButtonWidth(_rowRenameBusiness, actionWidth);
             SetActionRowButtonWidth(_rowNewBusiness, actionWidth);

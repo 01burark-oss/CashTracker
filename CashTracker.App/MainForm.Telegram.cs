@@ -15,7 +15,7 @@ namespace CashTracker.App
         {
             var today = DateTime.Today;
             var summary = await _summaryService.GetSummaryAsync(today, today);
-            await SendSummaryToTelegramAsync("Günlük Özet", today, today, summary, senderButton);
+            await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.dailyTitle"), today, today, summary, senderButton);
         }
 
         private async Task SendLast30SummaryAsync(Button senderButton)
@@ -23,7 +23,7 @@ namespace CashTracker.App
             var to = DateTime.Today;
             var from = to.AddDays(-29);
             var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync("Son 30 Gün Özet", from, to, summary, senderButton);
+            await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.last30Title"), from, to, summary, senderButton);
         }
 
         private async Task SendLast365SummaryAsync(Button senderButton)
@@ -31,7 +31,7 @@ namespace CashTracker.App
             var to = DateTime.Today;
             var from = to.AddDays(-364);
             var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync("Son 365 Gün Özet", from, to, summary, senderButton);
+            await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.last365Title"), from, to, summary, senderButton);
         }
 
         private async Task SendMonthlySummaryAsync(Button senderButton)
@@ -42,7 +42,12 @@ namespace CashTracker.App
             var from = new DateTime(item.Year, item.Month, 1);
             var to = from.AddMonths(1).AddDays(-1);
             var summary = await _summaryService.GetMonthlySummaryAsync(item.Year, item.Month);
-            await SendSummaryToTelegramAsync($"Aylık Özet ({item.Display})", from, to, summary, senderButton);
+            await SendSummaryToTelegramAsync(
+                AppLocalization.F("main.telegram.monthlyTitle", item.Display),
+                from,
+                to,
+                summary,
+                senderButton);
         }
 
         private async Task SendYearlySummaryAsync(Button senderButton)
@@ -53,7 +58,12 @@ namespace CashTracker.App
             var from = new DateTime(item.Year, 1, 1);
             var to = new DateTime(item.Year, 12, 31);
             var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync($"Yıllık Özet ({item.Year})", from, to, summary, senderButton);
+            await SendSummaryToTelegramAsync(
+                AppLocalization.F("main.telegram.yearlyTitle", item.Year),
+                from,
+                to,
+                summary,
+                senderButton);
         }
 
         private async Task SendSummaryToTelegramAsync(
@@ -65,7 +75,7 @@ namespace CashTracker.App
         {
             if (!_telegramSettings.IsEnabled)
             {
-                MessageBox.Show("Telegram ayarları eksik. Sol menüden \"Botu Değiştir\" adımını kullan.");
+                MessageBox.Show(AppLocalization.T("main.telegram.notConfigured"));
                 return;
             }
 
@@ -76,28 +86,32 @@ namespace CashTracker.App
                 var records = await _kasaService.GetAllAsync(from, to);
                 var activeBusiness = await _isletmeService.GetActiveAsync();
                 var businessName = string.IsNullOrWhiteSpace(activeBusiness.Ad)
-                    ? "Bilinmiyor"
+                    ? AppLocalization.T("common.unknown")
                     : activeBusiness.Ad.Trim();
 
                 var sb = new StringBuilder();
                 sb.AppendLine(title);
-                sb.AppendLine($"Aralık: {from:yyyy-MM-dd} - {to:yyyy-MM-dd}");
-                sb.AppendLine($"İşletme: {businessName}");
+                sb.AppendLine(AppLocalization.F("main.telegram.range", from, to));
+                sb.AppendLine(AppLocalization.F("main.telegram.business", businessName));
                 sb.AppendLine("--------------------------------");
-                sb.AppendLine($"Gelir: {summary.IncomeTotal:n2}");
-                sb.AppendLine($"Gider: {summary.ExpenseTotal:n2}");
-                sb.AppendLine($"Net: {summary.Net:n2}");
-                sb.AppendLine($"İşlem: {summary.IncomeCount + summary.ExpenseCount} (Gelir {summary.IncomeCount}, Gider {summary.ExpenseCount})");
+                sb.AppendLine(AppLocalization.F("main.summary.income", summary.IncomeTotal));
+                sb.AppendLine(AppLocalization.F("main.summary.expense", summary.ExpenseTotal));
+                sb.AppendLine(AppLocalization.F("main.summary.net", summary.Net));
+                sb.AppendLine(AppLocalization.F(
+                    "main.telegram.tx",
+                    summary.IncomeCount + summary.ExpenseCount,
+                    summary.IncomeCount,
+                    summary.ExpenseCount));
                 AppendOdemeYontemiBreakdown(sb, records);
                 AppendKalemBreakdown(sb, records, "Gelir");
                 AppendKalemBreakdown(sb, records, "Gider");
 
                 await _backupReport.SendTextAsync(sb.ToString().Trim());
-                MessageBox.Show("Özet Telegram'a gönderildi.");
+                MessageBox.Show(AppLocalization.T("main.telegram.sent"));
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Telegram gönderim hatası: " + ex.Message);
+                MessageBox.Show(AppLocalization.F("main.telegram.sendError", ex.Message));
             }
             finally
             {
@@ -121,15 +135,15 @@ namespace CashTracker.App
                 .ToList();
 
             sb.AppendLine();
-            sb.AppendLine($"{tip} Kalemleri:");
+            sb.AppendLine(AppLocalization.F("main.telegram.categoryHeader", AppLocalization.GetTipDisplay(tip)));
             if (kalemRows.Count == 0)
             {
-                sb.AppendLine("- Kayıt yok.");
+                sb.AppendLine(AppLocalization.T("main.telegram.noRecord"));
                 return;
             }
 
             foreach (var row in kalemRows)
-                sb.AppendLine($"- {row.Kalem}: {row.Toplam:n2} ({row.Count} işlem)");
+                sb.AppendLine(AppLocalization.F("main.telegram.categoryRow", row.Kalem, row.Toplam, row.Count));
         }
 
         private static void AppendOdemeYontemiBreakdown(StringBuilder sb, IReadOnlyCollection<Kasa> records)
@@ -146,12 +160,12 @@ namespace CashTracker.App
                     StringComparer.OrdinalIgnoreCase);
 
             sb.AppendLine();
-            sb.AppendLine("Odeme Yontemleri:");
+            sb.AppendLine(AppLocalization.T("main.telegram.methodsHeader"));
             foreach (var method in new[] { "Nakit", "KrediKarti", "OnlineOdeme", "Havale" })
             {
                 var income = byMethod.TryGetValue(method, out var values) ? values.Income : 0m;
                 var expense = byMethod.TryGetValue(method, out values) ? values.Expense : 0m;
-                sb.AppendLine($"- {GetOdemeYontemiLabel(method)}: Gelir {income:n2} | Gider {expense:n2} | Net {(income - expense):n2}");
+                sb.AppendLine(AppLocalization.F("main.telegram.methodRow", GetOdemeYontemiLabel(method), income, expense, income - expense));
             }
         }
 
@@ -159,10 +173,10 @@ namespace CashTracker.App
         {
             var normalized = (rawTip ?? string.Empty).Trim().ToLowerInvariant();
             if (tip == "Gelir")
-                return normalized is "gelir" or "giris" or "giriş";
+                return normalized is "gelir" or "giris" or "giriş" or "income" or "einnahme";
 
             if (tip == "Gider")
-                return normalized is "gider" or "cikis" or "çıkış";
+                return normalized is "gider" or "cikis" or "çıkış" or "expense" or "ausgabe";
 
             return false;
         }
@@ -175,15 +189,19 @@ namespace CashTracker.App
             if (!string.IsNullOrWhiteSpace(row.GiderTuru))
                 return row.GiderTuru.Trim();
 
-            return IsTip(row.Tip, "Gider") ? "Genel Gider" : "Genel Gelir";
+            return IsTip(row.Tip, "Gider")
+                ? AppLocalization.T("main.telegram.defaultExpenseCategory")
+                : AppLocalization.T("main.telegram.defaultIncomeCategory");
         }
 
         private static string GetOdemeYontemiLabel(string method)
         {
             return method switch
             {
-                "KrediKarti" => "Kredi Karti",
-                "OnlineOdeme" => "Online Odeme",
+                "KrediKarti" => AppLocalization.T("payment.card"),
+                "OnlineOdeme" => AppLocalization.T("payment.online"),
+                "Havale" => AppLocalization.T("payment.transfer"),
+                "Nakit" => AppLocalization.T("payment.cash"),
                 _ => method
             };
         }

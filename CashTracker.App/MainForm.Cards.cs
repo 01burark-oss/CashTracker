@@ -41,7 +41,7 @@ namespace CashTracker.App
 
             var title = new Label
             {
-                Text = "Gun Ozeti",
+                Text = AppLocalization.T("main.daily.cardTitle"),
                 AutoSize = true,
                 Font = BrandTheme.CreateHeadingFont(14f, FontStyle.Bold),
                 ForeColor = BrandTheme.Heading,
@@ -63,13 +63,13 @@ namespace CashTracker.App
             totals.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             layout.Controls.Add(totals, 0, 1);
 
-            totals.Controls.Add(CreateDailyTotalBox("Toplam Gelir", Color.FromArgb(17, 121, 85), out _lblDailyOverviewIncome), 0, 0);
-            totals.Controls.Add(CreateDailyTotalBox("Toplam Gider", Color.FromArgb(173, 59, 56), out _lblDailyOverviewExpense), 1, 0);
-            totals.Controls.Add(CreateDailyTotalBox("Net Kar", Color.FromArgb(31, 59, 93), out _lblDailyOverviewNet), 2, 0);
+            totals.Controls.Add(CreateDailyTotalBox(AppLocalization.T("main.daily.totalIncome"), Color.FromArgb(17, 121, 85), out _lblDailyOverviewIncome), 0, 0);
+            totals.Controls.Add(CreateDailyTotalBox(AppLocalization.T("main.daily.totalExpense"), Color.FromArgb(173, 59, 56), out _lblDailyOverviewExpense), 1, 0);
+            totals.Controls.Add(CreateDailyTotalBox(AppLocalization.T("main.daily.net"), Color.FromArgb(31, 59, 93), out _lblDailyOverviewNet), 2, 0);
 
             var subtitle = new Label
             {
-                Text = "Odeme Yontemine Gore Dagilim",
+                Text = AppLocalization.T("main.daily.subtitle"),
                 AutoSize = true,
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
                 ForeColor = BrandTheme.MutedText,
@@ -111,7 +111,7 @@ namespace CashTracker.App
 
             valueLabel = new Label
             {
-                Text = "0.00",
+                Text = FormatAmount(0m),
                 AutoSize = true,
                 Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
                 ForeColor = accent,
@@ -144,14 +144,14 @@ namespace CashTracker.App
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             table.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            AddMethodHeader(table, "Yontem", 0);
-            AddMethodHeader(table, "Gelir", 1);
-            AddMethodHeader(table, "Gider", 2);
+            AddMethodHeader(table, AppLocalization.T("common.method"), 0);
+            AddMethodHeader(table, AppLocalization.T("tip.income"), 1);
+            AddMethodHeader(table, AppLocalization.T("tip.expense"), 2);
 
-            AddMethodRow(table, 1, "Nakit", out _lblDailyNakitIncome, out _lblDailyNakitExpense);
-            AddMethodRow(table, 2, "Kredi Karti", out _lblDailyKrediKartiIncome, out _lblDailyKrediKartiExpense);
-            AddMethodRow(table, 3, "Online Odeme", out _lblDailyOnlineOdemeIncome, out _lblDailyOnlineOdemeExpense);
-            AddMethodRow(table, 4, "Havale", out _lblDailyHavaleIncome, out _lblDailyHavaleExpense);
+            AddMethodRow(table, 1, AppLocalization.T("payment.cash"), out _lblDailyNakitIncome, out _lblDailyNakitExpense);
+            AddMethodRow(table, 2, AppLocalization.T("payment.card"), out _lblDailyKrediKartiIncome, out _lblDailyKrediKartiExpense);
+            AddMethodRow(table, 3, AppLocalization.T("payment.online"), out _lblDailyOnlineOdemeIncome, out _lblDailyOnlineOdemeExpense);
+            AddMethodRow(table, 4, AppLocalization.T("payment.transfer"), out _lblDailyHavaleIncome, out _lblDailyHavaleExpense);
 
             table.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, table.ClientRectangle, Color.FromArgb(214, 223, 235), ButtonBorderStyle.Solid);
             return table;
@@ -193,7 +193,7 @@ namespace CashTracker.App
 
             income = new Label
             {
-                Text = "0.00",
+                Text = FormatAmount(0m),
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
@@ -205,7 +205,7 @@ namespace CashTracker.App
 
             expense = new Label
             {
-                Text = "0.00",
+                Text = FormatAmount(0m),
                 AutoSize = false,
                 Dock = DockStyle.Fill,
                 Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
@@ -218,9 +218,9 @@ namespace CashTracker.App
 
         private void ApplyDailyOverview(PeriodSummary summary, IReadOnlyCollection<Kasa> records)
         {
-            _lblDailyOverviewIncome.Text = $"{summary.IncomeTotal:n2}";
-            _lblDailyOverviewExpense.Text = $"{summary.ExpenseTotal:n2}";
-            _lblDailyOverviewNet.Text = $"{summary.Net:n2}";
+            _lblDailyOverviewIncome.Text = FormatAmount(summary.IncomeTotal);
+            _lblDailyOverviewExpense.Text = FormatAmount(summary.ExpenseTotal);
+            _lblDailyOverviewNet.Text = FormatAmount(summary.Net);
             _lblDailyOverviewNet.ForeColor = summary.Net >= 0
                 ? Color.FromArgb(31, 59, 93)
                 : Color.FromArgb(173, 59, 56);
@@ -248,13 +248,13 @@ namespace CashTracker.App
         {
             if (!byMethod.TryGetValue(method, out var values))
             {
-                income.Text = "0.00";
-                expense.Text = "0.00";
+                income.Text = FormatAmount(0m);
+                expense.Text = FormatAmount(0m);
                 return;
             }
 
-            income.Text = $"{values.Income:n2}";
-            expense.Text = $"{values.Expense:n2}";
+            income.Text = FormatAmount(values.Income);
+            expense.Text = FormatAmount(values.Expense);
         }
 
         private static SummaryCard CreateSummaryCard(string title, Color backColor, Color accent, string buttonText, Color borderColor)
@@ -367,21 +367,23 @@ namespace CashTracker.App
 
         private static void ApplySummary(SummaryCard card, PeriodSummary s)
         {
-            card.Income.Text = $"Gelir: {s.IncomeTotal:n2}";
-            card.Expense.Text = $"Gider: {s.ExpenseTotal:n2}";
-            card.Net.Text = $"Net: {s.Net:n2}";
+            card.Income.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
+            card.Expense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
+            card.Net.Text = AppLocalization.F("main.summary.net", s.Net);
         }
 
         private static bool IsIncomeTip(string? tip)
         {
             var normalized = NormalizeAscii(tip);
-            return normalized is "gelir" or "giris" or "income";
+            return normalized is "gelir" or "giris" or "income" or "einnahme";
         }
+
+        private static string FormatAmount(decimal value) => value.ToString("n2", AppLocalization.CurrentCulture);
 
         private static bool IsExpenseTip(string? tip)
         {
             var normalized = NormalizeAscii(tip);
-            return normalized is "gider" or "cikis" or "expense";
+            return normalized is "gider" or "cikis" or "expense" or "ausgabe";
         }
 
         private static string NormalizeOdemeYontemi(string? value)

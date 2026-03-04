@@ -96,11 +96,12 @@ namespace CashTracker.App
             _runtimeOptions = runtimeOptions;
             _updateService = updateService;
 
-            Text = "CashTracker Gösterge Paneli";
+            Text = AppLocalization.T("main.title");
             Width = 1320;
             Height = 900;
             MinimumSize = new Size(1320, 820);
             StartPosition = FormStartPosition.CenterScreen;
+            WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
             if (AppIconProvider.Current is Icon appIcon)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 using System.Windows.Forms;
 using CashTracker.App.Forms;
@@ -29,6 +30,10 @@ static class Program
 
         Directory.CreateDirectory(appData);
         var dbPath = Path.Combine(appData, "cashtracker.db");
+        var appState = AppStateStore.Load(appData);
+        AppLocalization.SetLanguage(appState.LanguageCode);
+        CultureInfo.DefaultThreadCurrentCulture = AppLocalization.CurrentCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = AppLocalization.CurrentCulture;
 
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)

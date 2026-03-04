@@ -18,22 +18,22 @@ namespace CashTracker.App.Forms
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             right.Controls.Add(layout);
 
-            var header = CreateSectionHeader("Islem Formu", "Kayit duzenleme ve islem komutlari");
+            var header = CreateSectionHeader(AppLocalization.T("kasa.form.title"), AppLocalization.T("kasa.form.subtitle"));
             header.Margin = new Padding(0, 0, 0, 8);
             layout.Controls.Add(header, 0, 0);
 
             var form = CreateEditorForm();
             layout.Controls.Add(form, 0, 1);
 
-            AddRow(form, "Tarih", out _dtTarih);
+            AddRow(form, AppLocalization.T("common.date"), out _dtTarih);
             _dtTarih.Enabled = true;
 
             AddTypeRow(form);
             AddAmountRow(form);
             AddPaymentMethodRow(form);
-            AddRow(form, "Kalem", out _cmbKalem);
+            AddRow(form, AppLocalization.T("common.category"), out _cmbKalem);
             AddKalemEmptyActionRow(form);
-            AddRow(form, "A\u00E7\u0131klama", out _txtAciklama);
+            AddRow(form, AppLocalization.T("common.description"), out _txtAciklama);
 
             _btnKalemSettings.Click += async (_, __) => await OpenSettingsForKalemManagementAsync();
 

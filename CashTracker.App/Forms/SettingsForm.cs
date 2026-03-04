@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using CashTracker.App;
 using CashTracker.App.UI;
 using CashTracker.Core.Services;
 
@@ -10,6 +11,7 @@ namespace CashTracker.App.Forms
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ITelegramApprovalService _telegramApprovalService;
+        private readonly AppRuntimeOptions _runtimeOptions;
 
         private TableLayoutPanel _rootLayout = null!;
         private Panel _businessPanel = null!;
@@ -17,15 +19,18 @@ namespace CashTracker.App.Forms
         private TableLayoutPanel _businessSectionLayout = null!;
         private TableLayoutPanel _categorySectionLayout = null!;
         private TableLayoutPanel _rowActiveBusiness = null!;
+        private TableLayoutPanel _rowLanguage = null!;
         private TableLayoutPanel _rowRenameBusiness = null!;
         private TableLayoutPanel _rowNewBusiness = null!;
         private TableLayoutPanel _rowEditKalem = null!;
         private TableLayoutPanel _rowAddKalem = null!;
 
         private ComboBox _cmbBusinesses = null!;
+        private ComboBox _cmbLanguage = null!;
         private TextBox _txtRenameBusiness = null!;
         private TextBox _txtNewBusiness = null!;
         private Button _btnSetActiveBusiness = null!;
+        private Button _btnApplyLanguage = null!;
         private Button _btnRenameBusiness = null!;
         private Button _btnAddBusiness = null!;
         private Button _btnDeleteBusiness = null!;
@@ -48,7 +53,7 @@ namespace CashTracker.App.Forms
             public int Id { get; init; }
             public string Ad { get; init; } = string.Empty;
             public bool IsAktif { get; init; }
-            public string Display => IsAktif ? $"{Ad} (Aktif)" : Ad;
+            public string Display => IsAktif ? $"{Ad} ({AppLocalization.T("settings.status.active")})" : Ad;
         }
 
         private sealed class KalemItem
@@ -60,17 +65,20 @@ namespace CashTracker.App.Forms
         public SettingsForm(
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
-            ITelegramApprovalService telegramApprovalService)
+            ITelegramApprovalService telegramApprovalService,
+            AppRuntimeOptions runtimeOptions)
         {
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
             _telegramApprovalService = telegramApprovalService;
+            _runtimeOptions = runtimeOptions;
 
-            Text = "Ayarlar";
+            Text = AppLocalization.T("settings.title");
             Width = 1120;
             Height = 740;
             MinimumSize = new Size(1020, 700);
             StartPosition = FormStartPosition.CenterParent;
+            WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
             if (AppIconProvider.Current is Icon appIcon)

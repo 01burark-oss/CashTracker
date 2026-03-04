@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CashTracker.App;
 using CashTracker.App.Controls;
 using CashTracker.App.UI;
 using CashTracker.Infrastructure.Services;
@@ -45,7 +46,7 @@ namespace CashTracker.App.Forms
             var navy = BrandTheme.Navy;
             var teal = BrandTheme.Teal;
 
-            Text = "CashTracker • İlk Kurulum";
+            Text = T("initial.title");
             Width = 980;
             Height = 640;
             MinimumSize = new Size(1120, 680);
@@ -136,7 +137,7 @@ namespace CashTracker.App.Forms
 
             var brandSubtitle = new Label
             {
-                Text = "Güvenli başlangıç ayarları",
+                Text = T("initial.brand.subtitle"),
                 AutoSize = false,
                 AutoEllipsis = false,
                 Dock = DockStyle.Top,
@@ -172,7 +173,7 @@ namespace CashTracker.App.Forms
 
             var stepTitle = new Label
             {
-                Text = "Kurulum Adımları",
+                Text = T("initial.steps.title"),
                 AutoSize = false,
                 AutoEllipsis = false,
                 Height = 22,
@@ -184,14 +185,14 @@ namespace CashTracker.App.Forms
             stepsPanel.Controls.Add(stepTitle, 0, 0);
 
             const int stepWrapWidth = 360;
-            _lblStep1 = CreateGuideStepLabel("1) Telegramda BotFather kullanicisina git (mavi tikli).", stepWrapWidth);
-            _lblStep2 = CreateGuideStepLabel("2) /newbot komutunu gir ve yeni botu olustur.", stepWrapWidth);
-            _lblStep3 = CreateGuideStepLabel("3) Botuna isim ver ve kullanici adi belirle.", stepWrapWidth);
-            _lblStep4 = CreateGuideStepLabel("4) Verilen tokeni bu ekrandaki Bot Token alanina gir.", stepWrapWidth);
-            _lblStep5 = CreateGuideStepLabel("5) Telegramda bota /start yaz.", stepWrapWidth);
-            _lblStep6 = CreateGuideStepLabel("6) Buradan User ID al butonuyla Chat ID bilgisini cek.", stepWrapWidth);
-            _lblStep7 = CreateGuideStepLabel("7) Baglantiyi Test Et butonuna bas.", stepWrapWidth);
-            _lblStep8 = CreateGuideStepLabel("8) Kurulumu Tamamla butonuna bas.", stepWrapWidth);
+            _lblStep1 = CreateGuideStepLabel(T("initial.steps.1"), stepWrapWidth);
+            _lblStep2 = CreateGuideStepLabel(T("initial.steps.2"), stepWrapWidth);
+            _lblStep3 = CreateGuideStepLabel(T("initial.steps.3"), stepWrapWidth);
+            _lblStep4 = CreateGuideStepLabel(T("initial.steps.4"), stepWrapWidth);
+            _lblStep5 = CreateGuideStepLabel(T("initial.steps.5"), stepWrapWidth);
+            _lblStep6 = CreateGuideStepLabel(T("initial.steps.6"), stepWrapWidth);
+            _lblStep7 = CreateGuideStepLabel(T("initial.steps.7"), stepWrapWidth);
+            _lblStep8 = CreateGuideStepLabel(T("initial.steps.8"), stepWrapWidth);
             _lblStepHint = new Label
             {
                 AutoSize = true,
@@ -217,7 +218,7 @@ namespace CashTracker.App.Forms
             {
                 var sideBack = new Button
                 {
-                    Text = "Geri Dön",
+                    Text = T("initial.button.back"),
                     Width = 132,
                     Height = 36,
                     BackColor = Color.FromArgb(31, 57, 90),
@@ -283,7 +284,7 @@ namespace CashTracker.App.Forms
 
             var cardTitle = new Label
             {
-                Text = "Telegram Bağlantı Bilgileri",
+                Text = T("initial.card.title"),
                 AutoSize = true,
                 Font = BrandTheme.CreateHeadingFont(14f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(22, 35, 53),
@@ -293,7 +294,7 @@ namespace CashTracker.App.Forms
 
             var cardMeta = new Label
             {
-                Text = "Canlı doğrulama yapılır, ardından test mesajı gönderilir.",
+                Text = T("initial.card.meta"),
                 AutoSize = true,
                 Font = BrandTheme.CreateFont(9.5f, FontStyle.Regular),
                 ForeColor = Color.FromArgb(99, 113, 132),
@@ -317,7 +318,7 @@ namespace CashTracker.App.Forms
 
             var lblToken = new Label
             {
-                Text = "Bot Token",
+                Text = T("initial.label.botToken"),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(36, 51, 74),
                 Font = BrandTheme.CreateHeadingFont(10f, FontStyle.Bold),
@@ -346,7 +347,7 @@ namespace CashTracker.App.Forms
 
             var lblUser = new Label
             {
-                Text = "Telegram User ID (Chat ID)",
+                Text = T("initial.label.userId"),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(36, 51, 74),
                 Font = BrandTheme.CreateHeadingFont(10f, FontStyle.Bold),
@@ -375,7 +376,7 @@ namespace CashTracker.App.Forms
 
             _btnFetchChatId = new Button
             {
-                Text = "Chat ID'yi Otomatik Al",
+                Text = T("initial.button.fetchChatId"),
                 Width = 220,
                 Height = 36,
                 BackColor = navy,
@@ -390,7 +391,7 @@ namespace CashTracker.App.Forms
 
             var btnOpenBotFather = new Button
             {
-                Text = "BotFather'a Git",
+                Text = T("initial.button.openBotFather"),
                 Width = 150,
                 Height = 36,
                 BackColor = Color.FromArgb(31, 57, 90),
@@ -409,8 +410,8 @@ namespace CashTracker.App.Forms
                 catch (Exception ex)
                 {
                     MessageBox.Show(
-                        "BotFather bağlantısı açılamadı: " + ex.Message,
-                        "Bağlantı Hatası",
+                        F("initial.error.botFatherOpenBody", ex.Message),
+                        T("initial.error.botFatherOpenTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                 }
@@ -434,7 +435,7 @@ namespace CashTracker.App.Forms
                 AutoEllipsis = false,
                 MaximumSize = new Size(620, 0),
                 Dock = DockStyle.Top,
-                Text = "Not: Bota /start yazin ve sonra Chat ID'yi Otomatik Al butonunu kullanin.",
+                Text = T("initial.hint.fetchChatId"),
                 ForeColor = Color.FromArgb(113, 122, 138),
                 Font = BrandTheme.CreateFont(9.2f, FontStyle.Regular),
                 Margin = new Padding(0, 2, 0, 8)
@@ -450,7 +451,7 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateHeadingFont(9.6f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(94, 106, 122),
                 Margin = new Padding(0, 0, 0, 10),
-                Text = "Bağlantı testi bekleniyor."
+                Text = T("initial.status.connectionWait")
             };
             cardLayout.Controls.Add(_lblConnectionStatus, 0, 4);
 
@@ -467,7 +468,7 @@ namespace CashTracker.App.Forms
 
             _btnSave = new Button
             {
-                Text = "Kurulumu Tamamla",
+                Text = T("initial.button.finish"),
                 Width = 188,
                 Height = 36,
                 BackColor = navy,
@@ -482,7 +483,7 @@ namespace CashTracker.App.Forms
 
             _btnTestConnection = new Button
             {
-                Text = "Bağlantıyı Test Et",
+                Text = T("initial.button.testConnection"),
                 Width = 170,
                 Height = 36,
                 BackColor = navy,
@@ -497,7 +498,7 @@ namespace CashTracker.App.Forms
 
             var btnCancel = new Button
             {
-                Text = isReconfigureMode ? "Geri Dön" : "Çıkış",
+                Text = isReconfigureMode ? T("initial.button.back") : T("initial.button.exit"),
                 Width = 96,
                 Height = 36,
                 BackColor = navy,
@@ -532,7 +533,7 @@ namespace CashTracker.App.Forms
             _isTesting = true;
             RefreshValidationState();
             SetConnectionStatus(
-                "Test mesajı gönderiliyor, lütfen bekleyin.",
+                T("initial.status.testing"),
                 Color.FromArgb(31, 72, 117));
 
             try
@@ -543,18 +544,18 @@ namespace CashTracker.App.Forms
                 };
                 var telegram = new TelegramBotService(httpClient, token);
                 var stamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                await telegram.SendTextAsync(userId, $"CashTracker kurulum testi ({stamp})");
+                await telegram.SendTextAsync(userId, F("initial.telegram.testMessage", stamp));
 
                 _connectionVerified = true;
                 _verifiedBotToken = token;
                 _verifiedUserId = userId;
 
                 SetConnectionStatus(
-                    "Ba\u011Flant\u0131 do\u011Fruland\u0131. Test mesaj\u0131 g\u00F6nderildi.",
+                    T("initial.status.verified"),
                     Color.FromArgb(22, 122, 87));
                 MessageBox.Show(
-                    "Test mesaj\u0131 ba\u015Far\u0131yla g\u00F6nderildi. Kurulumu tamamlayabilirsiniz.",
-                    "Ba\u015Far\u0131l\u0131",
+                    T("initial.message.testSuccessBody"),
+                    T("initial.message.successTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
@@ -565,11 +566,11 @@ namespace CashTracker.App.Forms
                 _verifiedUserId = string.Empty;
 
                 SetConnectionStatus(
-                    "Ba\u011Flant\u0131 do\u011Frulanamad\u0131. Bilgileri kontrol edip tekrar deneyin.",
+                    T("initial.status.verifyFailed"),
                     Color.FromArgb(166, 57, 54));
                 MessageBox.Show(
-                    "Telegram test hatas\u0131: " + ex.Message,
-                    "Ba\u011Flant\u0131 Hatas\u0131",
+                    F("initial.error.connectionBody", ex.Message),
+                    T("initial.error.connectionTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -584,7 +585,7 @@ namespace CashTracker.App.Forms
         {
             if (!TryValidateBotToken(BotToken, out var tokenMessage))
             {
-                MessageBox.Show(tokenMessage, "Bot Token Hatas\u0131", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show(tokenMessage, T("initial.error.botTokenTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 _txtBotToken.Focus();
                 return;
             }
@@ -592,7 +593,7 @@ namespace CashTracker.App.Forms
             _isTesting = true;
             RefreshValidationState();
             SetConnectionStatus(
-                "Chat ID için son bot mesajları okunuyor, lütfen bekleyin.",
+                T("initial.status.fetchingChatId"),
                 Color.FromArgb(31, 72, 117));
 
             try
@@ -607,11 +608,11 @@ namespace CashTracker.App.Forms
                 if (updates.Count == 0)
                 {
                     SetConnectionStatus(
-                        "Mesaj bulunamad\u0131. Bota /start yaz\u0131p tekrar deneyin.",
+                        T("initial.status.noMessage"),
                         Color.FromArgb(176, 118, 30));
                     MessageBox.Show(
-                        "Hi\u00E7 mesaj bulunamad\u0131.\n\nAd\u0131m:\n1) Telegram'da botunuza /start yaz\u0131n.\n2) Sonra bu butona tekrar bas\u0131n.",
-                        "Chat ID Bulunamad\u0131",
+                        T("initial.message.noMessageBody"),
+                        T("initial.message.chatIdNotFoundTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Information);
                     return;
@@ -640,22 +641,22 @@ namespace CashTracker.App.Forms
                         _txtUserId.SelectionLength = 0;
 
                         SetConnectionStatus(
-                            $"Birden fazla sohbet i\u00E7inden /start mesaj\u0131na g\u00F6re Chat ID se\u00E7ildi: {selectedChatId}",
+                            F("initial.status.chatIdSelectedFromStart", selectedChatId),
                             Color.FromArgb(176, 118, 30));
                         MessageBox.Show(
-                            $"Birden fazla sohbet bulundu ({distinctChatIds.Length}).\n/start mesaj\u0131na g\u00F6re se\u00E7ilen Chat ID: {selectedChatId}",
-                            "Chat ID Se\u00E7ildi",
+                            F("initial.message.chatIdSelectedFromStartBody", distinctChatIds.Length, selectedChatId),
+                            T("initial.message.chatIdSelectedTitle"),
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);
                         return;
                     }
 
                     SetConnectionStatus(
-                        "Birden fazla sohbet bulundu. Yanl\u0131\u015F atamay\u0131 \u00F6nlemek i\u00E7in Chat ID otomatik se\u00E7ilmedi.",
+                        T("initial.status.chatIdAmbiguous"),
                         Color.FromArgb(166, 57, 54));
                     MessageBox.Show(
-                        $"Birden fazla sohbet bulundu ({distinctChatIds.Length}).\n\nL\u00FCtfen botunuza sadece kendi hesab\u0131n\u0131zdan /start g\u00F6nderip tekrar deneyin veya Chat ID alan\u0131na de\u011Feri manuel girin.",
-                        "Chat ID Belirsiz",
+                        F("initial.message.chatIdAmbiguousBody", distinctChatIds.Length),
+                        T("initial.message.chatIdAmbiguousTitle"),
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
                     return;
@@ -667,17 +668,17 @@ namespace CashTracker.App.Forms
                 _txtUserId.SelectionLength = 0;
 
                 SetConnectionStatus(
-                    $"Chat ID otomatik al\u0131nd\u0131: {singleChatId}",
+                    F("initial.status.chatIdAuto", singleChatId),
                     Color.FromArgb(22, 122, 87));
             }
             catch (Exception ex)
             {
                 SetConnectionStatus(
-                    "Chat ID al\u0131namad\u0131. Token veya a\u011F ba\u011Flant\u0131s\u0131n\u0131 kontrol edin.",
+                    T("initial.status.chatIdFetchFailed"),
                     Color.FromArgb(166, 57, 54));
                 MessageBox.Show(
-                    "Chat ID alma hatas\u0131: " + ex.Message,
-                    "Telegram Hatas\u0131",
+                    F("initial.error.chatIdFetchBody", ex.Message),
+                    T("initial.error.telegramTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
             }
@@ -696,8 +697,8 @@ namespace CashTracker.App.Forms
             if (!IsCurrentInputVerified())
             {
                 MessageBox.Show(
-                    "\u00D6nce \"Ba\u011Flant\u0131y\u0131 Test Et\" ad\u0131m\u0131n\u0131 tamamlay\u0131n.",
-                    "Test Gerekli",
+                    T("initial.error.testRequiredBody"),
+                    T("initial.error.testRequiredTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
                 return;
@@ -713,7 +714,7 @@ namespace CashTracker.App.Forms
             {
                 if (showMessage)
                 {
-                    MessageBox.Show(tokenMessage, "Eksik Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(tokenMessage, T("initial.error.missingInfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     _txtBotToken.Focus();
                 }
 
@@ -724,7 +725,7 @@ namespace CashTracker.App.Forms
             {
                 if (showMessage)
                 {
-                    MessageBox.Show(userMessage, "Ge\u00E7ersiz Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(userMessage, T("initial.error.invalidInfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     _txtUserId.Focus();
                 }
 
@@ -751,13 +752,13 @@ namespace CashTracker.App.Forms
                 if (tokenValid && userValid)
                 {
                     SetConnectionStatus(
-                        "Ba\u011Flant\u0131 testi bekleniyor.",
+                        T("initial.status.connectionWait"),
                         Color.FromArgb(176, 118, 30));
                 }
                 else
                 {
                     SetConnectionStatus(
-                        "Ba\u011Flant\u0131 testi i\u00E7in alanlar\u0131 d\u00FCzeltin.",
+                        T("initial.status.fixFields"),
                         Color.FromArgb(94, 106, 122));
                 }
             }
@@ -780,7 +781,7 @@ namespace CashTracker.App.Forms
             var token = value?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(token))
             {
-                message = "Bot token zorunludur.";
+                message = T("initial.validation.botTokenRequired");
                 return false;
             }
 
@@ -790,11 +791,11 @@ namespace CashTracker.App.Forms
                 parts[1].Length < 10 ||
                 !long.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
             {
-                message = "Biçim geçersiz. Örnek: 123456789:ABCDEF123456";
+                message = T("initial.validation.botTokenFormat");
                 return false;
             }
 
-            message = "Bot token bi\u00E7imi uygun.";
+            message = T("initial.validation.botTokenValid");
             return true;
         }
 
@@ -804,11 +805,11 @@ namespace CashTracker.App.Forms
             if (!long.TryParse(userId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ||
                 parsed == 0)
             {
-                message = "User ID say\u0131sal olmal\u0131d\u0131r.";
+                message = T("initial.validation.userIdNumeric");
                 return false;
             }
 
-            message = "User ID ge\u00E7erli g\u00F6r\u00FCn\u00FCyor.";
+            message = T("initial.validation.userIdValid");
             return true;
         }
 
@@ -819,6 +820,10 @@ namespace CashTracker.App.Forms
                 ? Color.FromArgb(23, 122, 88)
                 : Color.FromArgb(166, 57, 54);
         }
+
+        private static string T(string key) => AppLocalization.T(key);
+
+        private static string F(string key, params object[] args) => AppLocalization.F(key, args);
 
         private static Label CreateGuideStepLabel(string text, int maxWidth)
         {
@@ -857,10 +862,10 @@ namespace CashTracker.App.Forms
 
             _lblStepHint.Text = activeStep switch
             {
-                1 => "Siradaki islem: BotFather adimlarini tamamlayip tokeni girin.",
-                5 => "Siradaki islem: Bota /start yazip User ID bilgisini alin.",
-                7 => "Siradaki islem: Baglantiyi Test Et butonuna basin.",
-                _ => "Siradaki islem: Kurulumu Tamamla butonuna basin."
+                1 => T("initial.stepHint.token"),
+                5 => T("initial.stepHint.user"),
+                7 => T("initial.stepHint.test"),
+                _ => T("initial.stepHint.finish")
             };
         }
 

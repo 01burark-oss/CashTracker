@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using CashTracker.App;
 using CashTracker.App.UI;
 using CashTracker.Core.Services;
 
@@ -11,11 +12,12 @@ namespace CashTracker.App.Forms
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ITelegramApprovalService _telegramApprovalService;
+        private readonly AppRuntimeOptions _runtimeOptions;
 
         private DataGridView _grid = null!;
         private ComboBox _cmbTip = null!;
         private DateTimePicker _dtTarih = null!;
-        private NumericUpDown _numTutar = null!;
+        private TextBox _txtTutar = null!;
         private ComboBox _cmbKalem = null!;
         private Button _btnOdemeNakit = null!;
         private Button _btnOdemeKrediKarti = null!;
@@ -41,18 +43,21 @@ namespace CashTracker.App.Forms
             IKasaService kasaService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
-            ITelegramApprovalService telegramApprovalService)
+            ITelegramApprovalService telegramApprovalService,
+            AppRuntimeOptions runtimeOptions)
         {
             _kasaService = kasaService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
             _telegramApprovalService = telegramApprovalService;
+            _runtimeOptions = runtimeOptions;
 
-            Text = "Gelir / Gider";
+            Text = AppLocalization.T("kasa.title");
             Width = 1080;
             Height = 700;
             MinimumSize = new Size(1120, 700);
             StartPosition = FormStartPosition.CenterParent;
+            WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
             if (AppIconProvider.Current is Icon appIcon)

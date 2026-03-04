@@ -19,7 +19,7 @@ namespace CashTracker.App.Forms
             layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             left.Controls.Add(layout);
 
-            var header = CreateSectionHeader("Kayıtlar", "Tum hareketler ve detay listesi");
+            var header = CreateSectionHeader(AppLocalization.T("kasa.records.title"), AppLocalization.T("kasa.records.subtitle"));
             header.Margin = new Padding(0, 0, 0, 10);
             layout.Controls.Add(header, 0, 0);
 
@@ -68,12 +68,12 @@ namespace CashTracker.App.Forms
                 BackColor = Color.FromArgb(250, 251, 253)
             };
 
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tarih", HeaderText = "Tarih", FillWeight = 16, MinimumWidth = 120 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tip", HeaderText = "Tip", FillWeight = 9, MinimumWidth = 70 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OdemeYontemi", HeaderText = "Yontem", FillWeight = 14, MinimumWidth = 100 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tutar", HeaderText = "Tutar", FillWeight = 14, MinimumWidth = 90 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Kalem", HeaderText = "Kalem", FillWeight = 18, MinimumWidth = 110 });
-            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Aciklama", HeaderText = "Açıklama", FillWeight = 29, MinimumWidth = 140 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tarih", HeaderText = AppLocalization.T("common.date"), FillWeight = 16, MinimumWidth = 120 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tip", HeaderText = AppLocalization.T("common.type"), FillWeight = 9, MinimumWidth = 70 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "OdemeYontemi", HeaderText = AppLocalization.T("common.method"), FillWeight = 14, MinimumWidth = 100 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Tutar", HeaderText = AppLocalization.T("common.amount"), FillWeight = 14, MinimumWidth = 90 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Kalem", HeaderText = AppLocalization.T("common.category"), FillWeight = 18, MinimumWidth = 110 });
+            grid.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Aciklama", HeaderText = AppLocalization.T("common.description"), FillWeight = 29, MinimumWidth = 140 });
             grid.Columns[0].DefaultCellStyle = new DataGridViewCellStyle { Format = "dd.MM.yyyy HH:mm" };
             grid.Columns[3].DefaultCellStyle = new DataGridViewCellStyle
             {
@@ -92,6 +92,13 @@ namespace CashTracker.App.Forms
             if (e.ColumnIndex == 2)
             {
                 e.Value = MapOdemeYontemiLabel(e.Value?.ToString());
+                e.FormattingApplied = true;
+                return;
+            }
+
+            if (e.ColumnIndex == 1)
+            {
+                e.Value = AppLocalization.GetTipDisplay(MapTip(e.Value?.ToString()));
                 e.FormattingApplied = true;
                 return;
             }

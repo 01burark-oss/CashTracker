@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using CashTracker.Core.Entities;
 using CashTracker.Core.Services;
@@ -12,6 +14,7 @@ namespace CashTracker.Infrastructure.Services
     {
         private const string PinKey = "AppPin";
         private const string DefaultPin = "0000";
+        private const string EncryptedPrefix = "enc:";
 
         private readonly IDbContextFactory<CashTrackerDbContext> _dbFactory;
 
@@ -28,10 +31,11 @@ namespace CashTracker.Infrastructure.Services
 
             if (row == null)
             {
+                var storedDefaultPin = ProtectPin(DefaultPin);
                 db.AppSettings.Add(new AppSetting
                 {
                     Key = PinKey,
-                    Value = DefaultPin,
+                    Value = storedDefaultPin,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 });
@@ -39,15 +43,27 @@ namespace CashTracker.Infrastructure.Services
                 return DefaultPin;
             }
 
-            if (!IsValidPin(row.Value))
+            if (TryReadStoredPin(row.Value, out var resolvedPin) && IsValidPin(resolvedPin))
             {
-                row.Value = DefaultPin;
-                row.UpdatedAt = DateTime.Now;
-                await db.SaveChangesAsync();
-                return DefaultPin;
+                if (!IsEncrypted(row.Value))
+                {
+                    row.Value = ProtectPin(resolvedPin);
+                    row.UpdatedAt = DateTime.Now;
+                    await db.SaveChangesAsync();
+                }
+
+                return resolvedPin;
             }
 
-            return row.Value;
+            var fallback = ProtectPin(DefaultPin);
+            if (!string.Equals(row.Value, fallback, StringComparison.Ordinal))
+            {
+                row.Value = fallback;
+                row.UpdatedAt = DateTime.Now;
+                await db.SaveChangesAsync();
+            }
+
+            return DefaultPin;
         }
 
         public async Task SetPinAsync(string pin)
@@ -63,18 +79,74 @@ namespace CashTracker.Infrastructure.Services
                 db.AppSettings.Add(new AppSetting
                 {
                     Key = PinKey,
-                    Value = normalizedPin,
+                    Value = ProtectPin(normalizedPin),
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 });
             }
             else
             {
-                row.Value = normalizedPin;
+                row.Value = ProtectPin(normalizedPin);
                 row.UpdatedAt = DateTime.Now;
             }
 
             await db.SaveChangesAsync();
+        }
+
+        private static bool IsEncrypted(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   value.StartsWith(EncryptedPrefix, StringComparison.Ordinal);
+        }
+
+        private static bool TryReadStoredPin(string? storedValue, out string pin)
+        {
+            pin = string.Empty;
+            var raw = (storedValue ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(raw))
+                return false;
+
+            if (!IsEncrypted(raw))
+            {
+                pin = raw;
+                return true;
+            }
+
+            try
+            {
+                if (!OperatingSystem.IsWindows())
+                    return false;
+
+                var payload = raw[EncryptedPrefix.Length..];
+                var cipher = Convert.FromBase64String(payload);
+                var clear = ProtectedData.Unprotect(cipher, null, DataProtectionScope.CurrentUser);
+                pin = Encoding.UTF8.GetString(clear).Trim();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string ProtectPin(string pin)
+        {
+            if (string.IsNullOrWhiteSpace(pin))
+                return string.Empty;
+
+            try
+            {
+                if (!OperatingSystem.IsWindows())
+                    return pin.Trim();
+
+                var clearBytes = Encoding.UTF8.GetBytes(pin.Trim());
+                var cipherBytes = ProtectedData.Protect(clearBytes, null, DataProtectionScope.CurrentUser);
+                return EncryptedPrefix + Convert.ToBase64String(cipherBytes);
+            }
+            catch
+            {
+                return pin.Trim();
+            }
         }
 
         private static string NormalizePin(string? value)
