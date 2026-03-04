@@ -6,7 +6,10 @@ namespace CashTracker.App.Services
 {
     internal static class DesktopExeReplaceService
     {
-        public static bool TryScheduleReplace(string sourcePath, string? targetFileName = null)
+        public static bool TryScheduleReplace(
+            string sourcePath,
+            string? targetFileName = null,
+            int waitForProcessId = 0)
         {
             if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
                 return false;
@@ -28,10 +31,15 @@ namespace CashTracker.App.Services
 
             var escapedSrc = sourcePath.Replace("'", "''");
             var escapedDst = destPath.Replace("'", "''");
+            var pid = waitForProcessId > 0 ? waitForProcessId : 0;
 
             var script =
                 $"$src='{escapedSrc}'; " +
                 $"$dst='{escapedDst}'; " +
+                $"$pidToWait={pid}; " +
+                "if($pidToWait -gt 0){ " +
+                "try{ Wait-Process -Id $pidToWait -Timeout 300 -ErrorAction Stop } " +
+                "catch{ } } " +
                 "for($i=0;$i -lt 180;$i++){ " +
                 "try{ Copy-Item -LiteralPath $src -Destination $dst -Force; exit 0 } " +
                 "catch{ Start-Sleep -Seconds 1 } } " +

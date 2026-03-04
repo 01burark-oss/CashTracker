@@ -120,7 +120,8 @@ namespace CashTracker.App
                 {
                     DesktopExeReplaceService.TryScheduleReplace(
                         downloadedPath,
-                        Path.GetFileName(Application.ExecutablePath));
+                        Path.GetFileName(Application.ExecutablePath),
+                        Process.GetCurrentProcess().Id);
                 }
 
                 Process.Start(new ProcessStartInfo(downloadedPath) { UseShellExecute = true });
@@ -129,6 +130,7 @@ namespace CashTracker.App
                     AppLocalization.T("main.update.startedTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
+                Application.Exit();
             }
             catch (Exception ex)
             {
@@ -187,7 +189,8 @@ namespace CashTracker.App
 
             var desktopReplaceScheduled = DesktopExeReplaceService.TryScheduleReplace(
                 launchPath,
-                Path.GetFileName(Application.ExecutablePath));
+                Path.GetFileName(Application.ExecutablePath),
+                Process.GetCurrentProcess().Id);
 
             MessageBox.Show(
                 desktopReplaceScheduled
