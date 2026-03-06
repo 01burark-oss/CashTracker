@@ -39,3 +39,7 @@ Tag push triggers `.github/workflows/release.yml` and uploads:
 
 - `CashTracker.exe`
 - `CashTracker.exe.sha256`
+
+Release note:
+
+- Keep the primary asset name as `CashTracker.exe`. Older app versions download and launch this exact file name during in-app update, and the new binary now migrates itself from `%LOCALAPPDATA%\CashTracker\updates` into the installed location.

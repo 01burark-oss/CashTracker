@@ -257,13 +257,19 @@ namespace CashTracker.App
             expense.Text = FormatAmount(values.Expense);
         }
 
-        private static SummaryCard CreateSummaryCard(string title, Color backColor, Color accent, string buttonText, Color borderColor)
+        private static SummaryCard CreateSummaryCard(
+            string title,
+            Color backColor,
+            Color accent,
+            string buttonText,
+            Color borderColor,
+            bool includeRangeSelector = false)
         {
             var panel = new Panel
             {
                 Width = 330,
-                Height = 236,
-                MinimumSize = new Size(280, 220),
+                Height = includeRangeSelector ? 278 : 236,
+                MinimumSize = new Size(280, includeRangeSelector ? 258 : 220),
                 BackColor = backColor,
                 Margin = new Padding(0, 0, 16, 16),
                 Padding = new Padding(18, 16, 18, 14)
@@ -280,7 +286,7 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 4
+                RowCount = includeRangeSelector ? 5 : 4
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -289,15 +295,54 @@ namespace CashTracker.App
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             panel.Controls.Add(layout);
 
-            var titleLabel = new Label
+            ComboBox? rangeSelector = null;
+            Label? titleLabel = null;
+            var metricsRowIndex = 1;
+            if (includeRangeSelector)
             {
-                Text = title,
-                Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
-                ForeColor = accent,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 12)
-            };
-            layout.Controls.Add(titleLabel, 0, 0);
+                var selectorWrap = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 42,
+                    Margin = new Padding(0, 0, 0, 12),
+                    Padding = new Padding(12, 6, 12, 4),
+                    BackColor = Color.FromArgb(244, 248, 253)
+                };
+                selectorWrap.Paint += (_, e) =>
+                {
+                    using var pen = new Pen(Color.FromArgb(207, 218, 232), 1f);
+                    e.Graphics.DrawRectangle(pen, 0, 0, selectorWrap.Width - 1, selectorWrap.Height - 1);
+                    using var accentPen = new Pen(accent, 2f);
+                    e.Graphics.DrawLine(accentPen, 1, selectorWrap.Height - 2, selectorWrap.Width - 2, selectorWrap.Height - 2);
+                };
+
+                rangeSelector = new ComboBox
+                {
+                    Dock = DockStyle.Fill,
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    FlatStyle = FlatStyle.Flat,
+                    Margin = new Padding(0),
+                    BackColor = selectorWrap.BackColor,
+                    ForeColor = accent,
+                    Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
+                    IntegralHeight = false,
+                    DropDownHeight = 240
+                };
+                selectorWrap.Controls.Add(rangeSelector);
+                layout.Controls.Add(selectorWrap, 0, 0);
+            }
+            else
+            {
+                titleLabel = new Label
+                {
+                    Text = title,
+                    Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
+                    ForeColor = accent,
+                    AutoSize = true,
+                    Margin = new Padding(0, 0, 0, 12)
+                };
+                layout.Controls.Add(titleLabel, 0, 0);
+            }
 
             var metrics = new TableLayoutPanel
             {
@@ -311,7 +356,7 @@ namespace CashTracker.App
             metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             metrics.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.Controls.Add(metrics, 0, 1);
+            layout.Controls.Add(metrics, 0, metricsRowIndex);
 
             var income = new Label
             {
@@ -353,15 +398,17 @@ namespace CashTracker.App
             sendButton.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
             sendButton.FlatAppearance.BorderSize = 1;
             sendButton.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
-            layout.Controls.Add(sendButton, 0, 3);
+            layout.Controls.Add(sendButton, 0, includeRangeSelector ? 4 : 3);
 
             return new SummaryCard
             {
                 Root = panel,
+                Title = titleLabel,
                 Income = income,
                 Expense = expense,
                 Net = net,
-                SendButton = sendButton
+                SendButton = sendButton,
+                RangeSelector = rangeSelector
             };
         }
 

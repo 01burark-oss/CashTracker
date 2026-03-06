@@ -18,20 +18,14 @@ namespace CashTracker.App
             await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.dailyTitle"), today, today, summary, senderButton);
         }
 
-        private async Task SendLast30SummaryAsync(Button senderButton)
+        private async Task SendSelectedSummaryAsync(SummaryCard card, Button senderButton)
         {
-            var to = DateTime.Today;
-            var from = to.AddDays(-29);
+            var rangeCode = GetSelectedSummaryRangeCode(card);
+            var today = DateTime.Today;
+            var (from, to) = SummaryRangeCatalog.GetRange(rangeCode, today);
             var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.last30Title"), from, to, summary, senderButton);
-        }
-
-        private async Task SendLast365SummaryAsync(Button senderButton)
-        {
-            var to = DateTime.Today;
-            var from = to.AddDays(-364);
-            var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync(AppLocalization.T("main.telegram.last365Title"), from, to, summary, senderButton);
+            var title = AppLocalization.F("main.telegram.dynamicTitle", SummaryRangeCatalog.GetDisplay(rangeCode, today));
+            await SendSummaryToTelegramAsync(title, from, to, summary, senderButton);
         }
 
         private async Task SendMonthlySummaryAsync(Button senderButton)

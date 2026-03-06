@@ -8,6 +8,8 @@ namespace CashTracker.App
     {
         public string LastShortcutPromptVersion { get; set; } = string.Empty;
         public string LanguageCode { get; set; } = "tr";
+        public string SummaryPrimaryRange { get; set; } = SummaryRangeCatalog.Last30Days;
+        public string SummarySecondaryRange { get; set; } = SummaryRangeCatalog.Last1Year;
     }
 
     internal static class AppStateStore

@@ -20,15 +20,18 @@ static class Program
     static void Main()
     {
         ApplicationConfiguration.Initialize();
-        EnvFileLoader.Load();
-
-        var services = new ServiceCollection();
 
         var appData = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "CashTracker");
 
         Directory.CreateDirectory(appData);
+        if (UpdateBootstrapService.TryApplyPendingUpdate(appData))
+            return;
+
+        EnvFileLoader.Load();
+
+        var services = new ServiceCollection();
         var dbPath = Path.Combine(appData, "cashtracker.db");
         var appState = AppStateStore.Load(appData);
         AppLocalization.SetLanguage(appState.LanguageCode);

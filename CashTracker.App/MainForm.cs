@@ -21,11 +21,14 @@ namespace CashTracker.App
         private readonly UpdateSettings _updateSettings;
         private readonly AppRuntimeOptions _runtimeOptions;
         private readonly GitHubUpdateService _updateService;
+        private readonly System.Windows.Forms.Timer _dateChangeTimer;
         private bool _isAuthenticated;
+        private bool _isLoadingSummaryRangeSelectors;
+        private DateTime _lastSummaryDate = DateTime.Today;
 
         private SummaryCard _cardDaily = null!;
-        private SummaryCard _card30 = null!;
-        private SummaryCard _card365 = null!;
+        private SummaryCard _cardPrimaryRange = null!;
+        private SummaryCard _cardSecondaryRange = null!;
 
         private ComboBox _cmbMonth = null!;
         private Label _lblMonthIncome = null!;
@@ -52,10 +55,13 @@ namespace CashTracker.App
         private sealed class SummaryCard
         {
             public Panel Root { get; set; } = null!;
+            public Label? Title { get; set; }
             public Label Income { get; set; } = null!;
             public Label Expense { get; set; } = null!;
             public Label Net { get; set; } = null!;
             public Button SendButton { get; set; } = null!;
+            public ComboBox? RangeSelector { get; set; }
+            public string DefaultRangeCode { get; set; } = SummaryRangeCatalog.Last30Days;
         }
 
         private sealed class MonthItem
@@ -108,7 +114,11 @@ namespace CashTracker.App
                 Icon = appIcon;
 
             BuildUi();
+            _dateChangeTimer = new System.Windows.Forms.Timer { Interval = 60_000 };
+            _dateChangeTimer.Tick += async (_, __) => await RefreshSummariesIfDateChangedAsync();
+            _dateChangeTimer.Start();
             Shown += async (_, __) => await InitializeAfterLoginAsync();
+            FormClosed += (_, __) => _dateChangeTimer.Dispose();
         }
     }
 }

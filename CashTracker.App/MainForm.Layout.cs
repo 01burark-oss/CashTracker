@@ -128,11 +128,13 @@ namespace CashTracker.App
             var btnGelirGider = CreateNavButton(AppLocalization.T("main.nav.records"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnSettings = CreateNavButton(AppLocalization.T("main.nav.settings"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnChangeBot = CreateNavButton(AppLocalization.T("main.nav.bot"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnPrint = CreateNavButton(AppLocalization.T("main.nav.print"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnUpdate = CreateNavButton(AppLocalization.T("main.nav.update"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
 
             navButtons.Controls.Add(btnGelirGider);
             navButtons.Controls.Add(btnSettings);
             navButtons.Controls.Add(btnChangeBot);
+            navButtons.Controls.Add(btnPrint);
             navButtons.Controls.Add(btnUpdate);
 
             btnGelirGider.Click += (_, __) =>
@@ -148,6 +150,11 @@ namespace CashTracker.App
                 _ = RefreshSummariesAsync();
             };
             btnChangeBot.Click += (_, __) => OpenBotSettings();
+            btnPrint.Click += (_, __) =>
+            {
+                using var form = new PrintPreviewForm(_kasaService, _summaryService, _isletmeService);
+                form.ShowDialog(this);
+            };
             btnUpdate.Click += async (_, __) => await CheckForUpdatesAsync(btnUpdate);
 
             var footerCredit = new Label
@@ -334,19 +341,25 @@ namespace CashTracker.App
             content.Controls.Add(cardsPanel, 0, 4);
 
             _cardDaily = CreateSummaryCard(AppLocalization.T("main.summary.daily"), surface, BrandTheme.Teal, AppLocalization.T("main.summary.sendTelegram"), border);
-            _card30 = CreateSummaryCard(AppLocalization.T("main.summary.last30"), surface, BrandTheme.Navy, AppLocalization.T("main.summary.sendTelegram"), border);
-            _card365 = CreateSummaryCard(AppLocalization.T("main.summary.last365"), surface, Color.FromArgb(88, 101, 178), AppLocalization.T("main.summary.sendTelegram"), border);
+            _cardPrimaryRange = CreateSummaryCard(AppLocalization.T("main.summary.range.last30Days"), surface, BrandTheme.Navy, AppLocalization.T("main.summary.sendTelegram"), border, includeRangeSelector: true);
+            _cardSecondaryRange = CreateSummaryCard(AppLocalization.T("main.summary.range.last1Year"), surface, Color.FromArgb(88, 101, 178), AppLocalization.T("main.summary.sendTelegram"), border, includeRangeSelector: true);
+            _cardPrimaryRange.DefaultRangeCode = SummaryRangeCatalog.Last30Days;
+            _cardSecondaryRange.DefaultRangeCode = SummaryRangeCatalog.Last1Year;
 
             _cardDaily.SendButton.Click += async (_, __) => await SendDailySummaryAsync(_cardDaily.SendButton);
-            _card30.SendButton.Click += async (_, __) => await SendLast30SummaryAsync(_card30.SendButton);
-            _card365.SendButton.Click += async (_, __) => await SendLast365SummaryAsync(_card365.SendButton);
+            _cardPrimaryRange.SendButton.Click += async (_, __) => await SendSelectedSummaryAsync(_cardPrimaryRange, _cardPrimaryRange.SendButton);
+            _cardSecondaryRange.SendButton.Click += async (_, __) => await SendSelectedSummaryAsync(_cardSecondaryRange, _cardSecondaryRange.SendButton);
+            if (_cardPrimaryRange.RangeSelector is not null)
+                _cardPrimaryRange.RangeSelector.SelectedIndexChanged += async (_, __) => await HandleSummaryRangeChangedAsync(_cardPrimaryRange);
+            if (_cardSecondaryRange.RangeSelector is not null)
+                _cardSecondaryRange.RangeSelector.SelectedIndexChanged += async (_, __) => await HandleSummaryRangeChangedAsync(_cardSecondaryRange);
 
             cardsPanel.Controls.Add(_cardDaily.Root);
-            cardsPanel.Controls.Add(_card30.Root);
-            cardsPanel.Controls.Add(_card365.Root);
+            cardsPanel.Controls.Add(_cardPrimaryRange.Root);
+            cardsPanel.Controls.Add(_cardSecondaryRange.Root);
 
-            ResizeSummaryCards(cardsPanel, _cardDaily.Root, _card30.Root, _card365.Root);
-            cardsPanel.Resize += (_, __) => ResizeSummaryCards(cardsPanel, _cardDaily.Root, _card30.Root, _card365.Root);
+            ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
+            cardsPanel.Resize += (_, __) => ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
 
             var reportGrid = new TableLayoutPanel
             {
@@ -436,6 +449,7 @@ namespace CashTracker.App
                 new { Button = btnGelirGider, ExpandedText = AppLocalization.T("main.nav.records"), CollapsedText = AppLocalization.T("main.nav.short.records") },
                 new { Button = btnSettings, ExpandedText = AppLocalization.T("main.nav.settings"), CollapsedText = AppLocalization.T("main.nav.short.settings") },
                 new { Button = btnChangeBot, ExpandedText = AppLocalization.T("main.nav.bot"), CollapsedText = AppLocalization.T("main.nav.short.bot") },
+                new { Button = btnPrint, ExpandedText = AppLocalization.T("main.nav.print"), CollapsedText = AppLocalization.T("main.nav.short.print") },
                 new { Button = btnUpdate, ExpandedText = AppLocalization.T("main.nav.update"), CollapsedText = AppLocalization.T("main.nav.short.update") }
             };
 
@@ -471,6 +485,7 @@ namespace CashTracker.App
 
             LoadMonths();
             LoadYears();
+            LoadSummaryRangeSelectors();
 
             ResumeLayout(true);
         }
