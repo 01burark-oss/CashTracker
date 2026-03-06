@@ -21,12 +21,6 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
-      - name: Restore
-        run: dotnet restore CashTracker.sln
-
-      - name: Build
-        run: dotnet build CashTracker.sln -c Release --no-restore
-
       - name: Validate Tag And Version
         id: meta
         shell: pwsh
@@ -52,6 +46,9 @@ jobs:
           }
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Publish Release Build
+        run: dotnet publish .\CashTracker.App\CashTracker.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\artifacts\verify
 
       - name: Publish Release Artifacts
         shell: pwsh
