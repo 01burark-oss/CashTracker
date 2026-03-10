@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.Tests", "CashTr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.LicenseAdmin", "CashTracker.LicenseAdmin\CashTracker.LicenseAdmin.csproj", "{5C54834A-40F1-47E3-BD18-473246A82885}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CashTracker.CustomerUpdater", "CashTracker.CustomerUpdater\CashTracker.CustomerUpdater.csproj", "{8CBFE0D5-4A8A-475B-BF36-13B3B63FF02A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{5C54834A-40F1-47E3-BD18-473246A82885}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5C54834A-40F1-47E3-BD18-473246A82885}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5C54834A-40F1-47E3-BD18-473246A82885}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CBFE0D5-4A8A-475B-BF36-13B3B63FF02A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CBFE0D5-4A8A-475B-BF36-13B3B63FF02A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CBFE0D5-4A8A-475B-BF36-13B3B63FF02A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CBFE0D5-4A8A-475B-BF36-13B3B63FF02A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
