@@ -1,13 +1,10 @@
 ## CashTracker 1.2.2
 
-Bu surum, yayin kanalini calisir hale getirir ve musterilere gonderebileceginiz tek dosyalik updater exe'sini resmi release asset'i olarak ekler.
+Bu surum, yayin kanalini sadeleştirir ve ana uygulama release akisini duzeltmeye odaklanir.
 
-- `Write Update Manifest` adimi secret yoksa release'i artik dusurmez; uygulama ve updater GitHub release fallback ile calismaya devam eder.
+- `Write Update Manifest` adimi secret yoksa release'i artik dusurmez.
 - `CI` workflow'u tag push'larda calismaz; gereksiz fail mailleri azalir.
-- `InstallerLaunchService` repoya dahil edildi; bu sayede GitHub Actions release build'i artik eksik dosya yuzunden dusmez.
-- `CashTracker-Fabesco-Updater.exe` resmi release asset'i olarak eklendi. Musteri bu tek exe'yi calistirdiginda GitHub `latest` release'den guncel kurulumu indirip sessizce yukleyebilir.
-- Updater, GitHub release asset'lerini okuyup kurulumu SHA-256 ile dogrular.
-- Sessiz kurulumda masaustune `Cashtracker Fabesco` kisayolu garanti edilir.
+- `InstallerLaunchService` repoya dahil edildi; bu sayede uygulama ici installer baslatma akisi eksik dosya yuzunden bozulmaz.
 - Telegram artik zorunlu degil; uygulama local-first calisiyor.
 - Lisans/trial altyapisi eklendi ve ayarlardan yonetilebilir hale getirildi.
 - Ayrica satici tarafi icin ayri lisans yonetim araci eklendi.

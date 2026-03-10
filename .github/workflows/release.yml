@@ -63,14 +63,6 @@ jobs:
             -Configuration "Release" `
             -SetupBaseName "CashTracker-Setup"
 
-      - name: Build Customer Updater
-        shell: pwsh
-        run: |
-          .\scripts\publish-customer-updater.ps1 `
-            -Runtime "win-x64" `
-            -Configuration "Release" `
-            -OutputBaseName "CashTracker-Fabesco-Updater"
-
       - name: Write Update Manifest
         if: ${{ secrets.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML != '' }}
         shell: pwsh
@@ -98,5 +90,3 @@ jobs:
           files: |
             artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe
             artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe.sha256
-            artifacts/${{ steps.meta.outputs.version }}/CashTracker-Fabesco-Updater.exe
-            artifacts/${{ steps.meta.outputs.version }}/CashTracker-Fabesco-Updater.exe.sha256
