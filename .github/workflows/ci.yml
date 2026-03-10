@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
@@ -19,7 +21,7 @@ jobs:
 
       - name: Restore
         shell: pwsh
-        run: dotnet restore .\CashTracker.sln
+        run: dotnet restore .\CashTracker.sln --configuration Release
 
       - name: Build
         shell: pwsh
