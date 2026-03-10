@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using CashTracker.App;
+using CashTracker.App.Services;
 using CashTracker.App.UI;
 using CashTracker.Core.Services;
 
@@ -13,6 +14,8 @@ namespace CashTracker.App.Forms
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly AppRuntimeOptions _runtimeOptions;
+        private readonly IAppSecurityService _appSecurityService;
+        private readonly ILicenseService _licenseService;
 
         private DataGridView _grid = null!;
         private ComboBox _cmbTip = null!;
@@ -39,23 +42,28 @@ namespace CashTracker.App.Forms
         private bool _isLoadingKalemler;
         private string _selectedOdemeYontemi = "Nakit";
 
-        public KasaForm(
+        internal KasaForm(
             IKasaService kasaService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
             ITelegramApprovalService telegramApprovalService,
-            AppRuntimeOptions runtimeOptions)
+            AppRuntimeOptions runtimeOptions,
+            IAppSecurityService appSecurityService,
+            ILicenseService licenseService)
         {
             _kasaService = kasaService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
             _telegramApprovalService = telegramApprovalService;
             _runtimeOptions = runtimeOptions;
+            _appSecurityService = appSecurityService;
+            _licenseService = licenseService;
 
             Text = AppLocalization.T("kasa.title");
             Width = 1080;
             Height = 700;
             MinimumSize = new Size(1120, 700);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterParent;
             WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;

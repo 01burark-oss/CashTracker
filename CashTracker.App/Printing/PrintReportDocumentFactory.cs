@@ -49,14 +49,14 @@ namespace CashTracker.App.Printing
     internal sealed class PrintReportRenderer
     {
         private readonly PrintReportData _report;
-        private readonly Font _headlineFont = new("Times New Roman", 16.2f, FontStyle.Bold, GraphicsUnit.Point);
-        private readonly Font _executiveMetricFont = new("Times New Roman", 15.2f, FontStyle.Bold, GraphicsUnit.Point);
-        private readonly Font _metaFont = new("Segoe UI", 8.1f, FontStyle.Regular, GraphicsUnit.Point);
-        private readonly Font _noteFont = new("Segoe UI", 8f, FontStyle.Italic, GraphicsUnit.Point);
-        private readonly Font _headerFont = new("Segoe UI", 8.1f, FontStyle.Bold, GraphicsUnit.Point);
-        private readonly Font _cellFont = new("Segoe UI", 8f, FontStyle.Regular, GraphicsUnit.Point);
-        private readonly Font _summaryTitleFont = new("Times New Roman", 9.1f, FontStyle.Bold, GraphicsUnit.Point);
-        private readonly Font _footerFont = new("Segoe UI", 7.5f, FontStyle.Regular, GraphicsUnit.Point);
+        private readonly Font _headlineFont = BrandTheme.CreateHeadingFont(16.2f, FontStyle.Bold);
+        private readonly Font _executiveMetricFont = BrandTheme.CreateHeadingFont(15.2f, FontStyle.Bold);
+        private readonly Font _metaFont = BrandTheme.CreateFont(8.1f, FontStyle.Regular);
+        private readonly Font _noteFont = BrandTheme.CreateFont(8f, FontStyle.Italic);
+        private readonly Font _headerFont = BrandTheme.CreateFont(8.1f, FontStyle.Bold);
+        private readonly Font _cellFont = BrandTheme.CreateFont(8f, FontStyle.Regular);
+        private readonly Font _summaryTitleFont = BrandTheme.CreateHeadingFont(9.1f, FontStyle.Bold);
+        private readonly Font _footerFont = BrandTheme.CreateFont(7.5f, FontStyle.Regular);
         private readonly Brush _pageBrush = new SolidBrush(Color.White);
         private readonly Brush _headerBrush = new SolidBrush(Color.FromArgb(220, 220, 220));
         private readonly Brush _accentBrush = new SolidBrush(Color.FromArgb(236, 236, 236));

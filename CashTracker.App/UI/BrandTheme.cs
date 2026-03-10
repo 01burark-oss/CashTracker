@@ -19,10 +19,8 @@ namespace CashTracker.App.UI
         public static Font CreateFont(float size, FontStyle style = FontStyle.Regular)
         {
             var family = ResolveFamily(
-                "Aptos",
                 "Segoe UI Variable Text",
                 "Segoe UI Variable",
-                "Bahnschrift",
                 "Segoe UI");
             return new Font(family, size, style, GraphicsUnit.Point);
         }
@@ -30,10 +28,8 @@ namespace CashTracker.App.UI
         public static Font CreateHeadingFont(float size, FontStyle style = FontStyle.Bold)
         {
             var family = ResolveFamily(
-                "Aptos Display",
-                "Bahnschrift SemiBold",
-                "Bahnschrift",
-                "Segoe UI Semibold",
+                "Segoe UI Variable Text",
+                "Segoe UI Variable",
                 "Segoe UI");
             return new Font(family, size, style, GraphicsUnit.Point);
         }

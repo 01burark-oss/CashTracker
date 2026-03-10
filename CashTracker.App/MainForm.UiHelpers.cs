@@ -98,15 +98,18 @@ namespace CashTracker.App
 
         private static Button CreateNavButton(string text, Color back, Color fore, Color border, Color hover)
         {
+            var font = BrandTheme.CreateFont(9.8f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Width = 300,
-                Height = 42,
+                Height = UiMetrics.GetButtonHeight(font, 42, 16),
+                MinimumSize = new Size(0, UiMetrics.GetButtonHeight(font, 42, 16)),
                 Margin = new Padding(0, 0, 0, 10),
                 BackColor = back,
                 ForeColor = fore,
-                Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
+                Font = font,
+                Padding = new Padding(14, 0, 14, 0),
                 FlatStyle = FlatStyle.Flat
             };
 
@@ -120,21 +123,26 @@ namespace CashTracker.App
 
         private static Button CreatePanelActionButton(string text, Color back, Color fore)
         {
-            var standardBack = BrandTheme.Navy;
+            var font = BrandTheme.CreateFont(10f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Width = 188,
-                Height = 34,
-                BackColor = standardBack,
-                ForeColor = Color.White,
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Height = UiMetrics.GetButtonHeight(font),
+                MinimumSize = new Size(0, UiMetrics.GetButtonHeight(font)),
+                BackColor = back,
+                ForeColor = fore,
+                Font = font,
+                Padding = UiMetrics.ButtonPadding,
                 FlatStyle = FlatStyle.Flat
             };
 
             button.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
             button.FlatAppearance.BorderSize = 1;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
+            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(
+                Math.Max(back.R - 14, 0),
+                Math.Max(back.G - 14, 0),
+                Math.Max(back.B - 14, 0));
 
             return button;
         }

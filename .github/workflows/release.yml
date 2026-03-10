@@ -21,6 +21,10 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
       - name: Validate Tag And Version
         id: meta
         shell: pwsh
@@ -36,7 +40,10 @@ jobs:
           }
 
           [xml]$projectXml = Get-Content .\CashTracker.App\CashTracker.App.csproj
-          $projectVersion = $projectXml.Project.PropertyGroup.Version
+          $versionNode = @($projectXml.Project.PropertyGroup | Where-Object {
+            $_.PSObject.Properties.Name -contains "Version"
+          })[0]
+          $projectVersion = if ($null -ne $versionNode) { $versionNode.Version } else { "" }
           if ([string]::IsNullOrWhiteSpace($projectVersion)) {
             throw "Project version is empty in CashTracker.App.csproj"
           }
@@ -47,25 +54,39 @@ jobs:
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Publish Release Build
-        run: dotnet publish .\CashTracker.App\CashTracker.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o .\artifacts\verify
-
-      - name: Publish Release Artifacts
+      - name: Build Installer
         shell: pwsh
         run: |
           .\scripts\publish-release.ps1 `
             -Version "${{ steps.meta.outputs.version }}" `
             -Runtime "win-x64" `
             -Configuration "Release" `
-            -AssetName "CashTracker.exe"
+            -SetupBaseName "CashTracker-Setup"
+
+      - name: Write Update Manifest
+        shell: pwsh
+        env:
+          CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML: ${{ secrets.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML }}
+        run: |
+          $version = "${{ steps.meta.outputs.version }}"
+          $packagePath = ".\artifacts\$version\CashTracker-Setup.exe"
+          $packageUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/CashTracker-Setup.exe"
+
+          .\scripts\write-update-manifest.ps1 `
+            -Version "v$version" `
+            -PackageUrl $packageUrl `
+            -PackagePath $packagePath `
+            -OutputPath ".\artifacts\$version\update-manifest.json" `
+            -MinSupportedVersion "$version"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: CashTracker ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: release-notes/latest.md
           overwrite_files: true
           files: |
-            artifacts/${{ steps.meta.outputs.version }}/CashTracker.exe
-            artifacts/${{ steps.meta.outputs.version }}/CashTracker.exe.sha256
+            artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe
+            artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe.sha256
+            artifacts/${{ steps.meta.outputs.version }}/update-manifest.json

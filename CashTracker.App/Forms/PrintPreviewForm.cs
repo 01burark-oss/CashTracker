@@ -50,6 +50,7 @@ namespace CashTracker.App.Forms
             Width = 1360;
             Height = 860;
             MinimumSize = new Size(1180, 760);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterParent;
             WindowState = FormWindowState.Maximized;
             BackColor = Color.FromArgb(238, 239, 241);
@@ -172,7 +173,11 @@ namespace CashTracker.App.Forms
             var titlePanel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 74,
+                Height = UiMetrics.GetHeaderHeight(
+                    BrandTheme.CreateHeadingFont(14f, FontStyle.Bold),
+                    BrandTheme.CreateFont(8.9f),
+                    28,
+                    4),
                 BackColor = Color.White,
                 Margin = new Padding(0, 0, 0, 14),
                 Padding = new Padding(14, 12, 14, 10)
@@ -203,7 +208,7 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateFont(8.9f),
                 ForeColor = BrandTheme.MutedText,
                 Margin = new Padding(0),
-                Location = new Point(14, 38)
+                Location = new Point(14, 14 + UiMetrics.GetTextLineHeight(title.Font) + 4)
             };
             titlePanel.Controls.Add(subtitle);
 
@@ -252,16 +257,18 @@ namespace CashTracker.App.Forms
             notePanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             notePanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
+            var noteHeight = UiMetrics.GetNoteBoxHeight(BrandTheme.CreateFont(9.5f), 3, 12);
             _txtNote = new TextBox
             {
                 Dock = DockStyle.Top,
-                Height = 72,
+                Height = noteHeight,
                 Multiline = true,
                 BorderStyle = BorderStyle.None,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 Font = BrandTheme.CreateFont(9.5f),
                 Margin = new Padding(0),
+                MinimumSize = new Size(0, noteHeight),
                 ScrollBars = ScrollBars.Vertical
             };
             notePanel.Controls.Add(CreateInputFrame(_txtNote, bottomMargin: 8, padding: new Padding(12, 10, 12, 10)), 0, 0);
@@ -651,65 +658,55 @@ namespace CashTracker.App.Forms
 
         private static Panel CreateInputFrame(Control child, int bottomMargin, Padding? padding = null)
         {
-            var panel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = child.Height + (padding ?? new Padding(10, 8, 10, 8)).Vertical,
-                BackColor = Color.White,
-                Margin = new Padding(0, 0, 0, bottomMargin),
-                Padding = padding ?? new Padding(10, 8, 10, 8)
-            };
-            panel.Paint += (_, e) =>
-            {
-                using var pen = new Pen(Color.FromArgb(204, 204, 204), 1f);
-                e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
-            };
-
-            child.Dock = DockStyle.Fill;
-            panel.Controls.Add(child);
-            return panel;
+            return FormFactory.CreateInputFrame(child, bottomMargin, padding);
         }
 
         private static ComboBox CreateComboBox()
         {
+            var font = BrandTheme.CreateFont(9.5f);
             return new ComboBox
             {
                 Dock = DockStyle.Top,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
+                IntegralHeight = false,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
-                Font = BrandTheme.CreateFont(9.5f),
-                Height = 32,
+                Font = font,
+                Height = UiMetrics.GetInputHeight(font),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(font)),
                 Margin = new Padding(0)
             };
         }
 
         private static DateTimePicker CreateDatePicker()
         {
+            var font = BrandTheme.CreateFont(9.3f);
             return new DateTimePicker
             {
                 Dock = DockStyle.Top,
                 Format = DateTimePickerFormat.Short,
                 CalendarForeColor = Color.Black,
                 CalendarMonthBackground = Color.White,
-                Font = BrandTheme.CreateFont(9.3f),
-                Height = 32,
+                Font = font,
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(font)),
                 Margin = new Padding(0, 0, 10, 0)
             };
         }
 
         private static Button CreateActionButton(string text, bool filled)
         {
+            var font = BrandTheme.CreateFont(9.8f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Dock = DockStyle.Top,
-                Height = 42,
+                MinimumSize = new Size(0, UiMetrics.GetButtonHeight(font, 42, 16)),
                 BackColor = filled ? Color.Black : Color.White,
                 ForeColor = filled ? Color.White : Color.Black,
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateFont(9.8f, FontStyle.Bold),
+                Font = font,
+                Padding = UiMetrics.ButtonPadding,
                 Margin = new Padding(0, 0, 0, 10)
             };
 
@@ -721,17 +718,19 @@ namespace CashTracker.App.Forms
 
         private static Button CreateInlineActionButton(string text)
         {
+            var font = BrandTheme.CreateFont(8.9f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 Dock = DockStyle.Left,
-                Height = 34,
                 BackColor = Color.White,
                 ForeColor = Color.Black,
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateFont(8.9f, FontStyle.Bold),
+                Font = font,
+                MinimumSize = new Size(0, UiMetrics.GetButtonHeight(font)),
+                Padding = UiMetrics.ButtonPadding,
                 Margin = new Padding(0)
             };
 

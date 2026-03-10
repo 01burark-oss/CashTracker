@@ -8,7 +8,6 @@ namespace CashTracker.App.Forms
     public sealed partial class KasaForm
     {
         private const int OdemeButtonWidth = 150;
-        private const int OdemeButtonHeight = 38;
         private const int OdemeButtonGapX = 12;
         private const int OdemeButtonGapY = 8;
 
@@ -32,13 +31,17 @@ namespace CashTracker.App.Forms
         private void AddTypeRow(TableLayoutPanel form)
         {
             var label = new Label { Text = AppLocalization.T("common.type"), AutoSize = true, Anchor = AnchorStyles.Left };
+            var comboFont = BrandTheme.CreateFont(10f);
             _cmbTip = new ComboBox
             {
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
                 BackColor = Color.White,
                 Margin = new Padding(0, 8, 0, 8),
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                IntegralHeight = false,
+                Font = comboFont,
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(comboFont))
             };
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
@@ -57,11 +60,16 @@ namespace CashTracker.App.Forms
         private void AddAmountRow(TableLayoutPanel form)
         {
             var label = new Label { Text = AppLocalization.T("common.amount"), AutoSize = true, Anchor = AnchorStyles.Left };
+            var inputFont = BrandTheme.CreateFont(10f);
             _txtTutar = new TextBox
             {
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                AutoSize = false,
                 Margin = new Padding(0, 8, 0, 8),
                 BorderStyle = BorderStyle.FixedSingle,
+                Font = inputFont,
+                Height = UiMetrics.GetInputHeight(inputFont),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(inputFont)),
                 PlaceholderText = AppLocalization.T("kasa.amount.placeholder")
             };
             _txtTutar.KeyPress += AmountTextBoxKeyPress;
@@ -78,6 +86,7 @@ namespace CashTracker.App.Forms
             var label = new Label { Text = AppLocalization.T("common.method"), AutoSize = true, Anchor = AnchorStyles.Left };
             label.Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold);
             label.Margin = new Padding(0, 8, 10, 8);
+            var paymentButtonHeight = UiMetrics.GetCompactButtonHeight(BrandTheme.CreateHeadingFont(8.9f, FontStyle.Bold));
 
             var methodsPanel = new TableLayoutPanel
             {
@@ -93,9 +102,9 @@ namespace CashTracker.App.Forms
             methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonWidth));
             methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonGapX));
             methodsPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, OdemeButtonWidth));
-            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonHeight));
+            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, paymentButtonHeight));
             methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonGapY));
-            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, OdemeButtonHeight));
+            methodsPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, paymentButtonHeight));
 
             _btnOdemeNakit = CreateOdemeYontemiButton(AppLocalization.T("payment.cash"), "Nakit");
             _btnOdemeKrediKarti = CreateOdemeYontemiButton(AppLocalization.T("payment.card"), "KrediKarti");
@@ -144,23 +153,25 @@ namespace CashTracker.App.Forms
 
         private static Button CreateOdemeYontemiBaseButton(string text)
         {
+            var font = BrandTheme.CreateHeadingFont(8.9f, FontStyle.Bold);
+            var buttonHeight = UiMetrics.GetCompactButtonHeight(font);
             var button = new Button
             {
                 Text = text,
                 Width = OdemeButtonWidth,
-                Height = OdemeButtonHeight,
-                MinimumSize = new Size(OdemeButtonWidth, OdemeButtonHeight),
-                MaximumSize = new Size(OdemeButtonWidth, OdemeButtonHeight),
+                Height = buttonHeight,
+                MinimumSize = new Size(OdemeButtonWidth, buttonHeight),
+                MaximumSize = new Size(OdemeButtonWidth, buttonHeight),
                 AutoSize = false,
                 AutoEllipsis = true,
                 Margin = Padding.Empty,
                 Cursor = Cursors.Hand,
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateHeadingFont(8.9f, FontStyle.Bold),
+                Font = font,
                 TextAlign = ContentAlignment.MiddleCenter,
                 TextImageRelation = TextImageRelation.ImageBeforeText,
                 ImageAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(8, 0, 8, 0),
+                Padding = new Padding(10, 0, 10, 0),
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(38, 53, 72),
                 UseVisualStyleBackColor = false

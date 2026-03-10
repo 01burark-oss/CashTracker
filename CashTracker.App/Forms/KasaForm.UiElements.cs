@@ -9,10 +9,14 @@ namespace CashTracker.App.Forms
     {
         private static Panel CreateSectionHeader(string title, string subtitle)
         {
+            var titleFont = BrandTheme.CreateHeadingFont(13.5f, FontStyle.Bold);
+            var subtitleFont = BrandTheme.CreateFont(9.4f, FontStyle.Regular);
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 62
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, UiMetrics.GetHeaderHeight(titleFont, subtitleFont, 18, 2))
             };
 
             var layout = new TableLayoutPanel
@@ -29,7 +33,7 @@ namespace CashTracker.App.Forms
             var titleLabel = new Label
             {
                 Text = title,
-                Font = BrandTheme.CreateHeadingFont(13.5f, FontStyle.Bold),
+                Font = titleFont,
                 ForeColor = Color.FromArgb(42, 50, 61),
                 AutoSize = true,
                 Margin = new Padding(0)
@@ -39,7 +43,7 @@ namespace CashTracker.App.Forms
             var subtitleLabel = new Label
             {
                 Text = subtitle,
-                Font = BrandTheme.CreateFont(9.4f, FontStyle.Regular),
+                Font = subtitleFont,
                 ForeColor = Color.FromArgb(106, 118, 136),
                 AutoSize = true,
                 Margin = new Padding(0, 2, 0, 0)
@@ -51,16 +55,18 @@ namespace CashTracker.App.Forms
 
         private static Button CreateButton(string text, Color back, Color fore)
         {
+            var font = BrandTheme.CreateHeadingFont(9.5f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Width = 108,
-                Height = 36,
+                MinimumSize = new Size(108, UiMetrics.GetButtonHeight(font)),
                 BackColor = back,
                 ForeColor = fore,
-                Font = BrandTheme.CreateHeadingFont(9.5f, FontStyle.Bold),
+                Font = font,
                 Cursor = Cursors.Hand,
                 Margin = new Padding(8, 0, 0, 0),
+                Padding = UiMetrics.ButtonPadding,
                 FlatStyle = FlatStyle.Flat
             };
 

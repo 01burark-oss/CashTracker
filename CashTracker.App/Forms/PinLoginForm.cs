@@ -1,41 +1,33 @@
 using System;
 using System.Drawing;
-using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.App;
+using CashTracker.App.Controls;
 using CashTracker.App.UI;
-using CashTracker.Core.Models;
 using CashTracker.Core.Services;
-using CashTracker.Infrastructure.Services;
 
 namespace CashTracker.App.Forms
 {
     internal sealed class PinLoginForm : Form
     {
         private readonly IAppSecurityService _appSecurityService;
-        private readonly BackupReportService _backupReport;
-        private readonly TelegramSettings _telegramSettings;
-        private readonly TextBox _txtPin;
+        private readonly PinCodeInputControl _txtPin;
         private readonly Label _lblError;
         private readonly Button _btnLogin;
         private readonly Button _btnCancel;
         private readonly Button _btnForgotPin;
         private bool _isProcessing;
 
-        public PinLoginForm(
-            IAppSecurityService appSecurityService,
-            BackupReportService backupReport,
-            TelegramSettings telegramSettings)
+        public PinLoginForm(IAppSecurityService appSecurityService)
         {
             _appSecurityService = appSecurityService;
-            _backupReport = backupReport;
-            _telegramSettings = telegramSettings;
 
             Text = AppLocalization.T("pin.title");
-            Width = 620;
-            Height = 420;
-            MinimumSize = new Size(620, 420);
+            Width = 540;
+            Height = 460;
+            MinimumSize = new Size(540, 460);
+            UiMetrics.ApplyFormDefaults(this);
             MaximizeBox = false;
             MinimizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -45,47 +37,64 @@ namespace CashTracker.App.Forms
             if (AppIconProvider.Current is Icon appIcon)
                 Icon = appIcon;
 
-            var shell = new Panel
+            var shell = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 Padding = new Padding(24),
-                BackColor = BrandTheme.AppBackground
+                BackColor = BrandTheme.AppBackground,
+                ColumnCount = 3,
+                RowCount = 3
             };
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 372));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            shell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
             Controls.Add(shell);
 
             var card = new Panel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 BackColor = Color.White,
-                Padding = new Padding(26, 22, 26, 22)
+                Padding = new Padding(28, 24, 28, 24),
+                Margin = Padding.Empty
             };
             card.Paint += (_, e) => ControlPaint.DrawBorder(
                 e.Graphics,
                 card.ClientRectangle,
                 Color.FromArgb(211, 221, 234),
                 ButtonBorderStyle.Solid);
-            shell.Controls.Add(card);
+            shell.Controls.Add(card, 1, 1);
 
             var root = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
                 ColumnCount = 1,
-                RowCount = 5
+                RowCount = 5,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             card.Controls.Add(root);
 
+            var headingFont = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold);
             var lblTitle = new Label
             {
                 Text = AppLocalization.T("pin.header"),
-                AutoSize = true,
-                Font = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
+                AutoSize = false,
+                Dock = DockStyle.Top,
+                Height = UiMetrics.GetTextLineHeight(headingFont) + 4,
+                Font = headingFont,
                 ForeColor = BrandTheme.Heading,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Margin = new Padding(0, 0, 0, 8)
             };
             root.Controls.Add(lblTitle, 0, 0);
@@ -96,7 +105,10 @@ namespace CashTracker.App.Forms
                 AutoSize = true,
                 Font = BrandTheme.CreateFont(9.4f),
                 ForeColor = BrandTheme.MutedText,
-                Margin = new Padding(0, 0, 0, 18)
+                MaximumSize = new Size(296, 0),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Anchor = AnchorStyles.None,
+                Margin = new Padding(10, 0, 10, 18)
             };
             root.Controls.Add(lblInfo, 0, 1);
 
@@ -105,27 +117,26 @@ namespace CashTracker.App.Forms
                 Dock = DockStyle.Top,
                 ColumnCount = 3,
                 RowCount = 1,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 Margin = new Padding(0, 0, 0, 10)
             };
-            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
             pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 248));
+            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            pinRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             root.Controls.Add(pinRow, 0, 2);
 
-            _txtPin = new TextBox
+            var pinFont = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold);
+            _txtPin = new PinCodeInputControl
             {
                 Dock = DockStyle.Fill,
-                MaxLength = 4,
-                UseSystemPasswordChar = true,
-                Font = BrandTheme.CreateHeadingFont(14f, FontStyle.Bold),
-                TextAlign = HorizontalAlignment.Center,
-                BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(0)
-            };
-            _txtPin.KeyPress += (_, e) =>
-            {
-                if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
-                    e.Handled = true;
+                Width = 248,
+                Height = 54,
+                Font = pinFont,
+                Margin = new Padding(0),
+                PinLength = 4,
+                UsePasswordMask = true
             };
             pinRow.Controls.Add(_txtPin, 1, 0);
 
@@ -135,42 +146,51 @@ namespace CashTracker.App.Forms
                 AutoSize = true,
                 ForeColor = Color.FromArgb(173, 59, 56),
                 Font = BrandTheme.CreateFont(9f),
-                Margin = new Padding(2, 0, 2, 10)
+                MaximumSize = new Size(296, 0),
+                TextAlign = ContentAlignment.MiddleCenter,
+                Anchor = AnchorStyles.None,
+                Margin = new Padding(8, 12, 8, 12)
             };
             root.Controls.Add(_lblError, 0, 3);
             _txtPin.TextChanged += (_, __) => _lblError.Text = string.Empty;
 
-            var actionGrid = new TableLayoutPanel
+            var actionLayout = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 2,
                 AutoSize = true,
-                Margin = new Padding(0)
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Margin = new Padding(0, 4, 0, 0)
             };
-            actionGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
-            actionGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
-            actionGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.Controls.Add(actionGrid, 0, 4);
+            actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            root.Controls.Add(actionLayout, 0, 4);
 
             _btnLogin = CreateButton(AppLocalization.T("pin.button.login"), BrandTheme.Navy);
             _btnCancel = CreateButton(AppLocalization.T("pin.button.exit"), Color.FromArgb(102, 114, 128));
             _btnForgotPin = CreateButton(AppLocalization.T("pin.button.forgot"), BrandTheme.Teal);
-            _btnForgotPin.Dock = DockStyle.Fill;
-            _btnForgotPin.Margin = new Padding(0, 0, 10, 0);
-            actionGrid.Controls.Add(_btnForgotPin, 0, 0);
+            _btnForgotPin.AutoSize = true;
+            _btnForgotPin.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnForgotPin.MinimumSize = UiMetrics.GetButtonMinimumSize(_btnForgotPin.Font, 0);
+            _btnForgotPin.Anchor = AnchorStyles.None;
+            _btnForgotPin.Margin = new Padding(0, 0, 0, 10);
+            actionLayout.Controls.Add(_btnForgotPin, 0, 0);
 
             var primaryButtons = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Anchor = AnchorStyles.None,
                 Margin = new Padding(0)
             };
             primaryButtons.Controls.Add(_btnLogin);
             primaryButtons.Controls.Add(_btnCancel);
-            actionGrid.Controls.Add(primaryButtons, 1, 0);
+            actionLayout.Controls.Add(primaryButtons, 0, 1);
 
             _btnLogin.Click += async (_, __) => await AuthenticateAsync();
             _btnForgotPin.Click += async (_, __) => await SendPinReminderAsync();
@@ -199,57 +219,17 @@ namespace CashTracker.App.Forms
             _txtPin.Focus();
         }
 
-        private async Task SendPinReminderAsync()
+        private Task SendPinReminderAsync()
         {
             if (_isProcessing)
-                return;
+                return Task.CompletedTask;
 
-            if (!_telegramSettings.IsEnabled)
-            {
-                MessageBox.Show(
-                    AppLocalization.T("pin.forgot.telegramNotConfigured"),
-                    AppLocalization.T("pin.forgot.title"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
-                return;
-            }
-
-            var confirm = MessageBox.Show(
-                AppLocalization.T("pin.forgot.confirm"),
-                AppLocalization.T("pin.forgot.title"),
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Question);
-
-            if (confirm != DialogResult.Yes)
-                return;
-
-            _btnForgotPin.Enabled = false;
-
-            try
-            {
-                var currentPin = await _appSecurityService.GetPinAsync();
-                var stamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
-                var text = AppLocalization.F("pin.forgot.messageToTelegram", currentPin, stamp);
-                await _backupReport.SendTextAsync(text);
-
-                MessageBox.Show(
-                    AppLocalization.T("pin.forgot.sent"),
-                    AppLocalization.T("pin.forgot.title"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    AppLocalization.F("pin.forgot.sendError", ex.Message),
-                    AppLocalization.T("pin.forgot.title"),
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
-            finally
-            {
-                _btnForgotPin.Enabled = true;
-            }
+            MessageBox.Show(
+                "Guvenlik nedeniyle mevcut PIN gosterilemez. Yeni bir lisans/kurulum talebi icin satici ile iletisime gecin.",
+                "PIN Yardimi",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+            return Task.CompletedTask;
         }
 
         private async Task AuthenticateAsync()
@@ -269,11 +249,11 @@ namespace CashTracker.App.Forms
 
             try
             {
-                var currentPin = await _appSecurityService.GetPinAsync();
-                if (!string.Equals(enteredPin, currentPin, StringComparison.Ordinal))
+                if (!await _appSecurityService.VerifyPinAsync(enteredPin))
                 {
                     _lblError.Text = AppLocalization.T("pin.error.wrong");
-                    _txtPin.SelectAll();
+                    _txtPin.ClearPin();
+                    _txtPin.Focus();
                     return;
                 }
 
@@ -305,12 +285,12 @@ namespace CashTracker.App.Forms
                 Text = text,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                MinimumSize = new Size(118, 38),
+                MinimumSize = UiMetrics.GetButtonMinimumSize(font, 118),
                 BackColor = backColor,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
                 Font = font,
-                Padding = new Padding(16, 0, 16, 0),
+                Padding = UiMetrics.ButtonPadding,
                 Margin = new Padding(8, 0, 0, 0)
             };
             button.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);

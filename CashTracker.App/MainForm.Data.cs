@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Threading.Tasks;
 using CashTracker.Core.Models;
 
@@ -8,49 +6,6 @@ namespace CashTracker.App
 {
     internal sealed partial class MainForm
     {
-        private void LoadMonths()
-        {
-            var list = new List<MonthItem>();
-            var now = DateTime.Now;
-            var culture = AppLocalization.CurrentCulture;
-
-            for (int i = 0; i < 24; i++)
-            {
-                var d = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
-                list.Add(new MonthItem
-                {
-                    Year = d.Year,
-                    Month = d.Month,
-                    Display = d.ToString("MMMM yyyy", culture)
-                });
-            }
-
-            _cmbMonth.DataSource = list;
-            _cmbMonth.DisplayMember = "Display";
-            _cmbMonth.ValueMember = "Month";
-            _cmbMonth.SelectedIndex = 0;
-        }
-
-        private void LoadYears()
-        {
-            var now = DateTime.Now;
-            var list = new List<YearItem>();
-
-            for (int year = now.Year; year >= now.Year - 10; year--)
-            {
-                list.Add(new YearItem
-                {
-                    Year = year,
-                    Display = year.ToString(CultureInfo.InvariantCulture)
-                });
-            }
-
-            _cmbYear.DataSource = list;
-            _cmbYear.DisplayMember = "Display";
-            _cmbYear.ValueMember = "Year";
-            _cmbYear.SelectedIndex = 0;
-        }
-
         private void LoadSummaryRangeSelectors()
         {
             _isLoadingSummaryRangeSelectors = true;
@@ -75,45 +30,29 @@ namespace CashTracker.App
 
         private async Task RefreshSummariesAsync()
         {
-            await RefreshActiveBusinessInfoAsync();
             var today = DateTime.Today;
             _lastSummaryDate = today;
             RefreshSummaryRangeSelectorDisplays(today);
 
-            var sDaily = await _summaryService.GetSummaryAsync(today, today);
-            var dailyRecords = await _kasaService.GetAllAsync(today, today);
+            var snapshot = await _dashboardSnapshotService.GetSnapshotAsync(
+                today,
+                GetSelectedSummaryRangeCode(_cardPrimaryRange),
+                GetSelectedSummaryRangeCode(_cardSecondaryRange),
+                today.Month,
+                today.Year,
+                today.Year);
 
-            ApplySummary(_cardDaily, sDaily);
-            await RefreshSummaryRangeCardAsync(_cardPrimaryRange, today);
-            await RefreshSummaryRangeCardAsync(_cardSecondaryRange, today);
-            ApplyDailyOverview(sDaily, dailyRecords);
+            var businessName = string.IsNullOrWhiteSpace(snapshot.ActiveBusinessName)
+                ? AppLocalization.T("common.unknown")
+                : snapshot.ActiveBusinessName;
 
-            await RefreshMonthlyAsync();
-            await RefreshYearlyAsync();
-        }
-
-        private async Task RefreshMonthlyAsync()
-        {
-            if (_cmbMonth.SelectedItem is not MonthItem item) return;
-
-            var s = await _summaryService.GetMonthlySummaryAsync(item.Year, item.Month);
-
-            _lblMonthIncome.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
-            _lblMonthExpense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
-            _lblMonthNet.Text = AppLocalization.F("main.summary.net", s.Net);
-        }
-
-        private async Task RefreshYearlyAsync()
-        {
-            if (_cmbYear.SelectedItem is not YearItem item) return;
-
-            var from = new DateTime(item.Year, 1, 1);
-            var to = new DateTime(item.Year, 12, 31);
-            var s = await _summaryService.GetSummaryAsync(from, to);
-
-            _lblYearIncome.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
-            _lblYearExpense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
-            _lblYearNet.Text = AppLocalization.F("main.summary.net", s.Net);
+            _lblActiveBusinessReport.Text = AppLocalization.F("main.activeBusiness", businessName);
+            ApplySummary(_cardDaily, snapshot.DailySummary);
+            UpdateSummaryCardTitle(_cardPrimaryRange);
+            ApplySummary(_cardPrimaryRange, snapshot.PrimaryRangeSummary);
+            UpdateSummaryCardTitle(_cardSecondaryRange);
+            ApplySummary(_cardSecondaryRange, snapshot.SecondaryRangeSummary);
+            ApplyDailyOverview(snapshot.DailySummary, snapshot.DailyPaymentMethodBreakdowns);
         }
 
         private async Task RefreshActiveBusinessInfoAsync()

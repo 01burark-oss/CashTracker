@@ -13,19 +13,19 @@ namespace CashTracker.App.Printing
             html.AppendLine("<!doctype html>");
             html.AppendLine("<html><head><meta charset=\"utf-8\"><title>CashTracker Report</title>");
             html.AppendLine("<style>");
-            html.AppendLine("body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;margin:0;padding:24px;}");
+            html.AppendLine("body{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;background:#fff;color:#111;margin:0;padding:24px;}");
             html.AppendLine(".page{max-width:980px;margin:0 auto;border:1px solid #6f6f6f;padding:18px 18px 16px;background:#fff;}");
             html.AppendLine(".doc-header{display:block;}");
-            html.AppendLine(".hero-title{font-family:'Times New Roman',serif;font-size:22px;font-weight:700;text-align:center;letter-spacing:.01em;margin:0 0 4px;}");
-            html.AppendLine(".hero-business{font-family:'Times New Roman',serif;font-size:14px;font-weight:700;text-align:center;margin:0 0 3px;}");
+            html.AppendLine(".hero-title{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;font-size:22px;font-weight:700;text-align:center;letter-spacing:.01em;margin:0 0 4px;}");
+            html.AppendLine(".hero-business{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;font-size:14px;font-weight:700;text-align:center;margin:0 0 3px;}");
             html.AppendLine(".meta{text-align:center;font-size:12px;color:#303030;margin:0;}");
             html.AppendLine(".divider{border-top:1.4px solid #555;margin:10px 0 12px;}");
-            html.AppendLine(".section-title{font-family:'Times New Roman',serif;font-size:15px;font-weight:700;text-align:center;margin:0 0 6px;}");
+            html.AppendLine(".section-title{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;font-size:15px;font-weight:700;text-align:center;margin:0 0 6px;}");
             html.AppendLine(".note-panel{border:1px solid #6f6f6f;padding:8px 10px;font-size:12px;font-style:italic;min-height:40px;}");
             html.AppendLine(".summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:6px;}");
             html.AppendLine(".metric-card{border:1px solid #6f6f6f;background:#ececec;padding:6px 8px 8px;}");
             html.AppendLine(".metric-label{font-size:11px;font-weight:700;text-align:center;margin-bottom:8px;}");
-            html.AppendLine(".metric-value{font-family:'Times New Roman',serif;font-size:28px;font-weight:700;text-align:center;}");
+            html.AppendLine(".metric-value{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;font-size:28px;font-weight:700;text-align:center;}");
             html.AppendLine(".counts{text-align:center;font-size:11px;color:#444;margin:4px 0 0;}");
             html.AppendLine(".exec-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px;align-items:start;}");
             html.AppendLine(".table-panel{display:flex;flex-direction:column;}");
@@ -37,7 +37,7 @@ namespace CashTracker.App.Printing
             html.AppendLine(".center{text-align:center;}");
             html.AppendLine(".right{text-align:right;}");
             html.AppendLine(".total-row td{background:#ececec;font-weight:700;}");
-            html.AppendLine(".summary-title{font-family:'Times New Roman',serif;font-size:14px;font-weight:700;text-align:center;margin:14px 0 6px;}");
+            html.AppendLine(".summary-title{font-family:'Segoe UI Variable Text','Segoe UI',sans-serif;font-size:14px;font-weight:700;text-align:center;margin:14px 0 6px;}");
             html.AppendLine(".footer{text-align:right;font-size:11px;color:#444;margin-top:8px;}");
             html.AppendLine("</style></head><body><div class=\"page\">");
 

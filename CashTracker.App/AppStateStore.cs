@@ -10,6 +10,7 @@ namespace CashTracker.App
         public string LanguageCode { get; set; } = "tr";
         public string SummaryPrimaryRange { get; set; } = SummaryRangeCatalog.Last30Days;
         public string SummarySecondaryRange { get; set; } = SummaryRangeCatalog.Last1Year;
+        public bool HasCompletedOnboarding { get; set; }
     }
 
     internal static class AppStateStore

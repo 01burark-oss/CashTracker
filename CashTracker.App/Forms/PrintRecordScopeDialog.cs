@@ -14,6 +14,7 @@ namespace CashTracker.App.Forms
             Width = 460;
             Height = 220;
             MinimumSize = new Size(420, 210);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -65,9 +66,12 @@ namespace CashTracker.App.Forms
 
             var actions = new FlowLayoutPanel
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Anchor = AnchorStyles.Right,
                 Margin = new Padding(0)
             };
             root.Controls.Add(actions, 0, 2);
@@ -109,16 +113,18 @@ namespace CashTracker.App.Forms
 
         private static Button CreateActionButton(string text, bool filled = true)
         {
+            var font = BrandTheme.CreateFont(9.5f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Width = 104,
-                Height = 36,
+                MinimumSize = new Size(104, UiMetrics.GetButtonHeight(font)),
                 Margin = new Padding(10, 0, 0, 0),
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateFont(9.5f, FontStyle.Bold),
+                Font = font,
                 BackColor = filled ? Color.Black : Color.White,
-                ForeColor = filled ? Color.White : Color.Black
+                ForeColor = filled ? Color.White : Color.Black,
+                Padding = UiMetrics.ButtonPadding
             };
 
             button.FlatAppearance.BorderColor = Color.Black;

@@ -29,6 +29,7 @@ namespace CashTracker.App.Forms
 
         private static TableLayoutPanel CreateRootLayout()
         {
+            var bannerHeight = UiMetrics.GetBannerHeight(BrandTheme.CreateFont(9.2f, FontStyle.Bold), 20, 44);
             var root = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -40,20 +41,22 @@ namespace CashTracker.App.Forms
 
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62));
             root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
-            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, bannerHeight));
             root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             return root;
         }
 
         private static Label CreateActiveBusinessLabel()
         {
+            var font = BrandTheme.CreateFont(9.2f, FontStyle.Bold);
+            var bannerHeight = UiMetrics.GetBannerHeight(font, 20, 44);
             return new Label
             {
                 Dock = DockStyle.Top,
                 AutoSize = false,
-                Height = 40,
-                MinimumSize = new Size(0, 40),
-                Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
+                Height = bannerHeight,
+                MinimumSize = new Size(0, bannerHeight),
+                Font = font,
                 ForeColor = Color.FromArgb(30, 74, 120),
                 BackColor = Color.FromArgb(231, 241, 251),
                 BorderStyle = BorderStyle.FixedSingle,

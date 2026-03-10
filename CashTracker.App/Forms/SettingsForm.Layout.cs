@@ -4,7 +4,7 @@ using CashTracker.App.UI;
 
 namespace CashTracker.App.Forms
 {
-    public sealed partial class SettingsForm
+    internal sealed partial class SettingsForm
     {
         private void BuildUi()
         {
@@ -45,9 +45,17 @@ namespace CashTracker.App.Forms
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 11
+                RowCount = 19
             };
             _businessSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             _businessSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -93,11 +101,11 @@ namespace CashTracker.App.Forms
             _btnRenameBusiness.AutoSize = true;
             _btnRenameBusiness.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             _btnRenameBusiness.Dock = DockStyle.None;
-            _btnRenameBusiness.MinimumSize = new Size(0, 34);
+            _btnRenameBusiness.MinimumSize = new Size(0, UiMetrics.GetButtonHeight(_btnRenameBusiness.Font));
             _btnDeleteBusiness.AutoSize = true;
             _btnDeleteBusiness.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             _btnDeleteBusiness.Dock = DockStyle.None;
-            _btnDeleteBusiness.MinimumSize = new Size(0, 34);
+            _btnDeleteBusiness.MinimumSize = new Size(0, UiMetrics.GetButtonHeight(_btnDeleteBusiness.Font));
 
             var renameActions = new FlowLayoutPanel
             {
@@ -136,6 +144,84 @@ namespace CashTracker.App.Forms
             };
             _businessSectionLayout.Controls.Add(_lblBusinessHint, 0, 9);
 
+            var securityActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0, 8, 0, 0)
+            };
+            _btnChangePin = CreateActionButton("PIN Degistir", BrandTheme.Navy, Color.White);
+            _btnChangePin.AutoSize = true;
+            _btnChangePin.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnChangePin.Dock = DockStyle.None;
+            _btnChangePin.Margin = new Padding(0);
+            securityActions.Controls.Add(_btnChangePin);
+            _businessSectionLayout.Controls.Add(securityActions, 0, 10);
+
+            _businessSectionLayout.Controls.Add(CreateFieldLabel(AppLocalization.T("settings.license.title")), 0, 11);
+
+            var installCodeRow = CreateTwoColumnRow(100, 118);
+            _txtInstallCode = CreateInputBox();
+            _txtInstallCode.ReadOnly = true;
+            _btnCopyInstallCode = CreateActionButton(AppLocalization.T("settings.license.copy"), BrandTheme.Navy, Color.White);
+            installCodeRow.Controls.Add(_txtInstallCode, 0, 0);
+            installCodeRow.Controls.Add(_btnCopyInstallCode, 1, 0);
+            _businessSectionLayout.Controls.Add(installCodeRow, 0, 12);
+
+            _businessSectionLayout.Controls.Add(CreateFieldLabel(AppLocalization.T("settings.license.key")), 0, 13);
+
+            var licenseKeyFont = BrandTheme.CreateFont(9.5f);
+            var licenseKeyHeight = UiMetrics.GetNoteBoxHeight(licenseKeyFont, 4, 16);
+            _txtLicenseKey = new TextBox
+            {
+                Dock = DockStyle.Top,
+                Multiline = true,
+                Height = licenseKeyHeight,
+                MinimumSize = new Size(0, licenseKeyHeight),
+                BorderStyle = BorderStyle.FixedSingle,
+                ScrollBars = ScrollBars.Vertical,
+                Font = licenseKeyFont,
+                Margin = new Padding(0, 2, 0, 8)
+            };
+            _businessSectionLayout.Controls.Add(_txtLicenseKey, 0, 14);
+
+            _lblLicenseStatus = new Label
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ForeColor = BrandTheme.MutedText,
+                Font = BrandTheme.CreateFont(9f),
+                Margin = new Padding(2, 2, 2, 0),
+                Text = string.Empty
+            };
+            _businessSectionLayout.Controls.Add(_lblLicenseStatus, 0, 15);
+
+            var licenseActions = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                WrapContents = false,
+                Margin = new Padding(0, 8, 0, 0)
+            };
+            _btnActivateLicense = CreateActionButton(AppLocalization.T("settings.license.activate"), BrandTheme.Teal, Color.White);
+            _btnActivateLicense.AutoSize = true;
+            _btnActivateLicense.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            _btnActivateLicense.Dock = DockStyle.None;
+            _btnActivateLicense.Margin = new Padding(0);
+            licenseActions.Controls.Add(_btnActivateLicense);
+            _businessSectionLayout.Controls.Add(licenseActions, 0, 16);
+
+            var contactLabel = new Label
+            {
+                AutoSize = true,
+                ForeColor = BrandTheme.MutedText,
+                Font = BrandTheme.CreateFont(8.9f),
+                Margin = new Padding(2, 10, 2, 0),
+                Text = AppLocalization.T("settings.license.contact")
+            };
+            _businessSectionLayout.Controls.Add(contactLabel, 0, 17);
+
             InitializeLanguageSelector();
             _btnApplyLanguage.Click += (_, __) => ApplyLanguageSelection();
             _cmbBusinesses.SelectedIndexChanged += (_, __) => SyncSelectedBusinessToEditor();
@@ -143,6 +229,13 @@ namespace CashTracker.App.Forms
             _btnRenameBusiness.Click += async (_, __) => await RenameSelectedBusinessAsync();
             _btnAddBusiness.Click += async (_, __) => await AddBusinessAsync();
             _btnDeleteBusiness.Click += async (_, __) => await DeleteSelectedBusinessAsync();
+            _btnChangePin.Click += async (_, __) => await OpenPinChangeAsync();
+            _btnCopyInstallCode.Click += (_, __) =>
+            {
+                if (!string.IsNullOrWhiteSpace(_txtInstallCode.Text))
+                    Clipboard.SetText(_txtInstallCode.Text);
+            };
+            _btnActivateLicense.Click += async (_, __) => await ActivateLicenseAsync();
             _txtNewBusiness.KeyDown += async (_, e) =>
             {
                 if (e.KeyCode != Keys.Enter)
@@ -212,11 +305,11 @@ namespace CashTracker.App.Forms
             _btnUpdateKalem.AutoSize = true;
             _btnUpdateKalem.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             _btnUpdateKalem.Dock = DockStyle.None;
-            _btnUpdateKalem.MinimumSize = new Size(0, 34);
+            _btnUpdateKalem.MinimumSize = new Size(0, UiMetrics.GetButtonHeight(_btnUpdateKalem.Font));
             _btnDeleteKalem.AutoSize = true;
             _btnDeleteKalem.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             _btnDeleteKalem.Dock = DockStyle.None;
-            _btnDeleteKalem.MinimumSize = new Size(0, 34);
+            _btnDeleteKalem.MinimumSize = new Size(0, UiMetrics.GetButtonHeight(_btnDeleteKalem.Font));
 
             var editActions = new FlowLayoutPanel
             {

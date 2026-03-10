@@ -216,7 +216,7 @@ namespace CashTracker.App
             table.Controls.Add(expense, 2, rowIndex);
         }
 
-        private void ApplyDailyOverview(PeriodSummary summary, IReadOnlyCollection<Kasa> records)
+        private void ApplyDailyOverview(PeriodSummary summary, IReadOnlyCollection<DailyPaymentMethodBreakdown> breakdowns)
         {
             _lblDailyOverviewIncome.Text = FormatAmount(summary.IncomeTotal);
             _lblDailyOverviewExpense.Text = FormatAmount(summary.ExpenseTotal);
@@ -225,14 +225,10 @@ namespace CashTracker.App
                 ? Color.FromArgb(31, 59, 93)
                 : Color.FromArgb(173, 59, 56);
 
-            var byMethod = records
-                .GroupBy(x => NormalizeOdemeYontemi(x.OdemeYontemi), StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(
-                    g => g.Key,
-                    g => (
-                        Income: g.Where(x => IsIncomeTip(x.Tip)).Sum(x => x.Tutar),
-                        Expense: g.Where(x => IsExpenseTip(x.Tip)).Sum(x => x.Tutar)),
-                    StringComparer.OrdinalIgnoreCase);
+            var byMethod = breakdowns.ToDictionary(
+                x => x.Method,
+                x => (x.IncomeTotal, x.ExpenseTotal),
+                StringComparer.OrdinalIgnoreCase);
 
             ApplyDailyMethodValues("Nakit", byMethod, _lblDailyNakitIncome, _lblDailyNakitExpense);
             ApplyDailyMethodValues("KrediKarti", byMethod, _lblDailyKrediKartiIncome, _lblDailyKrediKartiExpense);
@@ -265,11 +261,16 @@ namespace CashTracker.App
             Color borderColor,
             bool includeRangeSelector = false)
         {
+            var selectorFont = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold);
+            var buttonFont = BrandTheme.CreateFont(10f, FontStyle.Bold);
+            var selectorWrapHeight = UiMetrics.GetInputHeight(selectorFont) + 10;
+            var buttonHeight = UiMetrics.GetButtonHeight(buttonFont, 40, 16);
+            var baseHeight = includeRangeSelector ? 278 : 236;
             var panel = new Panel
             {
                 Width = 330,
-                Height = includeRangeSelector ? 278 : 236,
-                MinimumSize = new Size(280, includeRangeSelector ? 258 : 220),
+                Height = Math.Max(baseHeight, includeRangeSelector ? 252 + selectorWrapHeight : 204 + buttonHeight),
+                MinimumSize = new Size(280, includeRangeSelector ? 252 + selectorWrapHeight : 204 + buttonHeight),
                 BackColor = backColor,
                 Margin = new Padding(0, 0, 16, 16),
                 Padding = new Padding(18, 16, 18, 14)
@@ -303,7 +304,7 @@ namespace CashTracker.App
                 var selectorWrap = new Panel
                 {
                     Dock = DockStyle.Top,
-                    Height = 42,
+                    Height = selectorWrapHeight,
                     Margin = new Padding(0, 0, 0, 12),
                     Padding = new Padding(12, 6, 12, 4),
                     BackColor = Color.FromArgb(244, 248, 253)
@@ -324,9 +325,10 @@ namespace CashTracker.App
                     Margin = new Padding(0),
                     BackColor = selectorWrap.BackColor,
                     ForeColor = accent,
-                    Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
+                    Font = selectorFont,
                     IntegralHeight = false,
-                    DropDownHeight = 240
+                    DropDownHeight = 240,
+                    MinimumSize = new Size(0, UiMetrics.GetInputHeight(selectorFont))
                 };
                 selectorWrap.Controls.Add(rangeSelector);
                 layout.Controls.Add(selectorWrap, 0, 0);
@@ -388,11 +390,12 @@ namespace CashTracker.App
             {
                 Text = buttonText,
                 Dock = DockStyle.Top,
-                Height = 38,
+                MinimumSize = new Size(0, buttonHeight),
                 BackColor = BrandTheme.Navy,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Font = buttonFont,
+                Padding = UiMetrics.ButtonPadding,
                 Margin = new Padding(0, 10, 0, 0)
             };
             sendButton.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CashTracker.App.Services;
 using CashTracker.Core.Entities;
 using CashTracker.Core.Models;
 using CashTracker.Core.Services;
@@ -230,6 +231,16 @@ namespace CashTracker.Tests.Support
             Pin = pin;
             return Task.CompletedTask;
         }
+
+        public Task<bool> VerifyPinAsync(string pin)
+        {
+            return Task.FromResult(string.Equals(Pin, pin, StringComparison.Ordinal));
+        }
+
+        public Task<bool> IsDefaultPinAsync()
+        {
+            return Task.FromResult(string.Equals(Pin, "0000", StringComparison.Ordinal));
+        }
     }
 
     internal sealed class FakeTelegramApprovalService : ITelegramApprovalService
@@ -248,6 +259,50 @@ namespace CashTracker.Tests.Support
         {
             title = null;
             return false;
+        }
+    }
+
+    internal sealed class FakeInstallIdentityService : IInstallIdentityService
+    {
+        public string InstallCode { get; set; } = "CTI-TEST-CODE";
+        public string InstallCodeHash { get; set; } = "test-install-hash";
+
+        public string GetInstallCode() => InstallCode;
+        public string GetInstallCodeHash() => InstallCodeHash;
+    }
+
+    internal sealed class FakeLicenseRuntimeStateStore : ILicenseRuntimeStateStore
+    {
+        public LicenseRuntimeState State { get; private set; } = new();
+
+        public LicenseRuntimeState Load()
+        {
+            return new LicenseRuntimeState
+            {
+                InstallCode = State.InstallCode,
+                TrialStartedAtUtc = State.TrialStartedAtUtc,
+                LastSeenAtUtc = State.LastSeenAtUtc,
+                LegacyExempt = State.LegacyExempt,
+                TamperLocked = State.TamperLocked,
+                ActivatedAtUtc = State.ActivatedAtUtc,
+                ActivatedLicenseId = State.ActivatedLicenseId,
+                UpdatedAtUtc = State.UpdatedAtUtc
+            };
+        }
+
+        public void Save(LicenseRuntimeState state)
+        {
+            State = new LicenseRuntimeState
+            {
+                InstallCode = state.InstallCode,
+                TrialStartedAtUtc = state.TrialStartedAtUtc,
+                LastSeenAtUtc = state.LastSeenAtUtc,
+                LegacyExempt = state.LegacyExempt,
+                TamperLocked = state.TamperLocked,
+                ActivatedAtUtc = state.ActivatedAtUtc,
+                ActivatedLicenseId = state.ActivatedLicenseId,
+                UpdatedAtUtc = state.UpdatedAtUtc
+            };
         }
     }
 }

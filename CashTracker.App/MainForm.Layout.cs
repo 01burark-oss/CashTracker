@@ -129,7 +129,7 @@ namespace CashTracker.App
             var btnSettings = CreateNavButton(AppLocalization.T("main.nav.settings"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnChangeBot = CreateNavButton(AppLocalization.T("main.nav.bot"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
             var btnPrint = CreateNavButton(AppLocalization.T("main.nav.print"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnUpdate = CreateNavButton(AppLocalization.T("main.nav.update"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnUpdate = _btnUpdateNav = CreateNavButton(AppLocalization.T("main.nav.update"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
 
             navButtons.Controls.Add(btnGelirGider);
             navButtons.Controls.Add(btnSettings);
@@ -139,13 +139,26 @@ namespace CashTracker.App
 
             btnGelirGider.Click += (_, __) =>
             {
-                using var form = new KasaForm(_kasaService, _isletmeService, _kalemTanimiService, _telegramApprovalService, _runtimeOptions);
+                using var form = new KasaForm(
+                    _kasaService,
+                    _isletmeService,
+                    _kalemTanimiService,
+                    _telegramApprovalService,
+                    _runtimeOptions,
+                    _appSecurityService,
+                    _licenseService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
             btnSettings.Click += (_, __) =>
             {
-                using var form = new SettingsForm(_isletmeService, _kalemTanimiService, _telegramApprovalService, _runtimeOptions);
+                using var form = new SettingsForm(
+                    _isletmeService,
+                    _kalemTanimiService,
+                    _telegramApprovalService,
+                    _runtimeOptions,
+                    _appSecurityService,
+                    _licenseService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
@@ -177,15 +190,16 @@ namespace CashTracker.App
             };
             sidebarLayout.Controls.Add(sidebarFooter, 0, 2);
 
+            var sidebarToggleFont = BrandTheme.CreateFont(10f, FontStyle.Bold);
             var btnSidebarToggle = new Button
             {
                 Text = "<",
                 Width = 36,
-                Height = 32,
+                MinimumSize = new Size(36, UiMetrics.GetCompactButtonHeight(sidebarToggleFont)),
                 BackColor = BrandTheme.Navy,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
+                Font = sidebarToggleFont,
                 Margin = new Padding(0)
             };
             btnSidebarToggle.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
@@ -197,11 +211,16 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 1,
+                RowCount = 3,
                 BackColor = contentBackground
             };
             contentShell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            contentShell.RowStyles.Add(new RowStyle(SizeType.Absolute, 96));
+            contentShell.RowStyles.Add(new RowStyle(
+                SizeType.Absolute,
+                UiMetrics.GetTopBarHeight(
+                    BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
+                    BrandTheme.CreateFont(9.2f, FontStyle.Bold))));
+            contentShell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             contentShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             shell.Controls.Add(contentShell, 1, 0);
 
@@ -265,10 +284,97 @@ namespace CashTracker.App
                 _telegramSettings.IsEnabled ? Color.FromArgb(22, 122, 87) : Color.FromArgb(166, 57, 54),
                 _telegramSettings.IsEnabled ? Color.FromArgb(229, 246, 239) : Color.FromArgb(251, 237, 236));
             var localBadge = CreateTopBadge(AppLocalization.T("main.badge.localData"), Color.FromArgb(39, 75, 120), Color.FromArgb(229, 239, 251));
+            _lblUpdateBadge = CreateTopBadge(
+                AppLocalization.T("main.badge.updateAvailable"),
+                Color.FromArgb(176, 118, 30),
+                Color.FromArgb(255, 246, 221));
+            _lblUpdateBadge.Visible = false;
 
             badgeFlow.Controls.Add(dateBadge);
             badgeFlow.Controls.Add(telegramBadge);
             badgeFlow.Controls.Add(localBadge);
+            badgeFlow.Controls.Add(_lblUpdateBadge);
+
+            _licenseBanner = new Panel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = Color.FromArgb(255, 247, 224),
+                Padding = new Padding(24, 14, 24, 14),
+                Visible = false
+            };
+            _licenseBanner.Paint += (_, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(229, 192, 104));
+                e.Graphics.DrawLine(pen, 0, _licenseBanner.Height - 1, _licenseBanner.Width, _licenseBanner.Height - 1);
+            };
+            contentShell.Controls.Add(_licenseBanner, 0, 1);
+
+            var bannerLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            bannerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            bannerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            _licenseBanner.Controls.Add(bannerLayout);
+
+            var bannerTextStack = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            bannerTextStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            bannerLayout.Controls.Add(bannerTextStack, 0, 0);
+
+            _lblLicenseBannerTitle = new Label
+            {
+                AutoSize = true,
+                Font = BrandTheme.CreateHeadingFont(10.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(128, 82, 16),
+                Margin = new Padding(0, 0, 0, 2),
+                Text = AppLocalization.T("license.banner.title")
+            };
+            bannerTextStack.Controls.Add(_lblLicenseBannerTitle, 0, 0);
+
+            _lblLicenseBannerText = new Label
+            {
+                AutoSize = true,
+                Font = BrandTheme.CreateFont(9.3f),
+                ForeColor = Color.FromArgb(122, 87, 24),
+                MaximumSize = new Size(720, 0),
+                Text = AppLocalization.T("license.banner.body")
+            };
+            bannerTextStack.Controls.Add(_lblLicenseBannerText, 0, 1);
+
+            _btnLicenseBannerAction = CreateNavButton(
+                AppLocalization.T("license.banner.action"),
+                Color.FromArgb(199, 146, 44),
+                Color.White,
+                Color.FromArgb(226, 178, 72),
+                Color.FromArgb(183, 131, 27));
+            _btnLicenseBannerAction.Width = 168;
+            _btnLicenseBannerAction.Margin = new Padding(16, 0, 0, 0);
+            _btnLicenseBannerAction.Click += (_, __) =>
+            {
+                using var form = new SettingsForm(
+                    _isletmeService,
+                    _kalemTanimiService,
+                    _telegramApprovalService,
+                    _runtimeOptions,
+                    _appSecurityService,
+                    _licenseService);
+                form.ShowDialog(this);
+                _ = RefreshLicenseBannerAsync();
+            };
+            bannerLayout.Controls.Add(_btnLicenseBannerAction, 1, 0);
 
             var contentScroll = new Panel
             {
@@ -277,7 +383,7 @@ namespace CashTracker.App
                 BackColor = contentBackground,
                 Padding = new Padding(24, 20, 24, 24)
             };
-            contentShell.Controls.Add(contentScroll, 0, 1);
+            contentShell.Controls.Add(contentScroll, 0, 2);
 
             var content = new TableLayoutPanel
             {
@@ -285,10 +391,9 @@ namespace CashTracker.App
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 1,
-                RowCount = 6
+                RowCount = 5
             };
             content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -361,89 +466,6 @@ namespace CashTracker.App
             ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
             cardsPanel.Resize += (_, __) => ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
 
-            var reportGrid = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                ColumnCount = 2,
-                RowCount = 1,
-                Margin = new Padding(0)
-            };
-            reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.Controls.Add(reportGrid, 0, 5);
-
-            var monthlyPanel = CreatePeriodReportPanel(
-                AppLocalization.T("main.period.monthlyTitle"),
-                AppLocalization.T("main.period.monthlySubtitle"),
-                AppLocalization.T("main.period.monthlySend"),
-                BrandTheme.Navy,
-                out _cmbMonth,
-                out _lblMonthIncome,
-                out _lblMonthExpense,
-                out _lblMonthNet,
-                out var btnSendMonth);
-
-            var yearlyPanel = CreatePeriodReportPanel(
-                AppLocalization.T("main.period.yearlyTitle"),
-                AppLocalization.T("main.period.yearlySubtitle"),
-                AppLocalization.T("main.period.yearlySend"),
-                Color.FromArgb(80, 96, 174),
-                out _cmbYear,
-                out _lblYearIncome,
-                out _lblYearExpense,
-                out _lblYearNet,
-                out var btnSendYear);
-
-            reportGrid.Controls.Add(monthlyPanel, 0, 0);
-            reportGrid.Controls.Add(yearlyPanel, 1, 0);
-
-            _cmbMonth.SelectedIndexChanged += async (_, __) => await RefreshMonthlyAsync();
-            _cmbYear.SelectedIndexChanged += async (_, __) => await RefreshYearlyAsync();
-            btnSendMonth.Click += async (_, __) => await SendMonthlySummaryAsync(btnSendMonth);
-            btnSendYear.Click += async (_, __) => await SendYearlySummaryAsync(btnSendYear);
-
-            void ApplyReportGridLayout()
-            {
-                var compact = contentScroll.ClientSize.Width < 980;
-                reportGrid.SuspendLayout();
-                reportGrid.ColumnStyles.Clear();
-                reportGrid.RowStyles.Clear();
-
-                if (compact)
-                {
-                    reportGrid.ColumnCount = 1;
-                    reportGrid.RowCount = 1;
-                    reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-                    reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                    reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                    reportGrid.SetColumn(monthlyPanel, 0);
-                    reportGrid.SetRow(monthlyPanel, 0);
-                    reportGrid.SetColumn(yearlyPanel, 0);
-                    reportGrid.SetRow(yearlyPanel, 1);
-                    monthlyPanel.Margin = new Padding(0, 0, 0, 12);
-                    yearlyPanel.Margin = new Padding(0);
-                }
-                else
-                {
-                    reportGrid.ColumnCount = 2;
-                    reportGrid.RowCount = 1;
-                    reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-                    reportGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-                    reportGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                    reportGrid.SetColumn(monthlyPanel, 0);
-                    reportGrid.SetRow(monthlyPanel, 0);
-                    reportGrid.SetColumn(yearlyPanel, 1);
-                    reportGrid.SetRow(yearlyPanel, 0);
-                    monthlyPanel.Margin = new Padding(0, 0, 8, 0);
-                    yearlyPanel.Margin = new Padding(8, 0, 0, 0);
-                }
-
-                reportGrid.ResumeLayout();
-            }
-
             var navItems = new[]
             {
                 new { Button = btnGelirGider, ExpandedText = AppLocalization.T("main.nav.records"), CollapsedText = AppLocalization.T("main.nav.short.records") },
@@ -479,12 +501,7 @@ namespace CashTracker.App
                 ApplySidebarState();
             };
 
-            contentScroll.Resize += (_, __) => ApplyReportGridLayout();
-            ApplyReportGridLayout();
             ApplySidebarState();
-
-            LoadMonths();
-            LoadYears();
             LoadSummaryRangeSelectors();
 
             ResumeLayout(true);
@@ -571,7 +588,11 @@ namespace CashTracker.App
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 2, 10, 2)
+                IntegralHeight = false,
+                Font = BrandTheme.CreateFont(10f),
+                Height = UiMetrics.GetInputHeight(BrandTheme.CreateFont(10f)),
+                Margin = new Padding(0, 2, 10, 2),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(BrandTheme.CreateFont(10f)))
             };
             actionRow.Controls.Add(selector, 0, 0);
 

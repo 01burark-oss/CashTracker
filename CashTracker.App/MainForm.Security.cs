@@ -1,7 +1,5 @@
-using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CashTracker.App.Forms;
 using CashTracker.App.Services;
 
 namespace CashTracker.App
@@ -10,21 +8,27 @@ namespace CashTracker.App
     {
         private async Task InitializeAfterLoginAsync()
         {
-            if (!_isAuthenticated)
-            {
-                using var loginForm = new PinLoginForm(_appSecurityService, _backupReport, _telegramSettings);
-                var loginResult = loginForm.ShowDialog(this);
-                if (loginResult != DialogResult.OK)
-                {
-                    BeginInvoke(new Action(Close));
-                    return;
-                }
+            _startupMetrics.Mark("mainform-init-start");
+            await _licenseService.RecordSuccessfulUseAsync();
+            await RefreshLicenseBannerAsync();
+            await RefreshSummariesAsync();
+            _startupMetrics.Mark("dashboard-snapshot-ready");
+            PromptDesktopShortcutIfNeeded();
+            _ = RunDeferredUpdateCheckAsync();
+        }
 
-                _isAuthenticated = true;
+        private async Task RefreshLicenseBannerAsync()
+        {
+            var access = await _licenseService.EvaluateAccessAsync();
+            if (access.Mode != LicenseAccessMode.Trial || !access.ShowBanner)
+            {
+                _licenseBanner.Visible = false;
+                return;
             }
 
-            await RefreshSummariesAsync();
-            PromptDesktopShortcutIfNeeded();
+            _lblLicenseBannerTitle.Text = AppLocalization.T("license.banner.title");
+            _lblLicenseBannerText.Text = AppLocalization.F("license.banner.remaining", access.DaysRemaining);
+            _licenseBanner.Visible = true;
         }
 
         private void PromptDesktopShortcutIfNeeded()

@@ -8,6 +8,7 @@ namespace CashTracker.App.Forms
     {
         private static void AddRow(TableLayoutPanel panel, string label, out TextBox textBox)
         {
+            var inputFont = BrandTheme.CreateFont(10f);
             var lbl = new Label
             {
                 Text = label,
@@ -19,8 +20,12 @@ namespace CashTracker.App.Forms
             textBox = new TextBox
             {
                 Anchor = AnchorStyles.Left | AnchorStyles.Right,
+                AutoSize = false,
                 BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(0, 8, 0, 8)
+                Margin = new Padding(0, 8, 0, 8),
+                Font = inputFont,
+                Height = UiMetrics.GetInputHeight(inputFont),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(inputFont))
             };
             panel.Controls.Add(lbl);
             panel.Controls.Add(textBox);
@@ -28,6 +33,7 @@ namespace CashTracker.App.Forms
 
         private static void AddRow(TableLayoutPanel panel, string label, out ComboBox comboBox)
         {
+            var comboFont = BrandTheme.CreateFont(10f);
             var lbl = new Label
             {
                 Text = label,
@@ -43,7 +49,11 @@ namespace CashTracker.App.Forms
                 Margin = new Padding(0, 8, 0, 8),
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.White
+                BackColor = Color.White,
+                IntegralHeight = false,
+                Font = comboFont,
+                Height = UiMetrics.GetInputHeight(comboFont),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(comboFont))
             };
 
             panel.Controls.Add(lbl);
@@ -82,7 +92,7 @@ namespace CashTracker.App.Forms
 
             _btnKalemSettings = CreateButton(AppLocalization.T("kasa.manageCategories"), BrandTheme.Teal, Color.White);
             _btnKalemSettings.Width = 146;
-            _btnKalemSettings.Height = 34;
+            _btnKalemSettings.MinimumSize = new Size(146, UiMetrics.GetButtonHeight(_btnKalemSettings.Font));
             _btnKalemSettings.Margin = new Padding(0);
             _btnKalemSettings.Anchor = AnchorStyles.Left;
             _btnKalemSettings.Visible = false;
@@ -96,6 +106,7 @@ namespace CashTracker.App.Forms
 
         private static void AddRow(TableLayoutPanel panel, string label, out DateTimePicker dtp)
         {
+            var pickerFont = BrandTheme.CreateFont(10f);
             var lbl = new Label
             {
                 Text = label,
@@ -115,7 +126,9 @@ namespace CashTracker.App.Forms
                 Dock = DockStyle.Fill,
                 Margin = Padding.Empty,
                 Format = DateTimePickerFormat.Custom,
-                CustomFormat = "dd.MM.yyyy HH:mm"
+                CustomFormat = "dd.MM.yyyy HH:mm",
+                Font = pickerFont,
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(pickerFont))
             };
             wrapper.Controls.Add(dtp);
             panel.Controls.Add(lbl);

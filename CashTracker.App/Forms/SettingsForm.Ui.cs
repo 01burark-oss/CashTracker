@@ -7,7 +7,7 @@ using CashTracker.Core.Services;
 
 namespace CashTracker.App.Forms
 {
-    public sealed partial class SettingsForm
+    internal sealed partial class SettingsForm
     {
         private enum HintTone
         {
@@ -22,7 +22,7 @@ namespace CashTracker.App.Forms
             return new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(16, 14, 16, 16),
+                Padding = UiMetrics.SurfacePadding,
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -30,10 +30,14 @@ namespace CashTracker.App.Forms
 
         private static Panel CreateSectionHeader(string title, string subtitle)
         {
+            var titleFont = BrandTheme.CreateHeadingFont(13f, FontStyle.Bold);
+            var subtitleFont = BrandTheme.CreateFont(9.3f);
             var panel = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 66
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, UiMetrics.GetHeaderHeight(titleFont, subtitleFont, 20, 3))
             };
 
             var layout = new TableLayoutPanel
@@ -50,7 +54,7 @@ namespace CashTracker.App.Forms
             var titleLabel = new Label
             {
                 Text = title,
-                Font = BrandTheme.CreateHeadingFont(13f, FontStyle.Bold),
+                Font = titleFont,
                 ForeColor = BrandTheme.Heading,
                 AutoSize = true,
                 Margin = new Padding(0)
@@ -60,7 +64,7 @@ namespace CashTracker.App.Forms
             var subtitleLabel = new Label
             {
                 Text = subtitle,
-                Font = BrandTheme.CreateFont(9.3f),
+                Font = subtitleFont,
                 ForeColor = BrandTheme.MutedText,
                 AutoSize = true,
                 Margin = new Padding(0, 3, 0, 0)
@@ -84,22 +88,33 @@ namespace CashTracker.App.Forms
 
         private static TextBox CreateInputBox()
         {
+            var font = BrandTheme.CreateFont(10f);
             return new TextBox
             {
-                Dock = DockStyle.Fill,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                AutoSize = false,
                 BorderStyle = BorderStyle.FixedSingle,
-                Margin = new Padding(0)
+                Font = font,
+                Height = UiMetrics.GetInputHeight(font),
+                Margin = new Padding(0, 3, 0, 3),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(font))
             };
         }
 
         private static ComboBox CreateFlatComboBox()
         {
+            var font = BrandTheme.CreateFont(10f);
+            var height = UiMetrics.GetInputHeight(font);
             return new ComboBox
             {
-                Dock = DockStyle.Fill,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0)
+                IntegralHeight = false,
+                Font = font,
+                Height = height,
+                Margin = new Padding(0, 3, 0, 3),
+                MinimumSize = new Size(0, height)
             };
         }
 
@@ -110,28 +125,31 @@ namespace CashTracker.App.Forms
                 Dock = DockStyle.Top,
                 ColumnCount = 2,
                 RowCount = 1,
-                Height = 36,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 Margin = new Padding(0, 0, 0, 10)
             };
             row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, leftPercent));
             row.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, rightWidth));
-            row.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+            row.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             return row;
         }
 
         private static Button CreateActionButton(string text, Color back, Color fore)
         {
+            var font = BrandTheme.CreateHeadingFont(9.2f, FontStyle.Bold);
             var button = new Button
             {
                 Text = text,
                 Dock = DockStyle.Fill,
-                Height = 34,
                 BackColor = back,
                 ForeColor = fore,
-                Font = BrandTheme.CreateHeadingFont(9.2f, FontStyle.Bold),
+                Font = font,
                 Cursor = Cursors.Hand,
                 FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(8, 0, 0, 0)
+                Margin = new Padding(8, 0, 0, 0),
+                MinimumSize = new Size(0, UiMetrics.GetButtonHeight(font)),
+                Padding = UiMetrics.ButtonPadding
             };
 
             button.FlatAppearance.BorderColor = Color.FromArgb(20, 40, 64);
@@ -191,11 +209,14 @@ namespace CashTracker.App.Forms
                     setHint(AppLocalization.T("settings.approval.timeout"), HintTone.Warning);
                     return false;
                 case TelegramApprovalStatus.NotConfigured:
-                    MessageBox.Show(
-                        AppLocalization.T("settings.approval.notConfiguredBody"),
+                    var localConfirm = MessageBox.Show(
+                        "Telegram onayi aktif degil. Yerel onay ile devam edilsin mi?",
                         AppLocalization.T("settings.title"),
-                        MessageBoxButtons.OK,
+                        MessageBoxButtons.YesNo,
                         MessageBoxIcon.Warning);
+                    if (localConfirm == DialogResult.Yes)
+                        return true;
+
                     setHint(AppLocalization.T("settings.approval.notConfiguredHint"), HintTone.Warning);
                     return false;
                 case TelegramApprovalStatus.Failed:

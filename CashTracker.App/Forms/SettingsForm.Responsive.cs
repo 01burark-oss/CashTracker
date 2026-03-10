@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace CashTracker.App.Forms
 {
-    public sealed partial class SettingsForm
+    internal sealed partial class SettingsForm
     {
         private void ApplyResponsiveLayout()
         {

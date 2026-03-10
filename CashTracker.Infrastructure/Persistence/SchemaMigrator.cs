@@ -7,6 +7,7 @@ namespace CashTracker.Infrastructure.Persistence
     public static partial class SchemaMigrator
     {
         private const string VarsayilanIsletmeAdi = "Mevcut Isletme";
+        private const string SchemaBootstrappedKey = "SchemaBootstrappedV2";
 
         public static void EnsureKasaSchema(CashTrackerDbContext db)
         {
@@ -23,9 +24,14 @@ namespace CashTracker.Infrastructure.Persistence
             EnsureIndexes(db);
 
             var activeIsletmeId = EnsureActiveBusiness(db, conn);
-            BackfillKasaBusiness(db, activeIsletmeId);
-            BackfillKasaKalem(db);
-            SeedKalemFromKasa(db);
+            if (!HasSchemaBootstrapMarker(conn))
+            {
+                BackfillKasaBusiness(db, activeIsletmeId);
+                BackfillKasaKalem(db);
+                SeedKalemFromKasa(db);
+                SetSchemaBootstrapMarker(db);
+            }
+
             EnsureDefaultKalemler(db, activeIsletmeId);
         }
 
@@ -64,6 +70,28 @@ namespace CashTracker.Infrastructure.Persistence
             if (result is null || result == DBNull.Value)
                 return 0;
             return Convert.ToInt32(result);
+        }
+
+        private static bool HasSchemaBootstrapMarker(DbConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT COUNT(1) FROM AppSetting WHERE Key = $key AND Value = '1';";
+            var p = cmd.CreateParameter();
+            p.ParameterName = "$key";
+            p.Value = SchemaBootstrappedKey;
+            cmd.Parameters.Add(p);
+            var result = cmd.ExecuteScalar();
+            return result != null && result != DBNull.Value && Convert.ToInt32(result) > 0;
+        }
+
+        private static void SetSchemaBootstrapMarker(CashTrackerDbContext db)
+        {
+            db.Database.ExecuteSqlRaw(@"
+INSERT INTO AppSetting (Key, Value, CreatedAt, UpdatedAt)
+SELECT {0}, '1', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+WHERE NOT EXISTS (
+    SELECT 1 FROM AppSetting WHERE Key = {0}
+);", SchemaBootstrappedKey);
         }
 
         private static partial void EnsureKasaTable(CashTrackerDbContext db, DbConnection conn);

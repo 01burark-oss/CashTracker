@@ -4,15 +4,17 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CashTracker.App.Services;
 
 namespace CashTracker.App.Forms
 {
-    public sealed partial class SettingsForm
+    internal sealed partial class SettingsForm
     {
         private async Task LoadAllAsync()
         {
             await LoadBusinessesAsync();
             await LoadKalemlerAsync();
+            await LoadLicenseStateAsync();
         }
 
         private void InitializeLanguageSelector()
@@ -426,5 +428,70 @@ namespace CashTracker.App.Forms
                 return AppLocalization.T("common.unknown");
             }
         }
+
+        private async Task OpenPinChangeAsync()
+        {
+            using var form = new PinSetupForm(_appSecurityService, isFirstRun: false);
+            if (form.ShowDialog(this) == DialogResult.OK)
+                SetBusinessHint("PIN guncellendi.", HintTone.Success);
+
+            await Task.CompletedTask;
+        }
+
+        private async Task LoadLicenseStateAsync()
+        {
+            if (_txtInstallCode is not null)
+                _txtInstallCode.Text = _licenseService.GetInstallCode();
+
+            var access = await _licenseService.EvaluateAccessAsync();
+            var current = await _licenseService.GetCurrentStatusAsync();
+
+            if (_txtLicenseKey is not null && current.IsValid)
+                _txtLicenseKey.Text = current.LicenseKey;
+
+            if (_lblLicenseStatus is null)
+                return;
+
+            _lblLicenseStatus.Text = access.Mode switch
+            {
+                LicenseAccessMode.Active => AppLocalization.F("settings.license.status.active", current.Payload?.CustomerName ?? "lisansli kullanici"),
+                LicenseAccessMode.LegacyExempt => AppLocalization.T("settings.license.status.legacy"),
+                LicenseAccessMode.Blocked => access.Message,
+                _ => AppLocalization.F("settings.license.status.trial", access.DaysRemaining)
+            };
+
+            _lblLicenseStatus.ForeColor = access.Mode switch
+            {
+                LicenseAccessMode.Active => ResolveHintColor(HintTone.Success),
+                LicenseAccessMode.LegacyExempt => ResolveHintColor(HintTone.Success),
+                LicenseAccessMode.Blocked => ResolveHintColor(HintTone.Error),
+                _ => ResolveHintColor(HintTone.Warning)
+            };
+        }
+
+        private async Task ActivateLicenseAsync()
+        {
+            if (_btnActivateLicense is null || _txtLicenseKey is null || _lblLicenseStatus is null)
+                return;
+
+            _btnActivateLicense.Enabled = false;
+
+            try
+            {
+                var result = await _licenseService.ActivateAsync(_txtLicenseKey.Text);
+                _lblLicenseStatus.Text = result.Message;
+                _lblLicenseStatus.ForeColor = result.IsValid
+                    ? ResolveHintColor(HintTone.Success)
+                    : ResolveHintColor(HintTone.Error);
+
+                if (result.IsValid)
+                    await LoadLicenseStateAsync();
+            }
+            finally
+            {
+                _btnActivateLicense.Enabled = true;
+            }
+        }
+
     }
 }

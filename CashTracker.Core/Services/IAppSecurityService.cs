@@ -6,5 +6,7 @@ namespace CashTracker.Core.Services
     {
         Task<string> GetPinAsync();
         Task SetPinAsync(string pin);
+        Task<bool> VerifyPinAsync(string pin);
+        Task<bool> IsDefaultPinAsync();
     }
 }

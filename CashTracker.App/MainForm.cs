@@ -14,31 +14,33 @@ namespace CashTracker.App
         private readonly ISummaryService _summaryService;
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly IDashboardSnapshotService _dashboardSnapshotService;
         private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
         private readonly TelegramSettings _telegramSettings;
         private readonly UpdateSettings _updateSettings;
         private readonly AppRuntimeOptions _runtimeOptions;
-        private readonly GitHubUpdateService _updateService;
+        private readonly ILicenseService _licenseService;
+        private readonly UpdateManifestService _updateService;
+        private readonly StartupMetrics _startupMetrics;
         private readonly System.Windows.Forms.Timer _dateChangeTimer;
-        private bool _isAuthenticated;
+        private ManifestUpdateCheckResult? _cachedUpdateResult;
+        private Label _lblUpdateBadge = null!;
+        private Panel _licenseBanner = null!;
+        private Label _lblLicenseBannerTitle = null!;
+        private Label _lblLicenseBannerText = null!;
+        private Button _btnLicenseBannerAction = null!;
+        private bool _isAuthenticated = true;
         private bool _isLoadingSummaryRangeSelectors;
+        private bool _hasDeferredUpdateCheckStarted;
         private DateTime _lastSummaryDate = DateTime.Today;
 
         private SummaryCard _cardDaily = null!;
         private SummaryCard _cardPrimaryRange = null!;
         private SummaryCard _cardSecondaryRange = null!;
 
-        private ComboBox _cmbMonth = null!;
-        private Label _lblMonthIncome = null!;
-        private Label _lblMonthExpense = null!;
-        private Label _lblMonthNet = null!;
-
-        private ComboBox _cmbYear = null!;
-        private Label _lblYearIncome = null!;
-        private Label _lblYearExpense = null!;
-        private Label _lblYearNet = null!;
+        private Button _btnUpdateNav = null!;
         private Label _lblActiveBusinessReport = null!;
         private Label _lblDailyOverviewIncome = null!;
         private Label _lblDailyOverviewExpense = null!;
@@ -64,48 +66,42 @@ namespace CashTracker.App
             public string DefaultRangeCode { get; set; } = SummaryRangeCatalog.Last30Days;
         }
 
-        private sealed class MonthItem
-        {
-            public int Year { get; set; }
-            public int Month { get; set; }
-            public string Display { get; set; } = string.Empty;
-        }
-
-        private sealed class YearItem
-        {
-            public int Year { get; set; }
-            public string Display { get; set; } = string.Empty;
-        }
-
         public MainForm(
             IKasaService kasaService,
             ISummaryService summaryService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
+            IDashboardSnapshotService dashboardSnapshotService,
             ITelegramApprovalService telegramApprovalService,
             IAppSecurityService appSecurityService,
             BackupReportService backupReport,
             TelegramSettings telegramSettings,
             UpdateSettings updateSettings,
             AppRuntimeOptions runtimeOptions,
-            GitHubUpdateService updateService)
+            ILicenseService licenseService,
+            UpdateManifestService updateService,
+            StartupMetrics startupMetrics)
         {
             _kasaService = kasaService;
             _summaryService = summaryService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _dashboardSnapshotService = dashboardSnapshotService;
             _telegramApprovalService = telegramApprovalService;
             _appSecurityService = appSecurityService;
             _backupReport = backupReport;
             _telegramSettings = telegramSettings;
             _updateSettings = updateSettings;
             _runtimeOptions = runtimeOptions;
+            _licenseService = licenseService;
             _updateService = updateService;
+            _startupMetrics = startupMetrics;
 
             Text = AppLocalization.T("main.title");
             Width = 1320;
             Height = 900;
             MinimumSize = new Size(1320, 820);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterScreen;
             WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;

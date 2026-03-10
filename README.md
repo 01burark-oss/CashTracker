@@ -3,14 +3,15 @@
 Download EXE (GitHub Release):
 
 - Latest release page: https://github.com/01burark-oss/CashTracker/releases/latest
-- Direct download (latest): https://github.com/01burark-oss/CashTracker/releases/latest/download/CashTracker.exe
-- SHA256 (latest): https://github.com/01burark-oss/CashTracker/releases/latest/download/CashTracker.exe.sha256
+- Direct download (latest): https://github.com/01burark-oss/CashTracker/releases/latest/download/CashTracker-Setup.exe
+- SHA256 (latest): https://github.com/01burark-oss/CashTracker/releases/latest/download/CashTracker-Setup.exe.sha256
+- Update manifest (latest): https://github.com/01burark-oss/CashTracker/releases/latest/download/update-manifest.json
 
 How to use:
 
-1. Download `CashTracker.exe` from the direct link above.
-2. Move it to any folder (for example Desktop).
-3. Double-click to run.
+1. Download `CashTracker-Setup.exe` from the direct link above.
+2. Run the installer.
+3. Complete license activation on first launch.
 
 Create local release artifact:
 
@@ -37,9 +38,11 @@ git push origin vX.Y.Z
 
 Tag push triggers `.github/workflows/release.yml` and uploads:
 
-- `CashTracker.exe`
-- `CashTracker.exe.sha256`
+- `CashTracker-Setup.exe`
+- `CashTracker-Setup.exe.sha256`
+- `update-manifest.json`
 
 Release note:
 
-- Keep the primary asset name as `CashTracker.exe`. Older app versions download and launch this exact file name during in-app update, and the new binary now migrates itself from `%LOCALAPPDATA%\CashTracker\updates` into the installed location.
+- Primary install asset is `CashTracker-Setup.exe`.
+- In-app updates use the signed `update-manifest.json` asset and launch the installer in per-user upgrade mode.

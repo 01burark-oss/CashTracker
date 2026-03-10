@@ -2,13 +2,14 @@ param(
     [string]$Version = "",
     [string]$Runtime = "win-x64",
     [string]$Configuration = "Release",
-    [string]$AssetName = "CashTracker.exe"
+    [string]$SetupBaseName = "CashTracker-Setup"
 )
 
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "CashTracker.App\CashTracker.App.csproj"
+$buildInstallerScript = Join-Path $PSScriptRoot "build-installer.ps1"
 
 if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
@@ -16,24 +17,22 @@ if (-not (Test-Path $projectPath)) {
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     [xml]$projectXml = Get-Content $projectPath
-    $Version = $projectXml.Project.PropertyGroup.Version
+    $versionNode = @($projectXml.Project.PropertyGroup | Where-Object {
+        $_.PSObject.Properties.Name -contains "Version"
+    })[0]
+    if ($null -ne $versionNode) {
+        $Version = $versionNode.Version
+    }
 }
 
 if ([string]::IsNullOrWhiteSpace($Version)) {
     throw "Version is required. Set <Version> in CashTracker.App.csproj or pass -Version."
 }
 
-$assetBaseName = [System.IO.Path]::GetFileNameWithoutExtension($AssetName)
-if ([string]::IsNullOrWhiteSpace($assetBaseName)) {
-    throw "AssetName must include a valid file name, for example 'CashTracker.exe'."
-}
-
 $artifactsRoot = Join-Path $repoRoot "artifacts"
 $versionDir = Join-Path $artifactsRoot $Version
 $publishDir = Join-Path $versionDir "publish"
-$publishedExePath = Join-Path $publishDir $AssetName
-$releaseExePath = Join-Path $versionDir $AssetName
-$shaPath = "$releaseExePath.sha256"
+$installerPath = Join-Path $versionDir "$SetupBaseName.exe"
 
 New-Item -ItemType Directory -Path $artifactsRoot -Force | Out-Null
 New-Item -ItemType Directory -Path $versionDir -Force | Out-Null
@@ -44,8 +43,6 @@ dotnet publish $projectPath `
     -c $Configuration `
     -r $Runtime `
     --self-contained true `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:DebugType=None `
     -p:DebugSymbols=false `
     -o $publishDir
@@ -54,39 +51,24 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
-if (-not (Test-Path $publishDir)) {
-    throw "Publish output directory not found: $publishDir"
+if (-not (Test-Path (Join-Path $publishDir "CashTracker.exe"))) {
+    throw "Expected published file not found: $(Join-Path $publishDir 'CashTracker.exe')"
 }
 
-if (-not (Test-Path $publishedExePath)) {
-    $defaultPublishedExe = Join-Path $publishDir "CashTracker.App.exe"
-    $fallbackExe = if (Test-Path $defaultPublishedExe) {
-        Get-Item -LiteralPath $defaultPublishedExe
-    }
-    else {
-        Get-ChildItem -Path $publishDir -File -Filter "*.exe" | Select-Object -First 1
-    }
-    if ($null -eq $fallbackExe) {
-        throw "Publish output does not contain an .exe file. Check publish settings."
-    }
+& $buildInstallerScript `
+    -Version $Version `
+    -PublishDir $publishDir `
+    -OutputDir $versionDir `
+    -SetupBaseName $SetupBaseName
 
-    $publishedExePath = $fallbackExe.FullName
+if (-not (Test-Path $installerPath)) {
+    throw "Installer was not created: $installerPath"
 }
 
-if (Test-Path $releaseExePath) {
-    Remove-Item $releaseExePath -Force
-}
-
-Copy-Item -Path $publishedExePath -Destination $releaseExePath -Force
-
-$hash = (Get-FileHash -Path $releaseExePath -Algorithm SHA256).Hash.ToLowerInvariant()
-Set-Content -Path $shaPath -Value "$hash *$AssetName" -NoNewline
-
-if (Test-Path $publishDir) {
-    Remove-Item -Path $publishDir -Recurse -Force
-}
+$installerSha = (Get-FileHash -Path $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+Set-Content -Path "$installerPath.sha256" -Value "$installerSha *$(Split-Path -Leaf $installerPath)" -NoNewline
 
 Write-Host "Done:"
-Write-Host " - Folder: $versionDir"
-Write-Host " - Exe:    $releaseExePath"
-Write-Host " - Sha256: $shaPath"
+Write-Host " - Folder:     $versionDir"
+Write-Host " - PublishDir: $publishDir"
+Write-Host " - Installer:  $installerPath"

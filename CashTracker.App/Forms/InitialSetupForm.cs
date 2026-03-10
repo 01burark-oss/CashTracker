@@ -50,6 +50,7 @@ namespace CashTracker.App.Forms
             Width = 980;
             Height = 640;
             MinimumSize = new Size(1120, 680);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = true;
@@ -122,28 +123,30 @@ namespace CashTracker.App.Forms
             brandTitleWrap.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             brandHeader.Controls.Add(brandTitleWrap, 1, 0);
 
+            var brandTitleFont = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold);
             var brandTitle = new Label
             {
                 Text = "CASHTRACKER",
                 AutoSize = false,
                 AutoEllipsis = false,
                 Dock = DockStyle.Top,
-                Height = 28,
+                Height = UiMetrics.GetTextLineHeight(brandTitleFont) + 4,
                 ForeColor = Color.White,
-                Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
+                Font = brandTitleFont,
                 Margin = new Padding(0, 0, 0, 2)
             };
             brandTitleWrap.Controls.Add(brandTitle, 0, 0);
 
+            var brandSubtitleFont = BrandTheme.CreateFont(10f, FontStyle.Regular);
             var brandSubtitle = new Label
             {
                 Text = T("initial.brand.subtitle"),
                 AutoSize = false,
                 AutoEllipsis = false,
                 Dock = DockStyle.Top,
-                Height = 22,
+                Height = UiMetrics.GetTextLineHeight(brandSubtitleFont) + 2,
                 ForeColor = Color.FromArgb(205, 222, 240),
-                Font = BrandTheme.CreateFont(10f, FontStyle.Regular),
+                Font = brandSubtitleFont,
                 Margin = new Padding(0)
             };
             brandTitleWrap.Controls.Add(brandSubtitle, 0, 1);
@@ -171,15 +174,16 @@ namespace CashTracker.App.Forms
                 stepsPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             brandLayout.Controls.Add(stepsPanel, 0, 2);
 
+            var stepTitleFont = BrandTheme.CreateHeadingFont(11f, FontStyle.Bold);
             var stepTitle = new Label
             {
                 Text = T("initial.steps.title"),
                 AutoSize = false,
                 AutoEllipsis = false,
-                Height = 22,
+                Height = UiMetrics.GetTextLineHeight(stepTitleFont) + 2,
                 Dock = DockStyle.Top,
                 ForeColor = Color.White,
-                Font = BrandTheme.CreateHeadingFont(11f, FontStyle.Bold),
+                Font = stepTitleFont,
                 Margin = new Padding(0, 0, 0, 8)
             };
             stepsPanel.Controls.Add(stepTitle, 0, 0);
@@ -216,16 +220,8 @@ namespace CashTracker.App.Forms
 
             if (isReconfigureMode)
             {
-                var sideBack = new Button
-                {
-                    Text = T("initial.button.back"),
-                    Width = 132,
-                    Height = 36,
-                    BackColor = Color.FromArgb(31, 57, 90),
-                    ForeColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    Anchor = AnchorStyles.Left
-                };
+                var sideBack = CreateActionButton(T("initial.button.back"), Color.FromArgb(31, 57, 90), 132);
+                sideBack.Anchor = AnchorStyles.Left;
                 sideBack.FlatAppearance.BorderColor = Color.FromArgb(93, 118, 150);
                 sideBack.FlatAppearance.BorderSize = 1;
                 sideBack.Click += (_, __) =>
@@ -326,13 +322,7 @@ namespace CashTracker.App.Forms
             };
             formGrid.Controls.Add(lblToken);
 
-            _txtBotToken = new TextBox
-            {
-                BorderStyle = BorderStyle.FixedSingle,
-                Height = 32,
-                Dock = DockStyle.Top,
-                Margin = new Padding(0, 0, 0, 4)
-            };
+            _txtBotToken = CreateSingleLineInput();
             _txtBotToken.Text = initialBotToken ?? string.Empty;
             _txtBotToken.TextChanged += (_, __) => RefreshValidationState();
             formGrid.Controls.Add(_txtBotToken);
@@ -355,13 +345,7 @@ namespace CashTracker.App.Forms
             };
             formGrid.Controls.Add(lblUser);
 
-            _txtUserId = new TextBox
-            {
-                BorderStyle = BorderStyle.FixedSingle,
-                Height = 32,
-                Dock = DockStyle.Top,
-                Margin = new Padding(0, 0, 0, 4)
-            };
+            _txtUserId = CreateSingleLineInput();
             _txtUserId.Text = initialUserId ?? string.Empty;
             _txtUserId.TextChanged += (_, __) => RefreshValidationState();
             formGrid.Controls.Add(_txtUserId);
@@ -374,31 +358,15 @@ namespace CashTracker.App.Forms
             };
             formGrid.Controls.Add(_lblUserStatus);
 
-            _btnFetchChatId = new Button
-            {
-                Text = T("initial.button.fetchChatId"),
-                Width = 220,
-                Height = 36,
-                BackColor = navy,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 0, 8, 8)
-            };
+            _btnFetchChatId = CreateActionButton(T("initial.button.fetchChatId"), navy, 220);
+            _btnFetchChatId.Margin = new Padding(0, 0, 8, 8);
             _btnFetchChatId.FlatAppearance.BorderColor = Color.FromArgb(93, 118, 150);
             _btnFetchChatId.FlatAppearance.BorderSize = 1;
             _btnFetchChatId.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             _btnFetchChatId.Click += async (_, __) => await FetchChatIdAsync();
 
-            var btnOpenBotFather = new Button
-            {
-                Text = T("initial.button.openBotFather"),
-                Width = 150,
-                Height = 36,
-                BackColor = Color.FromArgb(31, 57, 90),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 0, 0, 8)
-            };
+            var btnOpenBotFather = CreateActionButton(T("initial.button.openBotFather"), Color.FromArgb(31, 57, 90), 150);
+            btnOpenBotFather.Margin = new Padding(0, 0, 0, 8);
             btnOpenBotFather.FlatAppearance.BorderSize = 0;
             btnOpenBotFather.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             btnOpenBotFather.Click += (_, __) =>
@@ -458,7 +426,6 @@ namespace CashTracker.App.Forms
             var btnBar = new FlowLayoutPanel
             {
                 AutoSize = true,
-                Height = 42,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 Dock = DockStyle.Fill,
@@ -466,46 +433,21 @@ namespace CashTracker.App.Forms
             };
             cardLayout.Controls.Add(btnBar, 0, 6);
 
-            _btnSave = new Button
-            {
-                Text = T("initial.button.finish"),
-                Width = 188,
-                Height = 36,
-                BackColor = navy,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(8, 0, 0, 0)
-            };
+            _btnSave = CreateActionButton(T("initial.button.finish"), navy, 188);
+            _btnSave.Margin = new Padding(8, 0, 0, 0);
             _btnSave.FlatAppearance.BorderSize = 0;
             _btnSave.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             _btnSave.Click += (_, __) => Submit();
             btnBar.Controls.Add(_btnSave);
 
-            _btnTestConnection = new Button
-            {
-                Text = T("initial.button.testConnection"),
-                Width = 170,
-                Height = 36,
-                BackColor = navy,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 0, 8, 0)
-            };
+            _btnTestConnection = CreateActionButton(T("initial.button.testConnection"), navy, 170);
+            _btnTestConnection.Margin = new Padding(0, 0, 8, 0);
             _btnTestConnection.FlatAppearance.BorderSize = 0;
             _btnTestConnection.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
             _btnTestConnection.Click += async (_, __) => await TestConnectionAsync();
             btnBar.Controls.Add(_btnTestConnection);
 
-            var btnCancel = new Button
-            {
-                Text = isReconfigureMode ? T("initial.button.back") : T("initial.button.exit"),
-                Width = 96,
-                Height = 36,
-                BackColor = navy,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0)
-            };
+            var btnCancel = CreateActionButton(isReconfigureMode ? T("initial.button.back") : T("initial.button.exit"), navy, 96);
             btnCancel.FlatAppearance.BorderColor = Color.FromArgb(93, 118, 150);
             btnCancel.FlatAppearance.BorderSize = 1;
             btnCancel.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
@@ -819,6 +761,40 @@ namespace CashTracker.App.Forms
             label.ForeColor = isValid
                 ? Color.FromArgb(23, 122, 88)
                 : Color.FromArgb(166, 57, 54);
+        }
+
+        private static TextBox CreateSingleLineInput()
+        {
+            var font = BrandTheme.CreateFont(10f);
+            return new TextBox
+            {
+                BorderStyle = BorderStyle.FixedSingle,
+                Dock = DockStyle.Top,
+                AutoSize = false,
+                Margin = new Padding(0, 0, 0, 4),
+                Font = font,
+                Height = UiMetrics.GetInputHeight(font),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(font))
+            };
+        }
+
+        private static Button CreateActionButton(string text, Color backColor, int width)
+        {
+            var font = BrandTheme.CreateHeadingFont(9.6f, FontStyle.Bold);
+            var button = new Button
+            {
+                Text = text,
+                Width = width,
+                MinimumSize = new Size(width, UiMetrics.GetButtonHeight(font)),
+                BackColor = backColor,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = font,
+                Margin = new Padding(0),
+                Padding = UiMetrics.ButtonPadding
+            };
+
+            return button;
         }
 
         private static string T(string key) => AppLocalization.T(key);

@@ -42,6 +42,7 @@ namespace CashTracker.App.Services
 
             var latestTag = ReadString(root, "tag_name");
             var releasePage = ReadString(root, "html_url");
+            var releaseNotes = ReadString(root, "body");
 
             string assetName = string.Empty;
             string assetDownloadUrl = string.Empty;
@@ -50,13 +51,13 @@ namespace CashTracker.App.Services
             if (root.TryGetProperty("assets", out var assetsNode) && assetsNode.ValueKind == JsonValueKind.Array)
             {
                 var assets = assetsNode.EnumerateArray().ToArray();
-                var selectedAsset = SelectAsset(assets, settings.AssetName);
+                var selectedAsset = SelectAsset(assets, string.Empty);
                 if (selectedAsset.HasValue)
                 {
                     assetName = ReadString(selectedAsset.Value, "name");
                     assetDownloadUrl = ReadString(selectedAsset.Value, "browser_download_url");
 
-                    var selectedChecksum = SelectChecksumAsset(assets, assetName, settings.ChecksumAssetName);
+                    var selectedChecksum = SelectChecksumAsset(assets, assetName, string.Empty);
                     if (selectedChecksum.HasValue)
                     {
                         checksumAssetName = ReadString(selectedChecksum.Value, "name");
@@ -74,7 +75,8 @@ namespace CashTracker.App.Services
                 assetDownloadUrl,
                 checksumAssetName,
                 checksumAssetDownloadUrl,
-                releasePage);
+                releasePage,
+                releaseNotes);
         }
 
         public async Task<string> DownloadAssetAsync(
@@ -258,13 +260,15 @@ namespace CashTracker.App.Services
         string AssetDownloadUrl,
         string ChecksumAssetName,
         string ChecksumAssetDownloadUrl,
-        string ReleasePageUrl)
+        string ReleasePageUrl,
+        string ReleaseNotes)
     {
         public static UpdateCheckResult NotConfigured()
         {
             return new UpdateCheckResult(
                 false,
                 false,
+                string.Empty,
                 string.Empty,
                 string.Empty,
                 string.Empty,

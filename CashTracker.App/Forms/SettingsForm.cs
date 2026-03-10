@@ -1,17 +1,20 @@
 using System.Drawing;
 using System.Windows.Forms;
 using CashTracker.App;
+using CashTracker.App.Services;
 using CashTracker.App.UI;
 using CashTracker.Core.Services;
 
 namespace CashTracker.App.Forms
 {
-    public sealed partial class SettingsForm : Form
+    internal sealed partial class SettingsForm : Form
     {
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly AppRuntimeOptions _runtimeOptions;
+        private readonly IAppSecurityService _appSecurityService;
+        private readonly ILicenseService _licenseService;
 
         private TableLayoutPanel _rootLayout = null!;
         private Panel _businessPanel = null!;
@@ -34,7 +37,13 @@ namespace CashTracker.App.Forms
         private Button _btnRenameBusiness = null!;
         private Button _btnAddBusiness = null!;
         private Button _btnDeleteBusiness = null!;
+        private Button _btnChangePin = null!;
         private Label _lblBusinessHint = null!;
+        private TextBox _txtInstallCode = null!;
+        private TextBox _txtLicenseKey = null!;
+        private Button _btnCopyInstallCode = null!;
+        private Button _btnActivateLicense = null!;
+        private Label _lblLicenseStatus = null!;
 
         private ComboBox _cmbKalemTip = null!;
         private ListBox _lstKalemler = null!;
@@ -66,17 +75,22 @@ namespace CashTracker.App.Forms
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
             ITelegramApprovalService telegramApprovalService,
-            AppRuntimeOptions runtimeOptions)
+            AppRuntimeOptions runtimeOptions,
+            IAppSecurityService appSecurityService,
+            ILicenseService licenseService)
         {
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
             _telegramApprovalService = telegramApprovalService;
             _runtimeOptions = runtimeOptions;
+            _appSecurityService = appSecurityService;
+            _licenseService = licenseService;
 
             Text = AppLocalization.T("settings.title");
             Width = 1120;
             Height = 740;
             MinimumSize = new Size(1020, 700);
+            UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterParent;
             WindowState = FormWindowState.Maximized;
             BackColor = BrandTheme.AppBackground;

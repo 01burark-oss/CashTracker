@@ -20,3 +20,19 @@ telegram-setup.json
 *.user
 *.suo
 *.log
+
+# Local tooling and caches
+.codex/
+.dotnet/
+.local/
+.npm-cache/
+.tmp/
+--configfile
+Microsoft/
+NuGet/
+
+# Local scratch outputs
+app-build.txt
+test-output.txt
+tests-build.txt
+*.pdf

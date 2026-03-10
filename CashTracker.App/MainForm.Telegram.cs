@@ -28,38 +28,6 @@ namespace CashTracker.App
             await SendSummaryToTelegramAsync(title, from, to, summary, senderButton);
         }
 
-        private async Task SendMonthlySummaryAsync(Button senderButton)
-        {
-            if (_cmbMonth.SelectedItem is not MonthItem item)
-                return;
-
-            var from = new DateTime(item.Year, item.Month, 1);
-            var to = from.AddMonths(1).AddDays(-1);
-            var summary = await _summaryService.GetMonthlySummaryAsync(item.Year, item.Month);
-            await SendSummaryToTelegramAsync(
-                AppLocalization.F("main.telegram.monthlyTitle", item.Display),
-                from,
-                to,
-                summary,
-                senderButton);
-        }
-
-        private async Task SendYearlySummaryAsync(Button senderButton)
-        {
-            if (_cmbYear.SelectedItem is not YearItem item)
-                return;
-
-            var from = new DateTime(item.Year, 1, 1);
-            var to = new DateTime(item.Year, 12, 31);
-            var summary = await _summaryService.GetSummaryAsync(from, to);
-            await SendSummaryToTelegramAsync(
-                AppLocalization.F("main.telegram.yearlyTitle", item.Year),
-                from,
-                to,
-                summary,
-                senderButton);
-        }
-
         private async Task SendSummaryToTelegramAsync(
             string title,
             DateTime from,

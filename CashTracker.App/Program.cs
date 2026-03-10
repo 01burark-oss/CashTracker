@@ -1,6 +1,8 @@
-﻿using System;
+using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.App.Forms;
 using CashTracker.App.Services;
@@ -19,20 +21,22 @@ static class Program
     [STAThread]
     static void Main()
     {
+        Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         ApplicationConfiguration.Initialize();
 
-        var appData = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "CashTracker");
-
-        Directory.CreateDirectory(appData);
-        if (UpdateBootstrapService.TryApplyPendingUpdate(appData))
-            return;
-
+        var appData = AppDataPathResolver.Resolve();
         EnvFileLoader.Load();
+
+        var startupMetrics = new StartupMetrics(appData);
+        startupMetrics.Mark("program-start");
 
         var services = new ServiceCollection();
         var dbPath = Path.Combine(appData, "cashtracker.db");
+        var hadExistingDb = File.Exists(dbPath);
+        var hadExistingAppState = File.Exists(Path.Combine(appData, "app-state.json"));
+        var mirrorDbPaths = AppDataPathResolver.GetMirrorRoots(appData)
+            .Select(root => Path.Combine(root, "cashtracker.db"))
+            .ToArray();
         var appState = AppStateStore.Load(appData);
         AppLocalization.SetLanguage(appState.LanguageCode);
         CultureInfo.DefaultThreadCurrentCulture = AppLocalization.CurrentCulture;
@@ -58,23 +62,6 @@ static class Program
             config["Telegram:AllowedUserIds"],
             userSetup.UserId);
 
-        if (string.IsNullOrWhiteSpace(botToken) || string.IsNullOrWhiteSpace(chatId))
-        {
-            using var setupForm = new InitialSetupForm(botToken, userSetup.UserId);
-            if (setupForm.ShowDialog() != DialogResult.OK)
-                return;
-
-            botToken = setupForm.BotToken;
-            chatId = setupForm.UserId;
-            allowedUserIds = setupForm.UserId;
-
-            UserTelegramSetupStore.Save(appData, new UserTelegramSetup
-            {
-                BotToken = botToken,
-                UserId = chatId
-            });
-        }
-
         var telegramSettings = new TelegramSettings
         {
             BotToken = botToken,
@@ -88,8 +75,10 @@ static class Program
         {
             RepoOwner = FirstNonEmpty(config["Update:RepoOwner"], "01burark-oss"),
             RepoName = FirstNonEmpty(config["Update:RepoName"], "CashTracker"),
-            AssetName = FirstNonEmpty(config["Update:AssetName"], "CashTracker.exe"),
-            ChecksumAssetName = FirstNonEmpty(config["Update:ChecksumAssetName"], "CashTracker.exe.sha256")
+            ManifestUrl = FirstNonEmpty(
+                config["Update:ManifestUrl"],
+                "https://github.com/01burark-oss/CashTracker/releases/latest/download/update-manifest.json"),
+            AutoCheckDelaySeconds = int.TryParse(config["Update:AutoCheckDelaySeconds"], out var acd) ? acd : 30
         };
 
         services.AddDbContextFactory<CashTrackerDbContext>(opt =>
@@ -99,15 +88,19 @@ static class Program
         services.AddScoped<IKalemTanimiService, KalemTanimiService>();
         services.AddScoped<IKasaService, KasaService>();
         services.AddScoped<ISummaryService, SummaryService>();
+        services.AddScoped<IDashboardSnapshotService, DashboardSnapshotService>();
+        services.AddSingleton<IInstallIdentityService, InstallIdentityService>();
+        services.AddSingleton<ILicenseRuntimeStateStore, LicenseRuntimeStateStore>();
+        services.AddSingleton<ILicenseService, LicenseService>();
         services.AddSingleton<IAppSecurityService, AppSecurityService>();
-
         services.AddSingleton(telegramSettings);
         services.AddSingleton(updateSettings);
         services.AddSingleton(new AppRuntimeOptions { AppDataPath = appData });
-        services.AddSingleton(new DatabasePaths(dbPath));
+        services.AddSingleton(new DatabasePaths(dbPath, mirrorDbPaths));
+        services.AddSingleton(startupMetrics);
 
         services.AddSingleton<HttpClient>();
-        services.AddSingleton<GitHubUpdateService>();
+        services.AddSingleton<UpdateManifestService>();
         services.AddSingleton<TelegramBotService>(sp =>
             new TelegramBotService(sp.GetRequiredService<HttpClient>(), telegramSettings.BotToken));
         services.AddSingleton<ITelegramApprovalService, TelegramApprovalService>();
@@ -128,9 +121,42 @@ static class Program
             SchemaMigrator.EnsureKasaSchema(db);
         }
 
-        provider.GetRequiredService<TelegramPollingService>().Start();
+        startupMetrics.Mark("db-ready");
 
-        Application.Run(provider.GetRequiredService<MainForm>());
+        if (!EnsureLicenseReady(
+                provider,
+                new LicenseStartupContext
+                {
+                    HadExistingAppState = hadExistingAppState,
+                    HadExistingDatabase = hadExistingDb
+                }))
+            return;
+
+        startupMetrics.Mark("license-ready");
+
+        if (!EnsurePinReady(provider))
+            return;
+
+        startupMetrics.Mark("pin-ready");
+
+        if (!EnsureOptionalOnboarding(provider, appData, telegramSettings))
+            return;
+
+        startupMetrics.Mark("onboarding-ready");
+
+        var mainForm = provider.GetRequiredService<MainForm>();
+        mainForm.Shown += async (_, __) =>
+        {
+            startupMetrics.Mark("mainform-shown");
+            if (!telegramSettings.IsEnabled)
+                return;
+
+            await Task.Delay(2500);
+            provider.GetRequiredService<TelegramPollingService>().Start();
+            startupMetrics.Mark("telegram-polling-started");
+        };
+
+        Application.Run(mainForm);
     }
 
     private static string FirstNonEmpty(params string?[] values)
@@ -142,5 +168,67 @@ static class Program
         }
 
         return string.Empty;
+    }
+
+    private static bool EnsureLicenseReady(ServiceProvider provider, LicenseStartupContext startupContext)
+    {
+        var licenseService = provider.GetRequiredService<ILicenseService>();
+        var startupMetrics = provider.GetRequiredService<StartupMetrics>();
+        var access = licenseService.EvaluateAccessAsync(startupContext).GetAwaiter().GetResult();
+        startupMetrics.Mark($"license-access:{access.Mode}");
+        if (access.Mode != LicenseAccessMode.Blocked)
+            return true;
+
+        while (true)
+        {
+            using var activationForm = new LicenseActivationForm(licenseService);
+            var result = activationForm.ShowDialog();
+            startupMetrics.Mark($"license-activation-result:{result}");
+            if (result != DialogResult.OK)
+                return false;
+
+            access = licenseService.EvaluateAccessAsync().GetAwaiter().GetResult();
+            startupMetrics.Mark($"license-access-recheck:{access.Mode}");
+            if (access.Mode != LicenseAccessMode.Blocked)
+                return true;
+        }
+    }
+
+    private static bool EnsurePinReady(ServiceProvider provider)
+    {
+        var appSecurity = provider.GetRequiredService<IAppSecurityService>();
+        var startupMetrics = provider.GetRequiredService<StartupMetrics>();
+        var isDefaultPin = appSecurity.IsDefaultPinAsync().GetAwaiter().GetResult();
+        if (isDefaultPin)
+        {
+            using var setupForm = new PinSetupForm(appSecurity, isFirstRun: true);
+            var result = setupForm.ShowDialog();
+            startupMetrics.Mark($"pin-setup-result:{result}");
+            return result == DialogResult.OK;
+        }
+
+        using var loginForm = new PinLoginForm(appSecurity);
+        var loginResult = loginForm.ShowDialog();
+        startupMetrics.Mark($"pin-login-result:{loginResult}");
+        return loginResult == DialogResult.OK;
+    }
+
+    private static bool EnsureOptionalOnboarding(
+        ServiceProvider provider,
+        string appDataPath,
+        TelegramSettings telegramSettings)
+    {
+        var startupMetrics = provider.GetRequiredService<StartupMetrics>();
+        var state = AppStateStore.Load(appDataPath);
+        if (state.HasCompletedOnboarding)
+        {
+            startupMetrics.Mark("onboarding-already-complete");
+            return true;
+        }
+
+        state.HasCompletedOnboarding = true;
+        AppStateStore.Save(appDataPath, state);
+        startupMetrics.Mark("onboarding-skipped");
+        return true;
     }
 }
