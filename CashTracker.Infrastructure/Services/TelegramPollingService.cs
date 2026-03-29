@@ -37,8 +37,6 @@ namespace CashTracker.Infrastructure.Services
 
         private async Task RunAsync(CancellationToken ct)
         {
-            await InitializeOffsetAsync(ct);
-
             while (!ct.IsCancellationRequested)
             {
                 try
@@ -63,22 +61,6 @@ namespace CashTracker.Infrastructure.Services
                     Debug.WriteLine($"TelegramPollingService error: {ex}");
                     await Task.Delay(TimeSpan.FromSeconds(3), ct);
                 }
-            }
-        }
-
-        private async Task InitializeOffsetAsync(CancellationToken ct)
-        {
-            try
-            {
-                var pending = await _telegram.GetUpdatesAsync(null, 0, ct);
-                if (pending.Count > 0)
-                {
-                    _offset = pending.Max(x => x.UpdateId) + 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"TelegramPollingService init error: {ex}");
             }
         }
 

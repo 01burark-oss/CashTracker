@@ -33,18 +33,29 @@ namespace CashTracker.App.Forms
         private readonly Button _btnTestConnection;
         private readonly Button _btnFetchChatId;
 
+        private readonly string _initialAllowedUserIds;
         private bool _isTesting;
         private bool _connectionVerified;
         private string _verifiedBotToken = string.Empty;
         private string _verifiedUserId = string.Empty;
+        private string _resolvedAllowedUserIds = string.Empty;
+        private string _resolvedChatId = string.Empty;
 
         public string BotToken => _txtBotToken.Text.Trim();
+        public string ChatId => _txtUserId.Text.Trim();
         public string UserId => _txtUserId.Text.Trim();
+        public string AllowedUserIds => ResolveAllowedUserIds(ChatId, _initialAllowedUserIds, _resolvedAllowedUserIds);
 
         public InitialSetupForm(string initialBotToken, string initialUserId, bool isReconfigureMode = false)
+            : this(initialBotToken, initialUserId, string.Empty, isReconfigureMode)
+        {
+        }
+
+        public InitialSetupForm(string initialBotToken, string initialUserId, string initialAllowedUserIds, bool isReconfigureMode = false)
         {
             var navy = BrandTheme.Navy;
             var teal = BrandTheme.Teal;
+            _initialAllowedUserIds = initialAllowedUserIds?.Trim() ?? string.Empty;
 
             Text = T("initial.title");
             Width = 980;
@@ -347,7 +358,12 @@ namespace CashTracker.App.Forms
 
             _txtUserId = CreateSingleLineInput();
             _txtUserId.Text = initialUserId ?? string.Empty;
-            _txtUserId.TextChanged += (_, __) => RefreshValidationState();
+            _txtUserId.TextChanged += (_, __) =>
+            {
+                if (!string.Equals(ChatId, _resolvedChatId, StringComparison.Ordinal))
+                    _resolvedAllowedUserIds = string.Empty;
+                RefreshValidationState();
+            };
             formGrid.Controls.Add(_txtUserId);
 
             _lblUserStatus = new Label
@@ -578,9 +594,7 @@ namespace CashTracker.App.Forms
                     if (startChatIds.Length == 1)
                     {
                         var selectedChatId = startChatIds[0];
-                        _txtUserId.Text = selectedChatId.ToString(CultureInfo.InvariantCulture);
-                        _txtUserId.SelectionStart = _txtUserId.TextLength;
-                        _txtUserId.SelectionLength = 0;
+                        ApplyResolvedChatSelection(selectedChatId, updates);
 
                         SetConnectionStatus(
                             F("initial.status.chatIdSelectedFromStart", selectedChatId),
@@ -605,9 +619,7 @@ namespace CashTracker.App.Forms
                 }
 
                 var singleChatId = distinctChatIds[0];
-                _txtUserId.Text = singleChatId.ToString(CultureInfo.InvariantCulture);
-                _txtUserId.SelectionStart = _txtUserId.TextLength;
-                _txtUserId.SelectionLength = 0;
+                ApplyResolvedChatSelection(singleChatId, updates);
 
                 SetConnectionStatus(
                     F("initial.status.chatIdAuto", singleChatId),
@@ -674,6 +686,17 @@ namespace CashTracker.App.Forms
                 return false;
             }
 
+            if (!TryValidateAllowedUserScope(ChatId, AllowedUserIds, out var allowedMessage))
+            {
+                if (showMessage)
+                {
+                    MessageBox.Show(allowedMessage, T("initial.error.invalidInfoTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _txtUserId.Focus();
+                }
+
+                return false;
+            }
+
             return true;
         }
 
@@ -681,6 +704,7 @@ namespace CashTracker.App.Forms
         {
             var tokenValid = TryValidateBotToken(BotToken, out var tokenMessage);
             var userValid = TryValidateUserId(UserId, out var userMessage);
+            var allowedConfigValid = TryValidateAllowedUserScope(ChatId, AllowedUserIds, out var allowedMessage);
 
             SetFieldStatus(_lblTokenStatus, tokenMessage, tokenValid);
             SetFieldStatus(_lblUserStatus, userMessage, userValid);
@@ -694,8 +718,8 @@ namespace CashTracker.App.Forms
                 if (tokenValid && userValid)
                 {
                     SetConnectionStatus(
-                        T("initial.status.connectionWait"),
-                        Color.FromArgb(176, 118, 30));
+                        allowedConfigValid ? T("initial.status.connectionWait") : allowedMessage,
+                        allowedConfigValid ? Color.FromArgb(176, 118, 30) : Color.FromArgb(166, 57, 54));
                 }
                 else
                 {
@@ -706,8 +730,8 @@ namespace CashTracker.App.Forms
             }
 
             _btnFetchChatId.Enabled = !_isTesting && tokenValid;
-            _btnTestConnection.Enabled = !_isTesting && tokenValid && userValid;
-            _btnSave.Enabled = !_isTesting && tokenValid && userValid && IsCurrentInputVerified();
+            _btnTestConnection.Enabled = !_isTesting && tokenValid && userValid && allowedConfigValid;
+            _btnSave.Enabled = !_isTesting && tokenValid && userValid && allowedConfigValid && IsCurrentInputVerified();
             UpdateStepGuide(tokenValid, userValid);
         }
 
@@ -753,6 +777,86 @@ namespace CashTracker.App.Forms
 
             message = T("initial.validation.userIdValid");
             return true;
+        }
+
+        private static bool TryValidateAllowedUserScope(string chatId, string allowedUserIds, out string message)
+        {
+            if (!long.TryParse(chatId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedChatId))
+            {
+                message = T("initial.validation.userIdNumeric");
+                return false;
+            }
+
+            if (parsedChatId > 0)
+            {
+                message = T("initial.validation.userIdValid");
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(allowedUserIds))
+            {
+                message = "Grup sohbeti icin yetkili kullanici algilanamadi. Yetkili hesaptan mesaji gonderip tekrar Chat ID getir'i kullanin.";
+                return false;
+            }
+
+            foreach (var raw in allowedUserIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                {
+                    message = "Yetkili kullanici listesi gecersiz. Lutfen Telegram ayarlarini tekrar kaydedin.";
+                    return false;
+                }
+            }
+
+            message = T("initial.validation.userIdValid");
+            return true;
+        }
+
+        private void ApplyResolvedChatSelection(long chatId, System.Collections.Generic.IReadOnlyList<TelegramUpdate> updates)
+        {
+            _txtUserId.Text = chatId.ToString(CultureInfo.InvariantCulture);
+            _txtUserId.SelectionStart = _txtUserId.TextLength;
+            _txtUserId.SelectionLength = 0;
+            _resolvedChatId = _txtUserId.Text;
+            _resolvedAllowedUserIds = DetectAllowedUserIds(updates, chatId);
+        }
+
+        private static string DetectAllowedUserIds(System.Collections.Generic.IReadOnlyList<TelegramUpdate> updates, long chatId)
+        {
+            var startUserIds = updates
+                .Where(x => x.ChatId == chatId &&
+                            x.UserId.HasValue &&
+                            !string.IsNullOrWhiteSpace(x.Text) &&
+                            x.Text.Trim().StartsWith("/start", StringComparison.OrdinalIgnoreCase))
+                .Select(x => x.UserId!.Value)
+                .Distinct()
+                .ToArray();
+            if (startUserIds.Length == 1)
+                return startUserIds[0].ToString(CultureInfo.InvariantCulture);
+
+            var distinctUsers = updates
+                .Where(x => x.ChatId == chatId && x.UserId.HasValue)
+                .Select(x => x.UserId!.Value)
+                .Distinct()
+                .ToArray();
+            if (distinctUsers.Length == 1)
+                return distinctUsers[0].ToString(CultureInfo.InvariantCulture);
+
+            return string.Empty;
+        }
+
+        private static string ResolveAllowedUserIds(string chatId, string initialAllowedUserIds, string resolvedAllowedUserIds)
+        {
+            if (!string.IsNullOrWhiteSpace(resolvedAllowedUserIds))
+                return resolvedAllowedUserIds.Trim();
+
+            if (!string.IsNullOrWhiteSpace(initialAllowedUserIds))
+                return initialAllowedUserIds.Trim();
+
+            return long.TryParse(chatId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedChatId) &&
+                   parsedChatId > 0
+                ? parsedChatId.ToString(CultureInfo.InvariantCulture)
+                : string.Empty;
         }
 
         private static void SetFieldStatus(Label label, string text, bool isValid)

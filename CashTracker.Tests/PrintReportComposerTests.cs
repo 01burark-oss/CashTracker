@@ -87,5 +87,82 @@ namespace CashTracker.Tests
             Assert.Equal("Genel Gelir", report.IncomeCategories[0].CategoryName);
             Assert.Equal("Genel Gider", report.Records[0].Description);
         }
+
+        [Fact]
+        public void Compose_NonPreviewLimitedReport_UsesVisibleRowsForSummaryAndAggregates()
+        {
+            AppLocalization.SetLanguage("tr");
+
+            var request = new PrintReportRequest
+            {
+                Template = PrintReportTemplate.AccountingReport,
+                From = new DateTime(2026, 3, 1),
+                To = new DateTime(2026, 3, 6),
+                RangeDisplay = "Ozel",
+                GeneratedAt = new DateTime(2026, 3, 6, 12, 0, 0),
+                RecordLimit = 1,
+                IsPreview = false
+            };
+
+            var rows = new[]
+            {
+                new Kasa { Id = 1, Tarih = new DateTime(2026, 3, 1), Tip = "Gelir", Tutar = 1000m, OdemeYontemi = "Nakit", Kalem = "Satis" },
+                new Kasa { Id = 2, Tarih = new DateTime(2026, 3, 2), Tip = "Gelir", Tutar = 750m, OdemeYontemi = "KrediKarti", Kalem = "Paket" },
+                new Kasa { Id = 3, Tarih = new DateTime(2026, 3, 3), Tip = "Gider", Tutar = 500m, OdemeYontemi = "Nakit", Kalem = "Kira" }
+            };
+
+            var report = PrintReportComposer.Compose(
+                request,
+                "Demo",
+                new PeriodSummary { From = request.From, To = request.To, IncomeTotal = 1750m, ExpenseTotal = 500m, IncomeCount = 2, ExpenseCount = 1 },
+                rows);
+
+            Assert.Equal(3, report.TotalRecordCount);
+            Assert.Single(report.Records);
+            Assert.Equal(1000m, report.Summary.IncomeTotal);
+            Assert.Equal(0m, report.Summary.ExpenseTotal);
+            Assert.Equal(1, report.Summary.IncomeCount);
+            Assert.Equal(0, report.Summary.ExpenseCount);
+            Assert.Single(report.PaymentMethods);
+            Assert.Single(report.IncomeCategories);
+            Assert.Empty(report.ExpenseCategories);
+        }
+
+        [Fact]
+        public void Compose_PreviewLimitedReport_KeepsOverallSummaryAndAggregates()
+        {
+            AppLocalization.SetLanguage("tr");
+
+            var request = new PrintReportRequest
+            {
+                Template = PrintReportTemplate.AccountingReport,
+                From = new DateTime(2026, 3, 1),
+                To = new DateTime(2026, 3, 6),
+                RangeDisplay = "Ozel",
+                GeneratedAt = new DateTime(2026, 3, 6, 12, 0, 0),
+                RecordLimit = 1,
+                IsPreview = true
+            };
+
+            var rows = new[]
+            {
+                new Kasa { Id = 1, Tarih = new DateTime(2026, 3, 1), Tip = "Gelir", Tutar = 1000m, OdemeYontemi = "Nakit", Kalem = "Satis" },
+                new Kasa { Id = 2, Tarih = new DateTime(2026, 3, 2), Tip = "Gelir", Tutar = 750m, OdemeYontemi = "KrediKarti", Kalem = "Paket" },
+                new Kasa { Id = 3, Tarih = new DateTime(2026, 3, 3), Tip = "Gider", Tutar = 500m, OdemeYontemi = "Nakit", Kalem = "Kira" }
+            };
+
+            var report = PrintReportComposer.Compose(
+                request,
+                "Demo",
+                new PeriodSummary { From = request.From, To = request.To, IncomeTotal = 1750m, ExpenseTotal = 500m, IncomeCount = 2, ExpenseCount = 1 },
+                rows);
+
+            Assert.Single(report.Records);
+            Assert.Equal(1750m, report.Summary.IncomeTotal);
+            Assert.Equal(500m, report.Summary.ExpenseTotal);
+            Assert.Equal(2, report.PaymentMethods.Count);
+            Assert.Single(report.ExpenseCategories);
+            Assert.Equal(2, report.IncomeCategories.Count);
+        }
     }
 }

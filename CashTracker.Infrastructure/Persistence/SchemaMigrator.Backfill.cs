@@ -119,12 +119,15 @@ WHERE NOT EXISTS (
     SELECT 1 FROM KalemTanimi WHERE IsletmeId = {0} AND Tip = 'Gelir'
 );", isletmeId);
 
-            db.Database.ExecuteSqlRaw(@"
+            foreach (var category in DefaultKalemCatalog.DefaultExpenseCategories)
+            {
+                db.Database.ExecuteSqlRaw(@"
 INSERT INTO KalemTanimi (IsletmeId, Tip, Ad, CreatedAt)
-SELECT {0}, 'Gider', 'Genel Gider', CURRENT_TIMESTAMP
+SELECT {0}, 'Gider', {1}, CURRENT_TIMESTAMP
 WHERE NOT EXISTS (
-    SELECT 1 FROM KalemTanimi WHERE IsletmeId = {0} AND Tip = 'Gider'
-);", isletmeId);
+    SELECT 1 FROM KalemTanimi WHERE IsletmeId = {0} AND Tip = 'Gider' AND LOWER(Ad) = LOWER({1})
+);", isletmeId, category);
+            }
         }
     }
 }

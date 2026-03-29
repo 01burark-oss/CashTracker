@@ -40,14 +40,15 @@ namespace CashTracker.App
 
         private void OpenBotSettings()
         {
-            using var form = new InitialSetupForm(_telegramSettings.BotToken, _telegramSettings.ChatId, true);
+            using var form = new InitialSetupForm(_telegramSettings.BotToken, _telegramSettings.ChatId, _telegramSettings.AllowedUserIds, true);
             if (form.ShowDialog(this) != DialogResult.OK)
                 return;
 
             UserTelegramSetupStore.Save(_runtimeOptions.AppDataPath, new UserTelegramSetup
             {
                 BotToken = form.BotToken,
-                UserId = form.UserId
+                ChatId = form.ChatId,
+                AllowedUserIds = form.AllowedUserIds
             });
 
             MessageBox.Show(

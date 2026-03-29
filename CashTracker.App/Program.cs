@@ -56,11 +56,13 @@ static class Program
 
         var chatId = FirstNonEmpty(
             config["Telegram:ChatId"],
+            userSetup.ChatId,
             userSetup.UserId);
 
         var allowedUserIds = FirstNonEmpty(
             config["Telegram:AllowedUserIds"],
-            userSetup.UserId);
+            userSetup.AllowedUserIds,
+            ResolveDefaultAllowedUserIds(chatId));
 
         var telegramSettings = new TelegramSettings
         {
@@ -69,6 +71,14 @@ static class Program
             EnableCommands = !bool.TryParse(config["Telegram:EnableCommands"], out var ec) || ec,
             AllowedUserIds = allowedUserIds,
             PollTimeoutSeconds = int.TryParse(config["Telegram:PollTimeoutSeconds"], out var pts) ? pts : 20
+        };
+
+        var receiptOcrSettings = new ReceiptOcrSettings
+        {
+            Provider = FirstNonEmpty(config["ReceiptOcr:Provider"], "Gemini"),
+            ApiKey = FirstNonEmpty(config["ReceiptOcr:ApiKey"]),
+            Model = FirstNonEmpty(config["ReceiptOcr:Model"], "gemini-2.5-flash"),
+            SessionTimeoutMinutes = int.TryParse(config["ReceiptOcr:SessionTimeoutMinutes"], out var stm) ? stm : 30
         };
 
         var updateSettings = new UpdateSettings
@@ -94,6 +104,7 @@ static class Program
         services.AddSingleton<ILicenseService, LicenseService>();
         services.AddSingleton<IAppSecurityService, AppSecurityService>();
         services.AddSingleton(telegramSettings);
+        services.AddSingleton(receiptOcrSettings);
         services.AddSingleton(updateSettings);
         services.AddSingleton(new AppRuntimeOptions { AppDataPath = appData });
         services.AddSingleton(new DatabasePaths(dbPath, mirrorDbPaths));
@@ -104,10 +115,13 @@ static class Program
         services.AddSingleton<TelegramBotService>(sp =>
             new TelegramBotService(sp.GetRequiredService<HttpClient>(), telegramSettings.BotToken));
         services.AddSingleton<ITelegramApprovalService, TelegramApprovalService>();
+        services.AddSingleton<IReceiptOcrService, GeminiReceiptOcrService>();
+        services.AddSingleton<ITelegramReceiptSessionStore, TelegramReceiptSessionStore>();
 
         services.AddSingleton<IDailyReportService, DailyReportService>();
         services.AddSingleton<DatabaseBackupService>();
         services.AddSingleton<BackupReportService>();
+        services.AddSingleton<PinReminderService>();
         services.AddSingleton<TelegramCommandService>();
         services.AddSingleton<TelegramPollingService>();
 
@@ -133,6 +147,7 @@ static class Program
             return;
 
         startupMetrics.Mark("license-ready");
+        provider.GetRequiredService<ILicenseService>().ApplyReceiptOcrSettingsAsync(receiptOcrSettings).GetAwaiter().GetResult();
 
         if (!EnsurePinReady(provider))
             return;
@@ -170,6 +185,14 @@ static class Program
         return string.Empty;
     }
 
+    private static string ResolveDefaultAllowedUserIds(string chatId)
+    {
+        return long.TryParse(chatId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedChatId) &&
+               parsedChatId > 0
+            ? parsedChatId.ToString(CultureInfo.InvariantCulture)
+            : string.Empty;
+    }
+
     private static bool EnsureLicenseReady(ServiceProvider provider, LicenseStartupContext startupContext)
     {
         var licenseService = provider.GetRequiredService<ILicenseService>();
@@ -181,7 +204,7 @@ static class Program
 
         while (true)
         {
-            using var activationForm = new LicenseActivationForm(licenseService);
+            using var activationForm = new LicenseActivationForm(licenseService, provider.GetRequiredService<ReceiptOcrSettings>());
             var result = activationForm.ShowDialog();
             startupMetrics.Mark($"license-activation-result:{result}");
             if (result != DialogResult.OK)
@@ -207,7 +230,7 @@ static class Program
             return result == DialogResult.OK;
         }
 
-        using var loginForm = new PinLoginForm(appSecurity);
+        using var loginForm = new PinLoginForm(appSecurity, provider.GetRequiredService<PinReminderService>());
         var loginResult = loginForm.ShowDialog();
         startupMetrics.Mark($"pin-login-result:{loginResult}");
         return loginResult == DialogResult.OK;

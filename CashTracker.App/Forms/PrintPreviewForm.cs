@@ -340,9 +340,9 @@ namespace CashTracker.App.Forms
             _dtFrom.ValueChanged += (_, __) => SchedulePreviewRefresh();
             _dtTo.ValueChanged += (_, __) => SchedulePreviewRefresh();
             _btnApplyNote.Click += (_, __) => ApplyNoteAndRefresh();
-            _btnPrint.Click += async (_, __) => await PrintAsync();
-            _btnSavePdf.Click += async (_, __) => await SavePdfAsync();
-            _btnExport.Click += async (_, __) => await ExportHtmlAsync();
+            _btnPrint.Click += async (_, __) => await ExecuteUserActionAsync(PrintAsync);
+            _btnSavePdf.Click += async (_, __) => await ExecuteUserActionAsync(SavePdfAsync);
+            _btnExport.Click += async (_, __) => await ExecuteUserActionAsync(ExportHtmlAsync);
 
             ResumeLayout(true);
         }
@@ -435,6 +435,27 @@ namespace CashTracker.App.Forms
             {
                 _lblStatus.Text = AppLocalization.F("print.status.error", ex.Message);
                 _lblStatus.ForeColor = Color.FromArgb(173, 59, 56);
+            }
+            finally
+            {
+                SetActionState(true);
+            }
+        }
+
+        private async Task ExecuteUserActionAsync(Func<Task> action)
+        {
+            SetActionState(false);
+
+            try
+            {
+                await action();
+            }
+            catch (Exception ex)
+            {
+                var message = AppLocalization.F("print.status.error", ex.Message);
+                _lblStatus.Text = message;
+                _lblStatus.ForeColor = Color.FromArgb(173, 59, 56);
+                MessageBox.Show(message, AppLocalization.T("print.title"), MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {

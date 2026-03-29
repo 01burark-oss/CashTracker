@@ -9,6 +9,10 @@ namespace CashTracker.App
     internal sealed class UserTelegramSetup
     {
         public string BotToken { get; set; } = string.Empty;
+        public string ChatId { get; set; } = string.Empty;
+        public string AllowedUserIds { get; set; } = string.Empty;
+
+        // Legacy field for previous telegram-setup.json files.
         public string UserId { get; set; } = string.Empty;
     }
 
@@ -36,6 +40,8 @@ namespace CashTracker.App
                 return new UserTelegramSetup
                 {
                     BotToken = UnprotectIfNeeded(data.BotToken),
+                    ChatId = FirstNonEmpty(data.ChatId, data.UserId),
+                    AllowedUserIds = data.AllowedUserIds?.Trim() ?? string.Empty,
                     UserId = data.UserId?.Trim() ?? string.Empty
                 };
             }
@@ -55,7 +61,9 @@ namespace CashTracker.App
             var normalized = new UserTelegramSetup
             {
                 BotToken = Protect(setup.BotToken.Trim()),
-                UserId = setup.UserId.Trim()
+                ChatId = setup.ChatId.Trim(),
+                AllowedUserIds = setup.AllowedUserIds.Trim(),
+                UserId = setup.ChatId.Trim()
             };
 
             var json = JsonSerializer.Serialize(
@@ -68,6 +76,17 @@ namespace CashTracker.App
         private static string GetSettingsPath(string appDataPath)
         {
             return Path.Combine(appDataPath, FileName);
+        }
+
+        private static string FirstNonEmpty(params string?[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+
+            return string.Empty;
         }
 
         private static string Protect(string value)

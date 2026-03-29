@@ -4,6 +4,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using CashTracker.Core.Models;
+using CashTracker.Core.Utilities;
 
 namespace CashTracker.App.Services
 {
@@ -16,6 +18,7 @@ namespace CashTracker.App.Services
         Task<LicenseAccessResult> RecordSuccessfulUseAsync();
         Task<LicenseRuntimeState> GetRuntimeStateAsync();
         Task<LicenseValidationResult> ActivateAsync(string licenseKey);
+        Task ApplyReceiptOcrSettingsAsync(ReceiptOcrSettings settings);
         Task ClearAsync();
     }
 
@@ -235,6 +238,32 @@ namespace CashTracker.App.Services
             }
 
             return result;
+        }
+
+        public async Task ApplyReceiptOcrSettingsAsync(ReceiptOcrSettings settings)
+        {
+            ArgumentNullException.ThrowIfNull(settings);
+
+            var current = await GetCurrentStatusAsync();
+            if (!current.IsValid || current.Payload is null)
+            {
+                settings.ClearLicenseOverrides();
+                return;
+            }
+
+            if (!InstallScopedSecretProtector.TryUnprotect(
+                    current.Payload.EncryptedReceiptOcrApiKey,
+                    GetInstallCode(),
+                    out var apiKey))
+            {
+                settings.ClearLicenseOverrides();
+                return;
+            }
+
+            settings.ApplyLicenseOverrides(
+                current.Payload.ReceiptOcrProvider,
+                apiKey,
+                current.Payload.ReceiptOcrModel);
         }
 
         public Task ClearAsync()

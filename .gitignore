@@ -25,6 +25,10 @@ telegram-setup.json
 .codex/
 .dotnet/
 .local/
+.appdata/
+.localappdata/
+.nuget-packages/
+.nuget-http-cache/
 .npm-cache/
 .tmp/
 --configfile

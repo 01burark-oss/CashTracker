@@ -146,7 +146,8 @@ namespace CashTracker.App
                     _telegramApprovalService,
                     _runtimeOptions,
                     _appSecurityService,
-                    _licenseService);
+                    _licenseService,
+                    _receiptOcrSettings);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
@@ -158,7 +159,8 @@ namespace CashTracker.App
                     _telegramApprovalService,
                     _runtimeOptions,
                     _appSecurityService,
-                    _licenseService);
+                    _licenseService,
+                    _receiptOcrSettings);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
@@ -370,7 +372,8 @@ namespace CashTracker.App
                     _telegramApprovalService,
                     _runtimeOptions,
                     _appSecurityService,
-                    _licenseService);
+                    _licenseService,
+                    _receiptOcrSettings);
                 form.ShowDialog(this);
                 _ = RefreshLicenseBannerAsync();
             };

@@ -32,6 +32,9 @@ internal sealed class LicensePayload
     public DateTime IssuedAtUtc { get; set; }
     public DateTime? ExpiresAtUtc { get; set; }
     public string Edition { get; set; } = string.Empty;
+    public string ReceiptOcrProvider { get; set; } = string.Empty;
+    public string ReceiptOcrModel { get; set; } = string.Empty;
+    public string EncryptedReceiptOcrApiKey { get; set; } = string.Empty;
 }
 
 internal sealed class LicenseLedgerService
@@ -156,15 +159,29 @@ internal sealed class LicenseLedgerService
 
 internal sealed class LicenseKeyIssuer
 {
-    public string CreateLicenseKey(string customerName, string installCode, string licenseId, string edition, string privateKeyPath)
+    public string CreateLicenseKey(
+        string customerName,
+        string installCode,
+        string licenseId,
+        string edition,
+        string privateKeyPath,
+        string? receiptOcrApiKey = null,
+        string? receiptOcrProvider = null,
+        string? receiptOcrModel = null)
     {
+        var hasReceiptOcrSecret = !string.IsNullOrWhiteSpace(receiptOcrApiKey);
         var payload = new LicensePayload
         {
             LicenseId = licenseId,
             CustomerName = customerName.Trim(),
             InstallCodeHash = ComputeInstallCodeHash(installCode),
             IssuedAtUtc = DateTime.UtcNow,
-            Edition = edition.Trim()
+            Edition = edition.Trim(),
+            ReceiptOcrProvider = hasReceiptOcrSecret ? (receiptOcrProvider?.Trim() ?? "Gemini") : string.Empty,
+            ReceiptOcrModel = hasReceiptOcrSecret ? (receiptOcrModel?.Trim() ?? "gemini-2.5-flash") : string.Empty,
+            EncryptedReceiptOcrApiKey = hasReceiptOcrSecret
+                ? InstallScopedSecretProtector.Protect(receiptOcrApiKey!, installCode)
+                : string.Empty
         };
 
         var payloadBytes = JsonSerializer.SerializeToUtf8Bytes(payload);

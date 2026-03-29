@@ -16,6 +16,9 @@ internal sealed class LicenseAdminForm : Form
     private TextBox _txtKeyPath = null!;
     private TextBox _txtCustomerName = null!;
     private TextBox _txtInstallCode = null!;
+    private TextBox _txtReceiptOcrApiKey = null!;
+    private TextBox _txtReceiptOcrProvider = null!;
+    private TextBox _txtReceiptOcrModel = null!;
     private TextBox _txtEdition = null!;
     private TextBox _txtLicenseId = null!;
     private TextBox _txtNotes = null!;
@@ -75,11 +78,11 @@ internal sealed class LicenseAdminForm : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 15,
+            RowCount = 19,
             Padding = new Padding(22)
         };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        for (var i = 0; i < 14; i++)
+        for (var i = 0; i < 18; i++)
             layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         host.Controls.Add(layout);
@@ -121,6 +124,42 @@ internal sealed class LicenseAdminForm : Form
         _txtInstallCode = CreateInputBox();
         layout.Controls.Add(_txtInstallCode, 0, 7);
 
+        layout.Controls.Add(CreateFieldLabel("OCR API Key (Opsiyonel)"), 0, 8);
+        _txtReceiptOcrApiKey = CreateInputBox();
+        _txtReceiptOcrApiKey.UseSystemPasswordChar = true;
+        layout.Controls.Add(_txtReceiptOcrApiKey, 0, 9);
+
+        layout.Controls.Add(new Label
+        {
+            Text = "Bos birakilirsa lisans OCR secret tasimaz. Girilirse install code ile sifrelenir ve sadece bu kurulumda cozulebilir.",
+            Font = AdminTheme.CreateFont(9f),
+            ForeColor = AdminTheme.MutedText,
+            MaximumSize = new Size(350, 0),
+            AutoSize = true,
+            Margin = new Padding(0, 0, 0, 10)
+        }, 0, 10);
+
+        var ocrMetaRow = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            ColumnCount = 2,
+            RowCount = 2,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Margin = new Padding(0, 0, 0, 0)
+        };
+        ocrMetaRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
+        ocrMetaRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
+        ocrMetaRow.Controls.Add(CreateFieldLabel("OCR Provider"), 0, 0);
+        ocrMetaRow.Controls.Add(CreateFieldLabel("OCR Model"), 1, 0);
+        _txtReceiptOcrProvider = CreateInputBox();
+        _txtReceiptOcrProvider.Text = "Gemini";
+        _txtReceiptOcrModel = CreateInputBox();
+        _txtReceiptOcrModel.Text = "gemini-2.5-flash";
+        ocrMetaRow.Controls.Add(_txtReceiptOcrProvider, 0, 1);
+        ocrMetaRow.Controls.Add(_txtReceiptOcrModel, 1, 1);
+        layout.Controls.Add(ocrMetaRow, 0, 11);
+
         var metaRow = new TableLayoutPanel
         {
             Dock = DockStyle.Top,
@@ -132,7 +171,7 @@ internal sealed class LicenseAdminForm : Form
         };
         metaRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         metaRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        layout.Controls.Add(metaRow, 0, 8);
+        layout.Controls.Add(metaRow, 0, 12);
 
         metaRow.Controls.Add(CreateFieldLabel("Edition"), 0, 0);
         metaRow.Controls.Add(CreateFieldLabel("License ID"), 1, 0);
@@ -143,7 +182,7 @@ internal sealed class LicenseAdminForm : Form
         metaRow.Controls.Add(_txtEdition, 0, 1);
         metaRow.Controls.Add(_txtLicenseId, 1, 1);
 
-        layout.Controls.Add(CreateFieldLabel("Notlar"), 0, 9);
+        layout.Controls.Add(CreateFieldLabel("Notlar"), 0, 13);
         _txtNotes = new TextBox
         {
             Dock = DockStyle.Top,
@@ -153,7 +192,7 @@ internal sealed class LicenseAdminForm : Form
             Font = AdminTheme.CreateFont(9.3f),
             Margin = new Padding(0, 2, 0, 10)
         };
-        layout.Controls.Add(_txtNotes, 0, 10);
+        layout.Controls.Add(_txtNotes, 0, 14);
 
         var actionBar = new FlowLayoutPanel
         {
@@ -173,7 +212,7 @@ internal sealed class LicenseAdminForm : Form
         };
         actionBar.Controls.Add(btnGenerate);
         actionBar.Controls.Add(btnCopy);
-        layout.Controls.Add(actionBar, 0, 11);
+        layout.Controls.Add(actionBar, 0, 15);
 
         _lblStatus = new Label
         {
@@ -182,9 +221,9 @@ internal sealed class LicenseAdminForm : Form
             Font = AdminTheme.CreateFont(9.1f),
             Margin = new Padding(2, 0, 2, 10)
         };
-        layout.Controls.Add(_lblStatus, 0, 12);
+        layout.Controls.Add(_lblStatus, 0, 16);
 
-        layout.Controls.Add(CreateFieldLabel("Uretilen Lisans Anahtari"), 0, 13);
+        layout.Controls.Add(CreateFieldLabel("Uretilen Lisans Anahtari"), 0, 17);
         _txtResult = new TextBox
         {
             Dock = DockStyle.Fill,
@@ -194,7 +233,7 @@ internal sealed class LicenseAdminForm : Form
             Font = AdminTheme.CreateFont(9.1f),
             Margin = new Padding(0, 2, 0, 0)
         };
-        layout.Controls.Add(_txtResult, 0, 14);
+        layout.Controls.Add(_txtResult, 0, 18);
     }
 
     private void BuildRightPanel(Control host)
@@ -288,6 +327,9 @@ internal sealed class LicenseAdminForm : Form
     {
         var keyPath = (_txtKeyPath.Text ?? string.Empty).Trim();
         var customerName = (_txtCustomerName.Text ?? string.Empty).Trim();
+        var receiptOcrApiKey = (_txtReceiptOcrApiKey.Text ?? string.Empty).Trim();
+        var receiptOcrProvider = (_txtReceiptOcrProvider.Text ?? string.Empty).Trim();
+        var receiptOcrModel = (_txtReceiptOcrModel.Text ?? string.Empty).Trim();
         var edition = string.IsNullOrWhiteSpace(_txtEdition.Text) ? "pro" : _txtEdition.Text.Trim();
         var licenseId = string.IsNullOrWhiteSpace(_txtLicenseId.Text)
             ? LicenseAdminRuntime.CreateLicenseId()
@@ -327,7 +369,15 @@ internal sealed class LicenseAdminForm : Form
 
         try
         {
-            var licenseKey = _issuer.CreateLicenseKey(customerName, installCode, licenseId, edition, keyPath);
+            var licenseKey = _issuer.CreateLicenseKey(
+                customerName,
+                installCode,
+                licenseId,
+                edition,
+                keyPath,
+                receiptOcrApiKey,
+                receiptOcrProvider,
+                receiptOcrModel);
             _txtResult.Text = licenseKey;
             _txtLicenseId.Text = licenseId;
 

@@ -485,7 +485,10 @@ namespace CashTracker.App.Forms
                     : ResolveHintColor(HintTone.Error);
 
                 if (result.IsValid)
+                {
+                    await _licenseService.ApplyReceiptOcrSettingsAsync(_receiptOcrSettings);
                     await LoadLicenseStateAsync();
+                }
             }
             finally
             {

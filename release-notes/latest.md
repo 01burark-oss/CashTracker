@@ -1,17 +1,13 @@
-## CashTracker 1.2.2
+## CashTracker 1.3.0
 
-Bu surum, yayin kanalini sadeleştirir ve ana uygulama release akisini duzeltmeye odaklanir.
+Bu surum, Telegram uzerinden fis OCR akisini ve lisansla bagli OCR yetkilendirmesini yayina hazir hale getirir.
 
-- `Write Update Manifest` adimi secret yoksa release'i artik dusurmez.
-- `CI` workflow'u tag push'larda calismaz; gereksiz fail mailleri azalir.
-- `InstallerLaunchService` repoya dahil edildi; bu sayede uygulama ici installer baslatma akisi eksik dosya yuzunden bozulmaz.
-- Telegram artik zorunlu degil; uygulama local-first calisiyor.
-- Lisans/trial altyapisi eklendi ve ayarlardan yonetilebilir hale getirildi.
-- Ayrica satici tarafi icin ayri lisans yonetim araci eklendi.
-- Dashboard acilisi ve veri yukleme akislari hizlandirildi.
-- Guncelleme denetimi imzali manifest ve GitHub fallback mantigiyla guclendirildi.
-- Turkce karakter, font, DPI ve WinForms yerlesim sorunlari buyuk olcude duzeltildi.
-- PIN ekranlari, ayarlar ve ana ekran yerlesimleri daha tutarli hale getirildi.
-- Yedek, onbellek, test ve lokal demo senaryolari icin yeni arac scriptleri eklendi.
+- Telegram botuna gonderilen fis fotograflari artik OCR ile okunup gider kalemlerine gruplanabiliyor.
+- Eslesmeyen urunler, tarih ve odeme yontemi icin adim adim sohbet akisi eklendi.
+- Yeni gider kalemi olusturma ve onayli kayit acma akisi Telegram tarafina eklendi.
+- Gemini OCR ayarlari lisans anahtariyla cihaz bazli sifreli olarak tasinabiliyor.
+- Lisans aktivasyon ekrani, OCR destekli lisans metni ve iletisim bilgileriyle guncellendi.
+- 15 gunluk kilit testi ve lisans bloke akisi guncel build ile dogrulandi.
+- Repo icindeki sabit Gemini API key kaldirildi; release artik key'siz paketlenir.
 
-Kurulumdan sonra masaustunde uygulama kisayolu `Cashtracker Fabesco` olarak olusturulur.
+Kurulumdan sonra OCR kullanimi icin ya lisansla gelen sifreli OCR yetkisi ya da yerel ortam degiskeni gerekir.

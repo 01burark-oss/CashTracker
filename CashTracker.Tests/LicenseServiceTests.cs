@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using System.Reflection;
 using CashTracker.App;
 using CashTracker.App.Services;
+using CashTracker.Core.Models;
+using CashTracker.Core.Utilities;
 using CashTracker.Tests.Support;
 using Xunit;
 
@@ -173,6 +175,51 @@ namespace CashTracker.Tests
 
             Assert.Equal(LicenseAccessMode.Active, access.Mode);
             Assert.True(runtimeStore.State.LastSeenAtUtc > firstSeen);
+        }
+
+        [Fact]
+        public async Task ApplyReceiptOcrSettingsAsync_ValidEncryptedSecret_OverridesSettings()
+        {
+            using var rsa = RSA.Create(2048);
+            var installIdentity = new FakeInstallIdentityService
+            {
+                InstallCode = "CTI-1234ABCD-5678EF90-1357ACE0",
+                InstallCodeHash = "hash-ocr-123"
+            };
+            var service = new LicenseService(
+                new AppRuntimeOptions { AppDataPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")) },
+                installIdentity,
+                new FakeLicenseRuntimeStateStore(),
+                rsa.ToXmlString(false));
+
+            var payload = new LicensePayload
+            {
+                LicenseId = "LIC-OCR-001",
+                CustomerName = "OCR User",
+                InstallCodeHash = installIdentity.InstallCodeHash,
+                IssuedAtUtc = DateTime.UtcNow,
+                Edition = "pro",
+                ReceiptOcrProvider = "Gemini",
+                ReceiptOcrModel = "gemini-2.5-flash",
+                EncryptedReceiptOcrApiKey = InstallScopedSecretProtector.Protect("secret-api-key", installIdentity.InstallCode)
+            };
+
+            var activation = await service.ActivateAsync(CreateSignedLicenseKey(payload, rsa));
+            Assert.True(activation.IsValid);
+
+            var settings = new ReceiptOcrSettings
+            {
+                Provider = "Gemini",
+                ApiKey = string.Empty,
+                Model = "gemini-2.0-flash"
+            };
+
+            await service.ApplyReceiptOcrSettingsAsync(settings);
+
+            Assert.Equal("Gemini", settings.EffectiveProvider);
+            Assert.Equal("gemini-2.5-flash", settings.EffectiveModel);
+            Assert.Equal("secret-api-key", settings.EffectiveApiKey);
+            Assert.True(settings.IsConfigured);
         }
 
         private static string CreateSignedLicenseKey(LicensePayload payload, RSA rsa)

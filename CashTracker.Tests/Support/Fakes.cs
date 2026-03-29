@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CashTracker.App.Services;
 using CashTracker.Core.Entities;
@@ -21,6 +22,7 @@ namespace CashTracker.Tests.Support
 
         public int NextId { get; set; }
         public Kasa? LastCreated { get; private set; }
+        public IReadOnlyList<Kasa> Rows => _rows;
 
         public Task<List<Kasa>> GetAllAsync(DateTime? from = null, DateTime? to = null)
         {
@@ -46,6 +48,20 @@ namespace CashTracker.Tests.Support
             _rows.Add(kasa);
             LastCreated = kasa;
             return Task.FromResult(kasa.Id);
+        }
+
+        public Task<List<int>> CreateManyAsync(IEnumerable<Kasa> rows)
+        {
+            var ids = new List<int>();
+            foreach (var row in rows)
+            {
+                row.Id = NextId++;
+                _rows.Add(row);
+                LastCreated = row;
+                ids.Add(row.Id);
+            }
+
+            return Task.FromResult(ids);
         }
 
         public Task UpdateAsync(Kasa kasa)
@@ -259,6 +275,54 @@ namespace CashTracker.Tests.Support
         {
             title = null;
             return false;
+        }
+    }
+
+    internal sealed class FakeReceiptOcrService : IReceiptOcrService
+    {
+        public ReceiptOcrResult NextResult { get; set; } = new ReceiptOcrResult();
+        public Exception? NextException { get; set; }
+        public ReceiptOcrRequest? LastRequest { get; private set; }
+
+        public Task<ReceiptOcrResult> AnalyzeReceiptAsync(ReceiptOcrRequest request, CancellationToken ct = default)
+        {
+            LastRequest = request;
+            if (NextException != null)
+                throw NextException;
+
+            return Task.FromResult(NextResult);
+        }
+    }
+
+    internal sealed class FakeTelegramReceiptSessionStore : ITelegramReceiptSessionStore
+    {
+        private readonly Dictionary<string, TelegramReceiptSessionState> _sessions = new(StringComparer.OrdinalIgnoreCase);
+
+        public TelegramReceiptSessionState? LastSaved { get; private set; }
+
+        public Task<TelegramReceiptSessionState?> GetAsync(long chatId, long userId, CancellationToken ct = default)
+        {
+            _sessions.TryGetValue(BuildKey(chatId, userId), out var value);
+            return Task.FromResult(value);
+        }
+
+        public Task SaveAsync(TelegramReceiptSessionState state, CancellationToken ct = default)
+        {
+            state.UpdatedAtUtc = DateTime.UtcNow;
+            _sessions[BuildKey(state.ChatId, state.UserId)] = state;
+            LastSaved = state;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(long chatId, long userId, CancellationToken ct = default)
+        {
+            _sessions.Remove(BuildKey(chatId, userId));
+            return Task.CompletedTask;
+        }
+
+        private static string BuildKey(long chatId, long userId)
+        {
+            return $"{chatId}:{userId}";
         }
     }
 

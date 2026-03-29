@@ -10,6 +10,9 @@ namespace CashTracker.App.Services
         public DateTime IssuedAtUtc { get; set; }
         public DateTime? ExpiresAtUtc { get; set; }
         public string Edition { get; set; } = string.Empty;
+        public string ReceiptOcrProvider { get; set; } = string.Empty;
+        public string ReceiptOcrModel { get; set; } = string.Empty;
+        public string EncryptedReceiptOcrApiKey { get; set; } = string.Empty;
     }
 
     internal enum LicenseValidationError

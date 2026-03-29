@@ -10,6 +10,7 @@ namespace CashTracker.Core.Services
         Task<List<Kasa>> GetAllAsync(DateTime? from = null, DateTime? to = null);
         Task<Kasa?> GetByIdAsync(int id);
         Task<int> CreateAsync(Kasa kasa);
+        Task<List<int>> CreateManyAsync(IEnumerable<Kasa> rows);
         Task UpdateAsync(Kasa kasa);
         Task DeleteAsync(int id);
     }

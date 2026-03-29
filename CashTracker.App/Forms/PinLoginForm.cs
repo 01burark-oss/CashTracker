@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using CashTracker.App;
 using CashTracker.App.Controls;
+using CashTracker.App.Services;
 using CashTracker.App.UI;
 using CashTracker.Core.Services;
 
@@ -12,21 +13,24 @@ namespace CashTracker.App.Forms
     internal sealed class PinLoginForm : Form
     {
         private readonly IAppSecurityService _appSecurityService;
+        private readonly PinReminderService? _pinReminderService;
         private readonly PinCodeInputControl _txtPin;
         private readonly Label _lblError;
         private readonly Button _btnLogin;
         private readonly Button _btnCancel;
         private readonly Button _btnForgotPin;
+        private readonly List<Button> _keypadButtons = new();
         private bool _isProcessing;
 
-        public PinLoginForm(IAppSecurityService appSecurityService)
+        public PinLoginForm(IAppSecurityService appSecurityService, PinReminderService? pinReminderService = null)
         {
             _appSecurityService = appSecurityService;
+            _pinReminderService = pinReminderService;
 
             Text = AppLocalization.T("pin.title");
-            Width = 540;
-            Height = 460;
-            MinimumSize = new Size(540, 460);
+            Width = 660;
+            Height = 760;
+            MinimumSize = new Size(660, 760);
             UiMetrics.ApplyFormDefaults(this);
             MaximizeBox = false;
             MinimizeBox = false;
@@ -45,152 +49,161 @@ namespace CashTracker.App.Forms
                 ColumnCount = 3,
                 RowCount = 3
             };
-            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 372));
-            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-            shell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 440f));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
+            shell.RowStyles.Add(new RowStyle(SizeType.Absolute, 628f));
+            shell.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             Controls.Add(shell);
 
             var card = new Panel
             {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Dock = DockStyle.Fill,
                 BackColor = Color.White,
-                Padding = new Padding(28, 24, 28, 24),
+                Padding = new Padding(24),
                 Margin = Padding.Empty
             };
-            card.Paint += (_, e) => ControlPaint.DrawBorder(
-                e.Graphics,
-                card.ClientRectangle,
-                Color.FromArgb(211, 221, 234),
-                ButtonBorderStyle.Solid);
+            card.Paint += (_, e) =>
+            {
+                using var pen = new Pen(Color.FromArgb(205, 217, 231), 1.1f);
+                e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+            };
             shell.Controls.Add(card, 1, 1);
 
             var root = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 5,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink
+                RowCount = 8,
+                BackColor = Color.White,
+                Margin = Padding.Empty
             };
-            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 30f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 40f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 8f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 74f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 32f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 266f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 46f));
+            root.RowStyles.Add(new RowStyle(SizeType.Absolute, 62f));
             card.Controls.Add(root);
 
-            var headingFont = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold);
+            var badgeHost = CreateCenterHost();
+            root.Controls.Add(badgeHost, 0, 0);
+
+            var badge = new Label
+            {
+                AutoSize = false,
+                Size = new Size(126, 26),
+                Text = "GUVENLI GIRIS",
+                TextAlign = ContentAlignment.MiddleCenter,
+                BackColor = Color.FromArgb(231, 246, 242),
+                ForeColor = Color.FromArgb(31, 116, 100),
+                Font = BrandTheme.CreateHeadingFont(8.2f, FontStyle.Bold)
+            };
+            badgeHost.Controls.Add(badge);
+
             var lblTitle = new Label
             {
+                Dock = DockStyle.Fill,
                 Text = AppLocalization.T("pin.header"),
-                AutoSize = false,
-                Dock = DockStyle.Top,
-                Height = UiMetrics.GetTextLineHeight(headingFont) + 4,
-                Font = headingFont,
+                TextAlign = ContentAlignment.MiddleCenter,
                 ForeColor = BrandTheme.Heading,
-                TextAlign = ContentAlignment.MiddleCenter,
-                Margin = new Padding(0, 0, 0, 8)
+                Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
+                Margin = Padding.Empty
             };
-            root.Controls.Add(lblTitle, 0, 0);
+            root.Controls.Add(lblTitle, 0, 1);
 
-            var lblInfo = new Label
-            {
-                Text = AppLocalization.T("pin.info"),
-                AutoSize = true,
-                Font = BrandTheme.CreateFont(9.4f),
-                ForeColor = BrandTheme.MutedText,
-                MaximumSize = new Size(296, 0),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.None,
-                Margin = new Padding(10, 0, 10, 18)
-            };
-            root.Controls.Add(lblInfo, 0, 1);
+            var pinHost = CreateCenterHost();
+            root.Controls.Add(pinHost, 0, 3);
 
-            var pinRow = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                ColumnCount = 3,
-                RowCount = 1,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                Margin = new Padding(0, 0, 0, 10)
-            };
-            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 248));
-            pinRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-            pinRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.Controls.Add(pinRow, 0, 2);
-
-            var pinFont = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold);
             _txtPin = new PinCodeInputControl
             {
-                Dock = DockStyle.Fill,
-                Width = 248,
-                Height = 54,
-                Font = pinFont,
-                Margin = new Padding(0),
+                Size = new Size(284, 58),
+                Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
                 PinLength = 4,
                 UsePasswordMask = true
             };
-            pinRow.Controls.Add(_txtPin, 1, 0);
+            pinHost.Controls.Add(_txtPin);
 
             _lblError = new Label
             {
+                Dock = DockStyle.Fill,
                 Text = string.Empty,
-                AutoSize = true,
+                TextAlign = ContentAlignment.TopCenter,
                 ForeColor = Color.FromArgb(173, 59, 56),
                 Font = BrandTheme.CreateFont(9f),
-                MaximumSize = new Size(296, 0),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Anchor = AnchorStyles.None,
-                Margin = new Padding(8, 12, 8, 12)
+                Margin = new Padding(8, 0, 8, 0)
             };
-            root.Controls.Add(_lblError, 0, 3);
-            _txtPin.TextChanged += (_, __) => _lblError.Text = string.Empty;
-
-            var actionLayout = new TableLayoutPanel
+            root.Controls.Add(_lblError, 0, 4);
+            _txtPin.TextChanged += async (_, __) =>
             {
-                Dock = DockStyle.Top,
-                ColumnCount = 1,
-                RowCount = 2,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                Margin = new Padding(0, 4, 0, 0)
+                _lblError.Text = string.Empty;
+                if (!_isProcessing && (_txtPin.Text?.Length ?? 0) == 4)
+                    await AuthenticateAsync();
             };
-            actionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            actionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            root.Controls.Add(actionLayout, 0, 4);
 
-            _btnLogin = CreateButton(AppLocalization.T("pin.button.login"), BrandTheme.Navy);
-            _btnCancel = CreateButton(AppLocalization.T("pin.button.exit"), Color.FromArgb(102, 114, 128));
-            _btnForgotPin = CreateButton(AppLocalization.T("pin.button.forgot"), BrandTheme.Teal);
-            _btnForgotPin.AutoSize = true;
-            _btnForgotPin.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            _btnForgotPin.MinimumSize = UiMetrics.GetButtonMinimumSize(_btnForgotPin.Font, 0);
-            _btnForgotPin.Anchor = AnchorStyles.None;
-            _btnForgotPin.Margin = new Padding(0, 0, 0, 10);
-            actionLayout.Controls.Add(_btnForgotPin, 0, 0);
+            var keypadHost = CreateCenterHost();
+            root.Controls.Add(keypadHost, 0, 5);
 
-            var primaryButtons = new FlowLayoutPanel
+            var keypad = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
-                FlowDirection = FlowDirection.RightToLeft,
-                WrapContents = false,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                Anchor = AnchorStyles.None,
-                Margin = new Padding(0)
+                Size = new Size(336, 252),
+                ColumnCount = 3,
+                RowCount = 4,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
             };
-            primaryButtons.Controls.Add(_btnLogin);
-            primaryButtons.Controls.Add(_btnCancel);
-            actionLayout.Controls.Add(primaryButtons, 0, 1);
+            for (var i = 0; i < 3; i++)
+                keypad.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 112f));
+            for (var i = 0; i < 4; i++)
+                keypad.RowStyles.Add(new RowStyle(SizeType.Absolute, 63f));
+            keypadHost.Controls.Add(keypad);
+
+            AddKeypadButton(keypad, "1", 0, 0, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "2", 1, 0, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "3", 2, 0, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "4", 0, 1, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "5", 1, 1, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "6", 2, 1, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "7", 0, 2, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "8", 1, 2, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "9", 2, 2, Color.FromArgb(249, 251, 255), BrandTheme.Heading, HandleDigitClick);
+            AddKeypadButton(keypad, "Temizle", 0, 3, Color.FromArgb(255, 245, 229), Color.FromArgb(160, 102, 27), (_, __) => ClearPin());
+            AddKeypadButton(keypad, "0", 1, 3, Color.FromArgb(237, 243, 251), BrandTheme.NavyDeep, HandleDigitClick);
+            AddKeypadButton(keypad, "Sil", 2, 3, Color.FromArgb(239, 242, 246), Color.FromArgb(87, 99, 116), (_, __) => RemoveLastDigit());
+
+            var forgotHost = CreateCenterHost();
+            root.Controls.Add(forgotHost, 0, 6);
+
+            _btnForgotPin = CreateFlatActionButton(AppLocalization.T("pin.button.forgot"), BrandTheme.Teal, Color.White, new Size(240, 42));
+            forgotHost.Controls.Add(_btnForgotPin);
+
+            var actionsHost = CreateCenterHost();
+            root.Controls.Add(actionsHost, 0, 7);
+
+            var actions = new TableLayoutPanel
+            {
+                Size = new Size(336, 52),
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
+            };
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 164f));
+            actions.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 172f));
+            actions.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
+            actionsHost.Controls.Add(actions);
+
+            _btnCancel = CreateFlatActionButton(AppLocalization.T("pin.button.exit"), Color.FromArgb(235, 239, 244), Color.FromArgb(79, 92, 108), new Size(156, 48));
+            _btnCancel.Margin = new Padding(0, 0, 8, 0);
+            actions.Controls.Add(_btnCancel, 0, 0);
+
+            _btnLogin = CreateFlatActionButton(AppLocalization.T("pin.button.login"), BrandTheme.Navy, Color.White, new Size(164, 48));
+            _btnLogin.Margin = new Padding(8, 0, 0, 0);
+            actions.Controls.Add(_btnLogin, 1, 0);
 
             _btnLogin.Click += async (_, __) => await AuthenticateAsync();
             _btnForgotPin.Click += async (_, __) => await SendPinReminderAsync();
@@ -219,17 +232,35 @@ namespace CashTracker.App.Forms
             _txtPin.Focus();
         }
 
-        private Task SendPinReminderAsync()
+        private async Task SendPinReminderAsync()
         {
             if (_isProcessing)
-                return Task.CompletedTask;
+                return;
 
-            MessageBox.Show(
-                "Guvenlik nedeniyle mevcut PIN gosterilemez. Yeni bir lisans/kurulum talebi icin satici ile iletisime gecin.",
-                "PIN Yardimi",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
-            return Task.CompletedTask;
+            if (_pinReminderService is null)
+            {
+                MessageBox.Show(
+                    "Telegram hatirlatma servisi hazir degil.",
+                    "PIN Yardimi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            SetBusyState(true);
+
+            try
+            {
+                var result = await _pinReminderService.SendCurrentPinAsync();
+                var icon = result.Status == PinReminderStatus.Success
+                    ? MessageBoxIcon.Information
+                    : MessageBoxIcon.Warning;
+                MessageBox.Show(result.Message, "PIN Yardimi", MessageBoxButtons.OK, icon);
+            }
+            finally
+            {
+                SetBusyState(false);
+            }
         }
 
         private async Task AuthenticateAsync()
@@ -244,8 +275,7 @@ namespace CashTracker.App.Forms
                 return;
             }
 
-            _isProcessing = true;
-            _btnLogin.Enabled = false;
+            SetBusyState(true);
 
             try
             {
@@ -266,40 +296,120 @@ namespace CashTracker.App.Forms
             }
             finally
             {
-                _btnLogin.Enabled = true;
-                _isProcessing = false;
+                SetBusyState(false);
             }
+        }
+
+        private void HandleDigitClick(object? sender, EventArgs e)
+        {
+            if (_isProcessing || sender is not Button button || string.IsNullOrWhiteSpace(button.Text))
+                return;
+
+            _txtPin.AppendDigit(button.Text[0]);
+            _txtPin.Focus();
+        }
+
+        private void ClearPin()
+        {
+            if (_isProcessing)
+                return;
+
+            _txtPin.ClearPin();
+            _txtPin.Focus();
+        }
+
+        private void RemoveLastDigit()
+        {
+            if (_isProcessing)
+                return;
+
+            _txtPin.RemoveLastDigit();
+            _txtPin.Focus();
+        }
+
+        private void SetBusyState(bool isBusy)
+        {
+            _isProcessing = isBusy;
+            _btnLogin.Enabled = !isBusy;
+            _btnCancel.Enabled = !isBusy;
+            _btnForgotPin.Enabled = !isBusy;
+            foreach (var button in _keypadButtons)
+                button.Enabled = !isBusy;
+        }
+
+        private void AddKeypadButton(
+            TableLayoutPanel parent,
+            string text,
+            int column,
+            int row,
+            Color backColor,
+            Color foreColor,
+            EventHandler handler)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+                BackColor = backColor,
+                ForeColor = foreColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateHeadingFont(text.Length == 1 ? 18f : 10.2f, FontStyle.Bold),
+                Margin = new Padding(6),
+                Padding = Padding.Empty
+            };
+            button.FlatAppearance.BorderColor = Color.FromArgb(202, 214, 228);
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.MouseOverBackColor = ControlPaint.Light(backColor, 0.04f);
+            button.Click += handler;
+            parent.Controls.Add(button, column, row);
+            _keypadButtons.Add(button);
+        }
+
+        private static Panel CreateCenterHost()
+        {
+            var host = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = Padding.Empty,
+                Padding = Padding.Empty
+            };
+            void LayoutChildren()
+            {
+                foreach (Control child in host.Controls)
+                {
+                    child.Left = Math.Max((host.ClientSize.Width - child.Width) / 2, 0);
+                    child.Top = Math.Max((host.ClientSize.Height - child.Height) / 2, 0);
+                }
+            }
+
+            host.ControlAdded += (_, __) => LayoutChildren();
+            host.Resize += (_, __) => LayoutChildren();
+            return host;
+        }
+
+        private static Button CreateFlatActionButton(string text, Color backColor, Color foreColor, Size size)
+        {
+            var button = new Button
+            {
+                Text = text,
+                Size = size,
+                BackColor = backColor,
+                ForeColor = foreColor,
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateHeadingFont(9.3f, FontStyle.Bold),
+                Padding = new Padding(8, 4, 8, 4),
+                TextAlign = ContentAlignment.MiddleCenter,
+                UseCompatibleTextRendering = true
+            };
+            button.FlatAppearance.BorderSize = 1;
+            button.FlatAppearance.BorderColor = Color.FromArgb(205, 216, 230);
+            button.FlatAppearance.MouseOverBackColor = ControlPaint.Light(backColor, 0.04f);
+            return button;
         }
 
         private static bool IsValidPin(string pin)
         {
             return pin.Length == 4 && int.TryParse(pin, out _);
-        }
-
-        private static Button CreateButton(string text, Color backColor)
-        {
-            var font = BrandTheme.CreateHeadingFont(9.2f, FontStyle.Bold);
-
-            var button = new Button
-            {
-                Text = text,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                MinimumSize = UiMetrics.GetButtonMinimumSize(font, 118),
-                BackColor = backColor,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = font,
-                Padding = UiMetrics.ButtonPadding,
-                Margin = new Padding(8, 0, 0, 0)
-            };
-            button.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
-            button.FlatAppearance.BorderSize = 1;
-            button.FlatAppearance.MouseOverBackColor = Color.FromArgb(
-                Math.Max(backColor.R - 14, 0),
-                Math.Max(backColor.G - 14, 0),
-                Math.Max(backColor.B - 14, 0));
-            return button;
         }
     }
 }

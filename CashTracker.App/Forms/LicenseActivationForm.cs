@@ -4,25 +4,28 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.App.Services;
 using CashTracker.App.UI;
+using CashTracker.Core.Models;
 
 namespace CashTracker.App.Forms
 {
     internal sealed class LicenseActivationForm : Form
     {
         private readonly ILicenseService _licenseService;
+        private readonly ReceiptOcrSettings _receiptOcrSettings;
         private readonly TextBox _txtInstallCode;
         private readonly TextBox _txtLicenseKey;
         private readonly Label _lblStatus;
         private readonly Button _btnActivate;
 
-        public LicenseActivationForm(ILicenseService licenseService)
+        public LicenseActivationForm(ILicenseService licenseService, ReceiptOcrSettings receiptOcrSettings)
         {
             _licenseService = licenseService;
+            _receiptOcrSettings = receiptOcrSettings;
 
             Text = "CashTracker Lisans Aktivasyonu";
-            Width = 760;
-            Height = 560;
-            MinimumSize = new Size(760, 560);
+            Width = 780;
+            Height = 620;
+            MinimumSize = new Size(780, 620);
             UiMetrics.ApplyFormDefaults(this);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -60,27 +63,17 @@ namespace CashTracker.App.Forms
             root.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             card.Controls.Add(root);
 
-            var contentHost = new Panel
-            {
-                Dock = DockStyle.Fill,
-                AutoScroll = true,
-                Margin = Padding.Empty
-            };
-            root.Controls.Add(contentHost, 0, 0);
-
             var layout = new TableLayoutPanel
             {
-                Dock = DockStyle.Top,
+                Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 8,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                RowCount = 9,
                 Margin = Padding.Empty
             };
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            for (var i = 0; i < 8; i++)
+            for (var i = 0; i < 9; i++)
                 layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            contentHost.Controls.Add(layout);
+            root.Controls.Add(layout, 0, 0);
 
             var subtitle = new Label
             {
@@ -89,7 +82,17 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateFont(9.4f),
                 ForeColor = BrandTheme.MutedText,
                 MaximumSize = new Size(620, 0),
-                Margin = new Padding(0, 0, 0, 18)
+                Margin = new Padding(0, 0, 0, 14)
+            };
+
+            var activationHintLabel = new Label
+            {
+                AutoSize = true,
+                Font = BrandTheme.CreateFont(9f),
+                ForeColor = BrandTheme.MutedText,
+                MaximumSize = new Size(620, 0),
+                Margin = new Padding(2, 0, 2, 10),
+                Text = "Bu ekranda etkinlestirilen lisans anahtari kurulum koduna ozel uretilir. OCR paketi tanimliysa fis OCR ozelligi aktivasyondan sonra otomatik acilir."
             };
 
             var contactLabel = new Label
@@ -98,8 +101,8 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateFont(8.9f),
                 ForeColor = BrandTheme.MutedText,
                 MaximumSize = new Size(620, 0),
-                Margin = new Padding(2, 0, 2, 12),
-                Text = "Lisans almak icin: 01burark@gmail.com | Instagram: _6uwak"
+                Margin = new Padding(2, 2, 2, 4),
+                Text = "Lisans ve OCR aktivasyonu icin iletisim: Instagram @_6uwak | E-posta: 01burark@gmail.com"
             };
 
             layout.Controls.Add(new Label
@@ -111,8 +114,9 @@ namespace CashTracker.App.Forms
                 Margin = new Padding(0, 0, 0, 10)
             }, 0, 0);
             layout.Controls.Add(subtitle, 0, 1);
+            layout.Controls.Add(activationHintLabel, 0, 2);
 
-            layout.Controls.Add(CreateFieldLabel("Kurulum Kodu"), 0, 2);
+            layout.Controls.Add(CreateFieldLabel("Kurulum Kodu"), 0, 3);
 
             var inputFont = BrandTheme.CreateFont(10f);
             var deviceRow = new TableLayoutPanel
@@ -122,7 +126,7 @@ namespace CashTracker.App.Forms
                 RowCount = 1,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                Margin = new Padding(0, 0, 0, 12)
+                Margin = new Padding(0, 0, 0, 10)
             };
             deviceRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             deviceRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -141,11 +145,11 @@ namespace CashTracker.App.Forms
             btnCopy.Click += (_, __) => Clipboard.SetText(_txtInstallCode.Text);
             deviceRow.Controls.Add(_txtInstallCode, 0, 0);
             deviceRow.Controls.Add(btnCopy, 1, 0);
-            layout.Controls.Add(deviceRow, 0, 3);
+            layout.Controls.Add(deviceRow, 0, 4);
 
-            layout.Controls.Add(CreateFieldLabel("Lisans Anahtari"), 0, 4);
+            layout.Controls.Add(CreateFieldLabel("Lisans Anahtari"), 0, 5);
 
-            var licenseKeyHeight = UiMetrics.GetNoteBoxHeight(BrandTheme.CreateFont(9.5f), 5, 18);
+            var licenseKeyHeight = UiMetrics.GetNoteBoxHeight(BrandTheme.CreateFont(9.5f), 4, 18);
             _txtLicenseKey = new TextBox
             {
                 Dock = DockStyle.Top,
@@ -157,7 +161,7 @@ namespace CashTracker.App.Forms
                 Font = BrandTheme.CreateFont(9.5f),
                 Margin = new Padding(0, 0, 0, 8)
             };
-            layout.Controls.Add(_txtLicenseKey, 0, 5);
+            layout.Controls.Add(_txtLicenseKey, 0, 6);
 
             _lblStatus = new Label
             {
@@ -165,11 +169,11 @@ namespace CashTracker.App.Forms
                 ForeColor = BrandTheme.MutedText,
                 Font = BrandTheme.CreateFont(9.2f),
                 MaximumSize = new Size(620, 0),
-                Margin = new Padding(2, 10, 2, 10)
+                Margin = new Padding(2, 8, 2, 8)
             };
-            layout.Controls.Add(_lblStatus, 0, 6);
+            layout.Controls.Add(_lblStatus, 0, 7);
 
-            layout.Controls.Add(contactLabel, 0, 7);
+            layout.Controls.Add(contactLabel, 0, 8);
 
             var actions = new FlowLayoutPanel
             {
@@ -197,6 +201,7 @@ namespace CashTracker.App.Forms
             {
                 var contentWidth = Math.Max(420, card.ClientSize.Width - 64);
                 subtitle.MaximumSize = new Size(contentWidth, 0);
+                activationHintLabel.MaximumSize = new Size(contentWidth, 0);
                 _lblStatus.MaximumSize = new Size(contentWidth, 0);
                 contactLabel.MaximumSize = new Size(contentWidth, 0);
             }
@@ -237,6 +242,7 @@ namespace CashTracker.App.Forms
                 if (!result.IsValid)
                     return;
 
+                await _licenseService.ApplyReceiptOcrSettingsAsync(_receiptOcrSettings);
                 DialogResult = DialogResult.OK;
                 Close();
             }

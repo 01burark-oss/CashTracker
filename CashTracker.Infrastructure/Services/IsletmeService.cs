@@ -186,7 +186,12 @@ namespace CashTracker.Infrastructure.Services
         private static async Task EnsureDefaultKalemlerAsync(CashTrackerDbContext db, int isletmeId)
         {
             var gelirVar = await db.KalemTanimlari.AnyAsync(x => x.IsletmeId == isletmeId && x.Tip == "Gelir");
-            var giderVar = await db.KalemTanimlari.AnyAsync(x => x.IsletmeId == isletmeId && x.Tip == "Gider");
+            var existingExpenseCategories = await db.KalemTanimlari
+                .Where(x => x.IsletmeId == isletmeId && x.Tip == "Gider")
+                .Select(x => x.Ad)
+                .ToListAsync();
+            var existingExpenseSet = new HashSet<string>(existingExpenseCategories, StringComparer.OrdinalIgnoreCase);
+            var changed = false;
 
             if (!gelirVar)
             {
@@ -197,20 +202,25 @@ namespace CashTracker.Infrastructure.Services
                     Ad = "Genel Gelir",
                     CreatedAt = DateTime.Now
                 });
+                changed = true;
             }
 
-            if (!giderVar)
+            foreach (var category in DefaultKalemCatalog.DefaultExpenseCategories)
             {
+                if (existingExpenseSet.Contains(category))
+                    continue;
+
                 db.KalemTanimlari.Add(new KalemTanimi
                 {
                     IsletmeId = isletmeId,
                     Tip = "Gider",
-                    Ad = "Genel Gider",
+                    Ad = category,
                     CreatedAt = DateTime.Now
                 });
+                changed = true;
             }
 
-            if (!gelirVar || !giderVar)
+            if (changed)
                 await db.SaveChangesAsync();
         }
     }

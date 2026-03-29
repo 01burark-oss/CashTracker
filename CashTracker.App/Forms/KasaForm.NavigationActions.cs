@@ -13,7 +13,8 @@ namespace CashTracker.App.Forms
                 _telegramApprovalService,
                 _runtimeOptions,
                 _appSecurityService,
-                _licenseService);
+                _licenseService,
+                _receiptOcrSettings);
             form.ShowDialog(this);
 
             await LoadKalemlerForTipAsync();

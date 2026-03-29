@@ -66,6 +66,31 @@ namespace CashTracker.Infrastructure.Services
             return kasa.Id;
         }
 
+        public async Task<List<int>> CreateManyAsync(IEnumerable<Kasa> rows)
+        {
+            var activeIsletmeId = await _isletmeService.GetActiveIdAsync();
+            await using var db = await _dbFactory.CreateDbContextAsync();
+
+            var createdIds = new List<int>();
+            foreach (var kasa in rows)
+            {
+                kasa.IsletmeId = activeIsletmeId;
+                kasa.Tip = NormalizeTip(kasa.Tip);
+                kasa.OdemeYontemi = NormalizeOdemeYontemi(kasa.OdemeYontemi);
+                kasa.Kalem = NormalizeKalem(kasa.Tip, kasa.Kalem, kasa.GiderTuru);
+                kasa.GiderTuru = kasa.Tip == "Gider" ? kasa.Kalem : null;
+                kasa.CreatedAt = DateTime.Now;
+                db.Kasalar.Add(kasa);
+            }
+
+            await db.SaveChangesAsync();
+
+            foreach (var row in rows)
+                createdIds.Add(row.Id);
+
+            return createdIds;
+        }
+
         public async Task UpdateAsync(Kasa kasa)
         {
             var activeIsletmeId = await _isletmeService.GetActiveIdAsync();

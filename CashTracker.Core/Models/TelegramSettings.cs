@@ -26,7 +26,18 @@ namespace CashTracker.Core.Models
         public bool IsAllowedUser(long? userId)
         {
             if (string.IsNullOrWhiteSpace(AllowedUserIds))
-                return true;
+            {
+                if (!userId.HasValue)
+                    return false;
+
+                if (long.TryParse(ChatId, NumberStyles.Integer, CultureInfo.InvariantCulture, out var chatId) &&
+                    chatId > 0)
+                {
+                    return chatId == userId.Value;
+                }
+
+                return false;
+            }
 
             if (!userId.HasValue)
                 return false;

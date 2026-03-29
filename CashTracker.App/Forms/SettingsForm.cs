@@ -3,6 +3,7 @@ using System.Windows.Forms;
 using CashTracker.App;
 using CashTracker.App.Services;
 using CashTracker.App.UI;
+using CashTracker.Core.Models;
 using CashTracker.Core.Services;
 
 namespace CashTracker.App.Forms
@@ -15,6 +16,7 @@ namespace CashTracker.App.Forms
         private readonly AppRuntimeOptions _runtimeOptions;
         private readonly IAppSecurityService _appSecurityService;
         private readonly ILicenseService _licenseService;
+        private readonly ReceiptOcrSettings _receiptOcrSettings;
 
         private TableLayoutPanel _rootLayout = null!;
         private Panel _businessPanel = null!;
@@ -77,7 +79,8 @@ namespace CashTracker.App.Forms
             ITelegramApprovalService telegramApprovalService,
             AppRuntimeOptions runtimeOptions,
             IAppSecurityService appSecurityService,
-            ILicenseService licenseService)
+            ILicenseService licenseService,
+            ReceiptOcrSettings receiptOcrSettings)
         {
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
@@ -85,6 +88,7 @@ namespace CashTracker.App.Forms
             _runtimeOptions = runtimeOptions;
             _appSecurityService = appSecurityService;
             _licenseService = licenseService;
+            _receiptOcrSettings = receiptOcrSettings;
 
             Text = AppLocalization.T("settings.title");
             Width = 1120;

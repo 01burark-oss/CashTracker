@@ -306,6 +306,14 @@ namespace CashTracker.Tests
                     Path.GetTempPath(),
                     $"cashtracker_perf_backup_{Guid.NewGuid():N}.db"))));
 
+            var receiptOcrSettings = new ReceiptOcrSettings
+            {
+                Provider = "Gemini",
+                ApiKey = "test-key",
+                Model = "gemini-2.5-flash",
+                SessionTimeoutMinutes = 30
+            };
+
             var service = new TelegramCommandService(
                 bot,
                 settings,
@@ -315,7 +323,10 @@ namespace CashTracker.Tests
                 isletme,
                 new FakeAppSecurityService(),
                 backup,
-                new FakeTelegramApprovalService());
+                new FakeTelegramApprovalService(),
+                new FakeReceiptOcrService(),
+                new FakeTelegramReceiptSessionStore(),
+                receiptOcrSettings);
 
             return (bot, handler, service);
         }

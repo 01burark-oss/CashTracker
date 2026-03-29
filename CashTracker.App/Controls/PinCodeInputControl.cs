@@ -46,6 +46,22 @@ namespace CashTracker.App.Controls
             Text = string.Empty;
         }
 
+        public void AppendDigit(char digit)
+        {
+            if (!char.IsDigit(digit) || _value.Length >= PinLength)
+                return;
+
+            SetValue(_value + digit);
+        }
+
+        public void RemoveLastDigit()
+        {
+            if (_value.Length == 0)
+                return;
+
+            SetValue(_value[..^1]);
+        }
+
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
@@ -141,11 +157,14 @@ namespace CashTracker.App.Controls
 
             var boxCount = Math.Max(PinLength, 1);
             const int gap = 12;
+            const int outerPadding = 4;
             var totalGap = gap * (boxCount - 1);
-            var boxWidth = Math.Max((ClientSize.Width - totalGap) / boxCount, 40);
-            var boxHeight = Math.Max(ClientSize.Height - 2, 42);
-            var startX = Math.Max((ClientSize.Width - ((boxWidth * boxCount) + totalGap)) / 2, 0);
-            var y = Math.Max((ClientSize.Height - boxHeight) / 2, 0);
+            var availableWidth = Math.Max((ClientSize.Width - (outerPadding * 2)) - totalGap, boxCount * 40);
+            var boxWidth = Math.Max(40, availableWidth / boxCount);
+            var totalWidth = (boxWidth * boxCount) + totalGap;
+            var boxHeight = Math.Max(ClientSize.Height - 6, 42);
+            var startX = outerPadding + Math.Max(((ClientSize.Width - (outerPadding * 2)) - totalWidth) / 2, 0);
+            var y = Math.Max((ClientSize.Height - boxHeight) / 2, 2);
 
             for (var i = 0; i < boxCount; i++)
             {

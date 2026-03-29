@@ -41,6 +41,15 @@ namespace CashTracker.App.Printing
             var visibleRows = request.RecordLimit.HasValue
                 ? orderedRecords.Take(request.RecordLimit.Value).ToList()
                 : orderedRecords;
+            var aggregateRows = request.RecordLimit.HasValue && !request.IsPreview
+                ? visibleRows
+                : orderedRecords;
+            var effectiveSummary = request.RecordLimit.HasValue && !request.IsPreview
+                ? BuildSummary(
+                    aggregateRows,
+                    summary.From == default ? request.From : summary.From,
+                    summary.To == default ? request.To : summary.To)
+                : CloneSummary(summary, request.From, request.To);
 
             return new PrintReportData
             {
@@ -59,19 +68,38 @@ namespace CashTracker.App.Printing
                 RecordLimit = request.RecordLimit,
                 VisibleRecordCount = visibleRows.Count,
                 TotalRecordCount = orderedRecords.Count,
-                Summary = new PeriodSummary
-                {
-                    From = summary.From,
-                    To = summary.To,
-                    IncomeTotal = summary.IncomeTotal,
-                    ExpenseTotal = summary.ExpenseTotal,
-                    IncomeCount = summary.IncomeCount,
-                    ExpenseCount = summary.ExpenseCount
-                },
-                PaymentMethods = BuildMethodSummaries(orderedRecords),
-                IncomeCategories = BuildCategorySummaries(orderedRecords, "Gelir"),
-                ExpenseCategories = BuildCategorySummaries(orderedRecords, "Gider"),
+                Summary = effectiveSummary,
+                PaymentMethods = BuildMethodSummaries(aggregateRows),
+                IncomeCategories = BuildCategorySummaries(aggregateRows, "Gelir"),
+                ExpenseCategories = BuildCategorySummaries(aggregateRows, "Gider"),
                 Records = BuildRecordRows(visibleRows)
+            };
+        }
+
+        private static PeriodSummary CloneSummary(PeriodSummary summary, DateTime fallbackFrom, DateTime fallbackTo)
+        {
+            return new PeriodSummary
+            {
+                From = summary.From == default ? fallbackFrom : summary.From,
+                To = summary.To == default ? fallbackTo : summary.To,
+                IncomeTotal = summary.IncomeTotal,
+                ExpenseTotal = summary.ExpenseTotal,
+                IncomeCount = summary.IncomeCount,
+                ExpenseCount = summary.ExpenseCount
+            };
+        }
+
+        private static PeriodSummary BuildSummary(IEnumerable<Kasa> records, DateTime from, DateTime to)
+        {
+            var rows = records.ToList();
+            return new PeriodSummary
+            {
+                From = from,
+                To = to,
+                IncomeTotal = rows.Where(x => IsIncome(x.Tip)).Sum(x => x.Tutar),
+                ExpenseTotal = rows.Where(x => IsExpense(x.Tip)).Sum(x => x.Tutar),
+                IncomeCount = rows.Count(x => IsIncome(x.Tip)),
+                ExpenseCount = rows.Count(x => IsExpense(x.Tip))
             };
         }
 

@@ -161,7 +161,7 @@ namespace CashTracker.App.Forms
 
             _businessSectionLayout.Controls.Add(CreateFieldLabel(AppLocalization.T("settings.license.title")), 0, 11);
 
-            var installCodeRow = CreateTwoColumnRow(100, 118);
+            var installCodeRow = CreateTwoColumnRow(100, 136);
             _txtInstallCode = CreateInputBox();
             _txtInstallCode.ReadOnly = true;
             _btnCopyInstallCode = CreateActionButton(AppLocalization.T("settings.license.copy"), BrandTheme.Navy, Color.White);

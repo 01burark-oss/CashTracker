@@ -22,6 +22,7 @@ namespace CashTracker.App
         private readonly UpdateSettings _updateSettings;
         private readonly AppRuntimeOptions _runtimeOptions;
         private readonly ILicenseService _licenseService;
+        private readonly ReceiptOcrSettings _receiptOcrSettings;
         private readonly UpdateManifestService _updateService;
         private readonly StartupMetrics _startupMetrics;
         private readonly System.Windows.Forms.Timer _dateChangeTimer;
@@ -79,6 +80,7 @@ namespace CashTracker.App
             UpdateSettings updateSettings,
             AppRuntimeOptions runtimeOptions,
             ILicenseService licenseService,
+            ReceiptOcrSettings receiptOcrSettings,
             UpdateManifestService updateService,
             StartupMetrics startupMetrics)
         {
@@ -94,6 +96,7 @@ namespace CashTracker.App
             _updateSettings = updateSettings;
             _runtimeOptions = runtimeOptions;
             _licenseService = licenseService;
+            _receiptOcrSettings = receiptOcrSettings;
             _updateService = updateService;
             _startupMetrics = startupMetrics;
 
