@@ -11,6 +11,8 @@ permissions:
 jobs:
   build-and-release:
     runs-on: windows-latest
+    env:
+      CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML: ${{ secrets.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML }}
 
     steps:
       - name: Checkout
@@ -64,10 +66,8 @@ jobs:
             -SetupBaseName "CashTracker-Setup"
 
       - name: Write Update Manifest
-        if: ${{ secrets.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML != '' }}
+        if: ${{ env.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML != '' }}
         shell: pwsh
-        env:
-          CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML: ${{ secrets.CASHTRACKER_UPDATE_SIGNING_PRIVATE_KEY_XML }}
         run: |
           $version = "${{ steps.meta.outputs.version }}"
           $packagePath = ".\artifacts\$version\CashTracker-Setup.exe"
