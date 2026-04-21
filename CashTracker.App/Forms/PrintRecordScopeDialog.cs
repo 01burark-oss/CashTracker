@@ -14,11 +14,7 @@ namespace CashTracker.App.Forms
             Width = 460;
             Height = 220;
             MinimumSize = new Size(420, 210);
-            UiMetrics.ApplyFormDefaults(this);
-            StartPosition = FormStartPosition.CenterParent;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
+            UiMetrics.ApplyFullscreenDialogDefaults(this);
             ShowInTaskbar = false;
             BackColor = Color.White;
             Font = BrandTheme.CreateFont(10f);

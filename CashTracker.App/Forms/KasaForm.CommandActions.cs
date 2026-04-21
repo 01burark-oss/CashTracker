@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using CashTracker.Core.Entities;
+using CashTracker.Core.Models;
 
 namespace CashTracker.App.Forms
 {
@@ -35,11 +36,71 @@ namespace CashTracker.App.Forms
             }
 
             if (isNew)
-                await _kasaService.CreateAsync(kasa);
+            {
+                var kasaId = await _kasaService.CreateAsync(kasa);
+                if (!await TryCreateLinkedStockMovementAsync(kasaId, tip))
+                    return;
+            }
             else
+            {
                 await _kasaService.UpdateAsync(kasa);
+            }
 
             await LoadAllAsync();
+        }
+
+        private async Task<bool> TryCreateLinkedStockMovementAsync(int kasaId, string tip)
+        {
+            if (tip != "Gider" || !_chkStokGiris.Checked)
+                return true;
+
+            if (_cmbStokUrun.SelectedItem is not UrunHizmet product)
+            {
+                await RollbackKasaAsync(kasaId);
+                MessageBox.Show("Stok girisi icin urun secilmelidir.", "Stok girisi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            if (_numStokMiktar.Value <= 0)
+            {
+                await RollbackKasaAsync(kasaId);
+                MessageBox.Show("Stok miktari sifirdan buyuk olmalidir.", "Stok girisi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            try
+            {
+                await _stokService.CreateMovementAsync(new StokHareketCreateRequest
+                {
+                    UrunHizmetId = product.Id,
+                    Tarih = _dtTarih.Value,
+                    Miktar = _numStokMiktar.Value,
+                    Kaynak = "KasaGider",
+                    Aciklama = $"Gider stok girisi | KasaId: {kasaId} | {product.Ad}"
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await RollbackKasaAsync(kasaId);
+                MessageBox.Show(
+                    $"Stok girisi olusturulamadi. Gider kaydi geri alindi.\n\n{ex.Message}",
+                    "Stok girisi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return false;
+            }
+        }
+
+        private async Task RollbackKasaAsync(int kasaId)
+        {
+            try
+            {
+                await _kasaService.DeleteAsync(kasaId);
+            }
+            catch
+            {
+            }
         }
 
         private async Task DeleteAsync()

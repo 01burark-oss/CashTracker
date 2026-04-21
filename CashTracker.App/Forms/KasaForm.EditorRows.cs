@@ -52,7 +52,11 @@ namespace CashTracker.App.Forms
                 AppLocalization.T("tip.expense")
             });
             _cmbTip.SelectedIndex = 0;
-            _cmbTip.SelectedIndexChanged += async (_, __) => await LoadKalemlerForTipAsync();
+            _cmbTip.SelectedIndexChanged += async (_, __) =>
+            {
+                await LoadKalemlerForTipAsync();
+                UpdateStockLinkUi();
+            };
             form.Controls.Add(label);
             form.Controls.Add(_cmbTip);
         }
@@ -182,6 +186,80 @@ namespace CashTracker.App.Forms
             button.FlatAppearance.MouseOverBackColor = Color.FromArgb(240, 247, 252);
             button.FlatAppearance.MouseDownBackColor = Color.FromArgb(229, 239, 247);
             return button;
+        }
+
+        private void AddStockLinkRow(TableLayoutPanel form)
+        {
+            var label = new Label
+            {
+                Text = "Stok girisi",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                Font = BrandTheme.CreateHeadingFont(9.4f, FontStyle.Bold),
+                Margin = new Padding(0, 8, 10, 8)
+            };
+
+            var panel = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 4,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                Margin = new Padding(0, 6, 0, 10)
+            };
+            panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            _chkStokGiris = new CheckBox
+            {
+                Text = "Bu gider stoklu urun alimi",
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 6)
+            };
+            _chkStokGiris.CheckedChanged += (_, __) => UpdateStockLinkUi();
+
+            _cmbStokUrun = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Dock = DockStyle.Top,
+                FlatStyle = FlatStyle.Flat,
+                IntegralHeight = false,
+                Font = BrandTheme.CreateFont(10f),
+                Margin = new Padding(0, 0, 0, 6),
+                MinimumSize = new Size(0, UiMetrics.GetInputHeight(BrandTheme.CreateFont(10f)))
+            };
+
+            _numStokMiktar = new NumericUpDown
+            {
+                DecimalPlaces = 2,
+                Minimum = 0,
+                Maximum = 1_000_000_000,
+                Value = 1,
+                Dock = DockStyle.Top,
+                Font = BrandTheme.CreateFont(10f),
+                Margin = new Padding(0, 0, 0, 6)
+            };
+
+            _lblStokGirisHint = new Label
+            {
+                Text = "Sadece yeni gider kaydinda stok hareketi olusturulur.",
+                AutoSize = true,
+                ForeColor = Color.FromArgb(106, 118, 136),
+                Font = BrandTheme.CreateFont(8.8f),
+                Margin = new Padding(0)
+            };
+
+            panel.Controls.Add(_chkStokGiris, 0, 0);
+            panel.Controls.Add(_cmbStokUrun, 0, 1);
+            panel.Controls.Add(_numStokMiktar, 0, 2);
+            panel.Controls.Add(_lblStokGirisHint, 0, 3);
+
+            form.Controls.Add(label);
+            form.Controls.Add(panel);
         }
 
         private Button CreateOdemeYontemiButton(string text, string value)

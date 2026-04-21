@@ -417,9 +417,9 @@ namespace CashTracker.App
 
         private static void ApplySummary(SummaryCard card, PeriodSummary s)
         {
-            card.Income.Text = AppLocalization.F("main.summary.income", s.IncomeTotal);
-            card.Expense.Text = AppLocalization.F("main.summary.expense", s.ExpenseTotal);
-            card.Net.Text = AppLocalization.F("main.summary.net", s.Net);
+            card.Income.Text = FormatAmount(s.IncomeTotal);
+            card.Expense.Text = FormatAmount(s.ExpenseTotal);
+            card.Net.Text = FormatAmount(s.Net);
         }
 
         private static bool IsIncomeTip(string? tip)

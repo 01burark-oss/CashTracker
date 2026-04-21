@@ -13,6 +13,7 @@ namespace CashTracker.App.Forms
         private async Task LoadAllAsync()
         {
             await RefreshActiveBusinessInfoAsync();
+            await LoadStockProductsAsync();
             var list = await _kasaService.GetAllAsync();
             _grid.DataSource = new BindingList<Kasa>(list);
             _grid.ClearSelection();
@@ -31,6 +32,7 @@ namespace CashTracker.App.Forms
             SetSelectedOdemeYontemi(kasa.OdemeYontemi);
             _txtAciklama.Text = kasa.Aciklama ?? string.Empty;
             await LoadKalemlerForTipAsync(kasa.Kalem ?? kasa.GiderTuru);
+            ResetStockLinkForSelectedRecord();
         }
 
         private async Task ClearFormAsync()
@@ -41,7 +43,10 @@ namespace CashTracker.App.Forms
             _txtTutar.Text = string.Empty;
             SetSelectedOdemeYontemi("Nakit");
             _txtAciklama.Text = string.Empty;
+            _chkStokGiris.Checked = false;
+            _numStokMiktar.Value = 1;
             await LoadKalemlerForTipAsync();
+            UpdateStockLinkUi();
         }
 
         private async Task LoadKalemlerForTipAsync(string? preferredKalem = null)
@@ -105,6 +110,84 @@ namespace CashTracker.App.Forms
                 _cmbKalem.Enabled = _cmbKalem.Items.Count > 0;
                 UpdateKalemAvailabilityUi();
             }
+        }
+
+        private async Task LoadStockProductsAsync()
+        {
+            if (_isLoadingStockProducts)
+                return;
+
+            _isLoadingStockProducts = true;
+            try
+            {
+                _stockProducts = (await _urunHizmetService.GetAllAsync())
+                    .Where(x => x.Aktif && string.Equals(x.Tip, "Urun", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.Ad, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                _cmbStokUrun.DataSource = null;
+                _cmbStokUrun.DisplayMember = nameof(UrunHizmet.Ad);
+                _cmbStokUrun.ValueMember = nameof(UrunHizmet.Id);
+                _cmbStokUrun.DataSource = _stockProducts;
+            }
+            catch (Exception ex)
+            {
+                _stockProducts = new List<UrunHizmet>();
+                _cmbStokUrun.DataSource = null;
+                MessageBox.Show(
+                    $"Stok urunleri yuklenemedi: {ex.Message}",
+                    AppLocalization.T("kasa.title"),
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                _isLoadingStockProducts = false;
+                UpdateStockLinkUi();
+            }
+        }
+
+        private void ResetStockLinkForSelectedRecord()
+        {
+            _chkStokGiris.Checked = false;
+            _numStokMiktar.Value = 1;
+            UpdateStockLinkUi();
+        }
+
+        private void UpdateStockLinkUi()
+        {
+            if (_chkStokGiris == null || _cmbStokUrun == null || _numStokMiktar == null || _lblStokGirisHint == null)
+                return;
+
+            var tip = MapTip(_cmbTip.SelectedItem?.ToString() ?? AppLocalization.T("tip.income"));
+            var isNewExpense = _selectedId == 0 && tip == "Gider";
+            var hasProduct = _stockProducts.Count > 0;
+            _chkStokGiris.Enabled = isNewExpense && hasProduct;
+            _cmbStokUrun.Enabled = isNewExpense && hasProduct && _chkStokGiris.Checked;
+            _numStokMiktar.Enabled = isNewExpense && hasProduct && _chkStokGiris.Checked;
+
+            if (tip != "Gider")
+            {
+                _chkStokGiris.Checked = false;
+                _lblStokGirisHint.Text = "Stok girisi sadece gider kaydi icin kullanilir.";
+                return;
+            }
+
+            if (_selectedId != 0)
+            {
+                _chkStokGiris.Checked = false;
+                _lblStokGirisHint.Text = "Duzenlenen kayitta tekrar stok girisi yapilmaz; yeni gider kaydi acin.";
+                return;
+            }
+
+            if (!hasProduct)
+            {
+                _chkStokGiris.Checked = false;
+                _lblStokGirisHint.Text = "Once Urun / Stok ekranindan urun karti olusturun.";
+                return;
+            }
+
+            _lblStokGirisHint.Text = "Kaydedince gider kaydi ve stok girisi birlikte olusur.";
         }
 
         private void UpdateKalemAvailabilityUi()

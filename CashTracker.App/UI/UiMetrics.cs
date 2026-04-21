@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace CashTracker.App.UI
@@ -17,6 +18,39 @@ namespace CashTracker.App.UI
         public static void ApplyFormDefaults(Form form)
         {
             form.AutoScaleMode = AutoScaleMode.Dpi;
+        }
+
+        public static void EnableDoubleBuffer(Control control)
+        {
+            typeof(Control)
+                .GetProperty("DoubleBuffered", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.SetValue(control, true, null);
+        }
+
+        public static Color ResolveEffectiveBackColor(Control? control, Color fallback)
+        {
+            while (control is not null)
+            {
+                var color = control.BackColor;
+                if (color.A == byte.MaxValue)
+                    return color;
+
+                control = control.Parent;
+            }
+
+            return fallback;
+        }
+
+        public static void ApplyFullscreenDialogDefaults(
+            Form form,
+            FormStartPosition startPosition = FormStartPosition.CenterParent)
+        {
+            ApplyFormDefaults(form);
+            form.StartPosition = startPosition;
+            form.FormBorderStyle = FormBorderStyle.Sizable;
+            form.WindowState = FormWindowState.Maximized;
+            form.MaximizeBox = true;
+            form.MinimizeBox = true;
         }
 
         public static int GetTextLineHeight(Font font)

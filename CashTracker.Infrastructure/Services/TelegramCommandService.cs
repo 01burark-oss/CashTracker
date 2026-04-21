@@ -27,6 +27,10 @@ namespace CashTracker.Infrastructure.Services
         private readonly IReceiptOcrService _receiptOcrService;
         private readonly ITelegramReceiptSessionStore _receiptSessionStore;
         private readonly ReceiptOcrSettings _receiptOcrSettings;
+        private readonly IUrunHizmetService _urunHizmetService;
+        private readonly IStokService _stokService;
+        private readonly IBarcodeReaderService _barcodeReaderService;
+        private readonly ITelegramStockSessionStore _stockSessionStore;
 
         public TelegramCommandService(
             TelegramBotService telegram,
@@ -40,7 +44,11 @@ namespace CashTracker.Infrastructure.Services
             ITelegramApprovalService telegramApprovalService,
             IReceiptOcrService receiptOcrService,
             ITelegramReceiptSessionStore receiptSessionStore,
-            ReceiptOcrSettings receiptOcrSettings)
+            ReceiptOcrSettings receiptOcrSettings,
+            IUrunHizmetService urunHizmetService,
+            IStokService stokService,
+            IBarcodeReaderService barcodeReaderService,
+            ITelegramStockSessionStore stockSessionStore)
         {
             _telegram = telegram;
             _settings = settings;
@@ -54,6 +62,10 @@ namespace CashTracker.Infrastructure.Services
             _receiptOcrService = receiptOcrService;
             _receiptSessionStore = receiptSessionStore;
             _receiptOcrSettings = receiptOcrSettings;
+            _urunHizmetService = urunHizmetService;
+            _stokService = stokService;
+            _barcodeReaderService = barcodeReaderService;
+            _stockSessionStore = stockSessionStore;
         }
 
         public async Task ProcessUpdateAsync(TelegramUpdate update, CancellationToken ct = default)
@@ -76,11 +88,36 @@ namespace CashTracker.Infrastructure.Services
             var chatId = update.ChatId;
             var userId = update.UserId.Value;
             var text = (update.Text ?? string.Empty).Trim();
-            var session = await _receiptSessionStore.GetAsync(chatId, userId, ct);
+            var receiptSession = await _receiptSessionStore.GetAsync(chatId, userId, ct);
+            var stockSession = await _stockSessionStore.GetAsync(chatId, userId, ct);
 
             if (update.HasPhoto)
             {
-                if (session != null)
+                if (stockSession != null)
+                {
+                    await _telegram.SendTextAsync(
+                        ToChatId(chatId),
+                        "Devam eden bir stok oturumu var. Once onu tamamla veya `iptal` yaz.",
+                        ct);
+                    return;
+                }
+
+                if (TryParseStockCaption(update.Caption, out var stockCaptionArgs))
+                {
+                    if (receiptSession != null)
+                    {
+                        await _telegram.SendTextAsync(
+                            ToChatId(chatId),
+                            "Devam eden bir fis oturumu var. Once onu tamamla veya `iptal` yaz.",
+                            ct);
+                        return;
+                    }
+
+                    await StartStockPhotoCommandAsync(update, stockCaptionArgs, ct);
+                    return;
+                }
+
+                if (receiptSession != null)
                 {
                     await _telegram.SendTextAsync(
                         ToChatId(chatId),
@@ -93,11 +130,34 @@ namespace CashTracker.Infrastructure.Services
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(text) && stockSession != null)
+            {
+                if (text.StartsWith('/') &&
+                    TryParseCommand(text, out var activeCommand, out var activeArgs) &&
+                    IsSessionCancelCommand(activeCommand, activeArgs))
+                {
+                    await CancelStockSessionAsync(chatId, userId, ct);
+                    return;
+                }
+
+                if (text.StartsWith('/'))
+                {
+                    await _telegram.SendTextAsync(
+                        ToChatId(chatId),
+                        "Devam eden stok oturumu var. Cevap ver veya `iptal` yaz.",
+                        ct);
+                    return;
+                }
+
+                await HandleStockSessionInputAsync(stockSession, text, ct);
+                return;
+            }
+
             if (!string.IsNullOrWhiteSpace(text) &&
-                session != null &&
+                receiptSession != null &&
                 !text.StartsWith('/'))
             {
-                await HandleReceiptSessionInputAsync(session, text, ct);
+                await HandleReceiptSessionInputAsync(receiptSession, text, ct);
                 return;
             }
 
@@ -107,7 +167,7 @@ namespace CashTracker.Infrastructure.Services
             if (!TryParseCommand(text, out var command, out var args))
                 return;
 
-            if (session != null && IsSessionCancelCommand(command, args))
+            if (receiptSession != null && IsSessionCancelCommand(command, args))
             {
                 await CancelReceiptSessionAsync(chatId, userId, ct);
                 return;
@@ -162,6 +222,19 @@ namespace CashTracker.Infrastructure.Services
 
                     case "/gider":
                         await AddTransactionAsync("Gider", args, chatId, ct);
+                        break;
+
+                    case "/stok":
+                        if (receiptSession != null)
+                        {
+                            await _telegram.SendTextAsync(
+                                ToChatId(chatId),
+                                "Devam eden bir fis oturumu var. Once onu tamamla veya `iptal` yaz.",
+                                ct);
+                            break;
+                        }
+
+                        await HandleStockTextCommandAsync(update, args, ct);
                         break;
 
                     case "/sifre":
@@ -695,6 +768,540 @@ namespace CashTracker.Infrastructure.Services
             await _telegram.SendTextAsync(ToChatId(chatId), "Fis oturumu iptal edildi.", ct);
         }
 
+        private static bool TryParseStockCaption(string? caption, out string[] args)
+        {
+            args = Array.Empty<string>();
+            if (string.IsNullOrWhiteSpace(caption))
+                return false;
+
+            if (!TryParseCommand(caption.Trim(), out var command, out var parsedArgs))
+                return false;
+
+            if (command != "/stok")
+                return false;
+
+            args = parsedArgs;
+            return true;
+        }
+
+        private async Task StartStockPhotoCommandAsync(
+            TelegramUpdate update,
+            string[] args,
+            CancellationToken ct)
+        {
+            if (!update.UserId.HasValue)
+                return;
+
+            if (args.Length != 1 || !TryParseStockQuantity(args[0], out var quantity))
+            {
+                await _telegram.SendTextAsync(ToChatId(update.ChatId), GetStockUsage(), ct);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(update.PhotoFileId))
+            {
+                await _telegram.SendTextAsync(ToChatId(update.ChatId), "Barkod fotografi okunamadi.", ct);
+                return;
+            }
+
+            string? tempFilePath = null;
+            try
+            {
+                var telegramFilePath = await _telegram.GetFilePathAsync(update.PhotoFileId, ct);
+                tempFilePath = BuildTempStockFilePath(telegramFilePath);
+                await _telegram.DownloadFileAsync(telegramFilePath, tempFilePath, ct);
+
+                var barcode = await _barcodeReaderService.TryReadAsync(tempFilePath, ct);
+                if (!barcode.Success || string.IsNullOrWhiteSpace(barcode.Barcode))
+                {
+                    await StartStockBarcodeAwaitSessionAsync(
+                        update,
+                        quantity,
+                        "Barkod okunamadi. Lutfen barkod numarasini elle yaz veya `iptal` yaz.",
+                        ct);
+                    return;
+                }
+
+                var session = CreateStockSession(update, quantity);
+                await ContinueStockFlowFromBarcodeAsync(session, barcode.Barcode, ct);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"TelegramCommandService stock photo error: {ex}");
+                await _telegram.SendTextAsync(
+                    ToChatId(update.ChatId),
+                    "Stok barkod fotografi islenemedi. Fotograf net degilse barkodu elle /stok <barkod> <miktar> seklinde gonder.",
+                    ct);
+            }
+            finally
+            {
+                SafeDeleteFile(tempFilePath);
+            }
+        }
+
+        private async Task HandleStockTextCommandAsync(
+            TelegramUpdate update,
+            string[] args,
+            CancellationToken ct)
+        {
+            if (!update.UserId.HasValue)
+                return;
+
+            if (args.Length == 1 && TryParseStockQuantity(args[0], out var quantityOnly))
+            {
+                await StartStockBarcodeAwaitSessionAsync(
+                    update,
+                    quantityOnly,
+                    "Stok hareketi icin barkodu yaz. Ornek: 8690000000000",
+                    ct);
+                return;
+            }
+
+            if (args.Length == 2 &&
+                !string.IsNullOrWhiteSpace(args[0]) &&
+                TryParseStockQuantity(args[1], out var quantity))
+            {
+                var session = CreateStockSession(update, quantity);
+                await ContinueStockFlowFromBarcodeAsync(session, args[0], ct);
+                return;
+            }
+
+            await _telegram.SendTextAsync(ToChatId(update.ChatId), GetStockUsage(), ct);
+        }
+
+        private async Task StartStockBarcodeAwaitSessionAsync(
+            TelegramUpdate update,
+            decimal quantity,
+            string prompt,
+            CancellationToken ct)
+        {
+            var session = CreateStockSession(update, quantity);
+            session.Step = StockSessionStep.AwaitBarcode;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(ToChatId(update.ChatId), prompt, ct);
+        }
+
+        private TelegramStockSessionState CreateStockSession(TelegramUpdate update, decimal quantity)
+        {
+            return new TelegramStockSessionState
+            {
+                ChatId = update.ChatId,
+                UserId = update.UserId ?? 0,
+                SourceMessageId = update.MessageId,
+                PendingQuantity = quantity,
+                Step = StockSessionStep.AwaitBarcode
+            };
+        }
+
+        private async Task HandleStockSessionInputAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            var normalized = NormalizeForMatch(input);
+            if (normalized is "iptal" or "cancel" or "vazgec" or "vazgeÃ§")
+            {
+                await CancelStockSessionAsync(session.ChatId, session.UserId, ct);
+                return;
+            }
+
+            switch (session.Step)
+            {
+                case StockSessionStep.AwaitBarcode:
+                    await ContinueStockFlowFromBarcodeAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitProductName:
+                    await ResolveStockProductNameAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitUnit:
+                    await ResolveStockUnitAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitVatRate:
+                    await ResolveStockVatRateAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitPurchasePrice:
+                    await ResolveStockPurchasePriceAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitSalePrice:
+                    await ResolveStockSalePriceAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitCriticalStock:
+                    await ResolveStockCriticalStockAsync(session, input, ct);
+                    break;
+
+                case StockSessionStep.AwaitConfirmation:
+                    await ResolveStockConfirmationAsync(session, input, ct);
+                    break;
+
+                default:
+                    await _telegram.SendTextAsync(ToChatId(session.ChatId), "Beklenmeyen stok oturumu durumu.", ct);
+                    break;
+            }
+        }
+
+        private async Task ContinueStockFlowFromBarcodeAsync(
+            TelegramStockSessionState session,
+            string barcodeInput,
+            CancellationToken ct)
+        {
+            var barcode = NormalizeBarcode(barcodeInput);
+            if (string.IsNullOrWhiteSpace(barcode))
+            {
+                session.Step = StockSessionStep.AwaitBarcode;
+                await _stockSessionStore.SaveAsync(session, ct);
+                await _telegram.SendTextAsync(
+                    ToChatId(session.ChatId),
+                    "Barkod bos olamaz. Barkod numarasini yaz veya `iptal` yaz.",
+                    ct);
+                return;
+            }
+
+            session.Barcode = barcode;
+            var product = await _urunHizmetService.GetByBarcodeAsync(barcode, ct);
+            if (product == null)
+            {
+                session.Step = StockSessionStep.AwaitProductName;
+                await _stockSessionStore.SaveAsync(session, ct);
+                await _telegram.SendTextAsync(
+                    ToChatId(session.ChatId),
+                    $"Bu barkod kayitli degil: {barcode}\nUrun olusturalim. Urun adini yaz veya `iptal` yaz.",
+                    ct);
+                return;
+            }
+
+            session.ProductId = product.Id;
+            session.ProductName = product.Ad;
+            session.Unit = product.Birim;
+            session.VatRate = product.KdvOrani;
+            session.PurchasePrice = product.AlisFiyati;
+            session.SalePrice = product.SatisFiyati;
+            session.CriticalStock = product.KritikStok;
+            session.Step = StockSessionStep.AwaitConfirmation;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await SendStockConfirmationAsync(session, product, ct);
+        }
+
+        private async Task ResolveStockProductNameAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            var name = input.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                await _telegram.SendTextAsync(ToChatId(session.ChatId), "Urun adi bos olamaz. Urun adini yaz.", ct);
+                return;
+            }
+
+            session.ProductName = name;
+            session.Step = StockSessionStep.AwaitUnit;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(
+                ToChatId(session.ChatId),
+                "Birim yaz. Ornek: Adet, Kg, Litre. Varsayilan Adet icin `atla` yaz.",
+                ct);
+        }
+
+        private async Task ResolveStockUnitAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            session.Unit = IsSkip(input) ? "Adet" : input.Trim();
+            if (string.IsNullOrWhiteSpace(session.Unit))
+                session.Unit = "Adet";
+
+            session.Step = StockSessionStep.AwaitVatRate;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(
+                ToChatId(session.ChatId),
+                "KDV oranini yaz. Ornek: 20. Varsayilan 20 icin `atla` yaz.",
+                ct);
+        }
+
+        private async Task ResolveStockVatRateAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            if (IsSkip(input))
+            {
+                session.VatRate = 20m;
+            }
+            else if (!TryParseNonNegativeDecimal(input, out var vatRate))
+            {
+                await _telegram.SendTextAsync(ToChatId(session.ChatId), "KDV orani sayisal olmali. Ornek: 20 veya `atla`.", ct);
+                return;
+            }
+            else
+            {
+                session.VatRate = vatRate;
+            }
+
+            session.Step = StockSessionStep.AwaitPurchasePrice;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(
+                ToChatId(session.ChatId),
+                "Alis fiyatini yaz. Bilmiyorsan `atla` yaz.",
+                ct);
+        }
+
+        private async Task ResolveStockPurchasePriceAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            if (IsSkip(input))
+            {
+                session.PurchasePrice = 0m;
+            }
+            else if (!TryParseNonNegativeDecimal(input, out var purchasePrice))
+            {
+                await _telegram.SendTextAsync(ToChatId(session.ChatId), "Alis fiyati sayisal olmali. Ornek: 125,50 veya `atla`.", ct);
+                return;
+            }
+            else
+            {
+                session.PurchasePrice = purchasePrice;
+            }
+
+            session.Step = StockSessionStep.AwaitSalePrice;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(
+                ToChatId(session.ChatId),
+                "Satis fiyatini yaz. Bilmiyorsan `atla` yaz.",
+                ct);
+        }
+
+        private async Task ResolveStockSalePriceAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            if (IsSkip(input))
+            {
+                session.SalePrice = 0m;
+            }
+            else if (!TryParseNonNegativeDecimal(input, out var salePrice))
+            {
+                await _telegram.SendTextAsync(ToChatId(session.ChatId), "Satis fiyati sayisal olmali. Ornek: 150 veya `atla`.", ct);
+                return;
+            }
+            else
+            {
+                session.SalePrice = salePrice;
+            }
+
+            session.Step = StockSessionStep.AwaitCriticalStock;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await _telegram.SendTextAsync(
+                ToChatId(session.ChatId),
+                "Kritik stok miktarini yaz. Yoksa `atla` yaz.",
+                ct);
+        }
+
+        private async Task ResolveStockCriticalStockAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            if (IsSkip(input))
+            {
+                session.CriticalStock = 0m;
+            }
+            else if (!TryParseNonNegativeDecimal(input, out var criticalStock))
+            {
+                await _telegram.SendTextAsync(ToChatId(session.ChatId), "Kritik stok sayisal olmali. Ornek: 10 veya `atla`.", ct);
+                return;
+            }
+            else
+            {
+                session.CriticalStock = criticalStock;
+            }
+
+            session.Step = StockSessionStep.AwaitConfirmation;
+            await _stockSessionStore.SaveAsync(session, ct);
+            await SendStockConfirmationAsync(session, product: null, ct);
+        }
+
+        private async Task ResolveStockConfirmationAsync(
+            TelegramStockSessionState session,
+            string input,
+            CancellationToken ct)
+        {
+            var normalized = NormalizeForMatch(input);
+            if (normalized is not ("onayla" or "evet" or "yes"))
+            {
+                await _telegram.SendTextAsync(
+                    ToChatId(session.ChatId),
+                    "Stok hareketini kaydetmek icin `onayla`, vazgecmek icin `iptal` yaz.",
+                    ct);
+                return;
+            }
+
+            var product = await ResolveStockSessionProductAsync(session, ct);
+            if (product == null)
+            {
+                await _stockSessionStore.DeleteAsync(session.ChatId, session.UserId, ct);
+                await _telegram.SendTextAsync(
+                    ToChatId(session.ChatId),
+                    "Urun bulunamadi veya olusturulamadi. Stok hareketi kaydedilmedi.",
+                    ct);
+                return;
+            }
+
+            var result = await _stokService.CreateMovementAsync(
+                new StokHareketCreateRequest
+                {
+                    UrunHizmetId = product.Id,
+                    Miktar = session.PendingQuantity,
+                    Kaynak = "Telegram",
+                    Aciklama = $"Telegram stok | Barkod: {session.Barcode}"
+                },
+                ct);
+
+            await _stockSessionStore.DeleteAsync(session.ChatId, session.UserId, ct);
+            var businessName = await GetActiveBusinessNameAsync();
+            var sb = new StringBuilder();
+            sb.AppendLine("Stok hareketi kaydedildi.");
+            sb.AppendLine($"Isletme: {businessName}");
+            sb.AppendLine($"Urun: {product.Ad}");
+            sb.AppendLine($"Barkod: {session.Barcode}");
+            sb.AppendLine($"Miktar: {FormatSignedQuantity(session.PendingQuantity)}");
+            sb.AppendLine($"Mevcut stok: {result.MevcutStok:n2} {product.Birim}");
+            if (result.IsNegative)
+                sb.AppendLine("Uyari: Mevcut stok eksiye dustu.");
+
+            await _telegram.SendTextAsync(ToChatId(session.ChatId), sb.ToString().Trim(), ct);
+        }
+
+        private async Task<UrunHizmet?> ResolveStockSessionProductAsync(
+            TelegramStockSessionState session,
+            CancellationToken ct)
+        {
+            if (session.ProductId.HasValue)
+                return await _urunHizmetService.GetByIdAsync(session.ProductId.Value, ct);
+
+            try
+            {
+                var createdId = await _urunHizmetService.CreateAsync(
+                    new UrunHizmetCreateRequest
+                    {
+                        Tip = "Urun",
+                        Ad = session.ProductName,
+                        Barkod = session.Barcode,
+                        Birim = session.Unit,
+                        KdvOrani = session.VatRate,
+                        AlisFiyati = session.PurchasePrice,
+                        SatisFiyati = session.SalePrice,
+                        KritikStok = session.CriticalStock
+                    },
+                    ct);
+
+                return await _urunHizmetService.GetByIdAsync(createdId, ct);
+            }
+            catch (InvalidOperationException)
+            {
+                return await _urunHizmetService.GetByBarcodeAsync(session.Barcode, ct);
+            }
+        }
+
+        private async Task SendStockConfirmationAsync(
+            TelegramStockSessionState session,
+            UrunHizmet? product,
+            CancellationToken ct)
+        {
+            var isExistingProduct = product != null;
+            var productName = isExistingProduct ? product!.Ad : session.ProductName;
+            var unit = isExistingProduct ? product!.Birim : session.Unit;
+            var currentStock = isExistingProduct
+                ? await _stokService.GetCurrentStockAsync(product!.Id, ct)
+                : 0m;
+            var nextStock = currentStock + session.PendingQuantity;
+            var businessName = await GetActiveBusinessNameAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Stok hareketi ozeti");
+            sb.AppendLine($"Isletme: {businessName}");
+            sb.AppendLine(isExistingProduct ? $"Urun: {productName}" : $"Yeni urun: {productName}");
+            sb.AppendLine($"Barkod: {session.Barcode}");
+            sb.AppendLine($"Miktar: {FormatSignedQuantity(session.PendingQuantity)} ({(session.PendingQuantity > 0 ? "Giris" : "Cikis")})");
+            sb.AppendLine($"Mevcut stok: {currentStock:n2} {unit} -> {nextStock:n2} {unit}");
+            if (!isExistingProduct)
+            {
+                sb.AppendLine($"Birim: {session.Unit}");
+                sb.AppendLine($"KDV: %{session.VatRate:n2}");
+                sb.AppendLine($"Alis/Satis: {session.PurchasePrice:n2} / {session.SalePrice:n2}");
+                sb.AppendLine($"Kritik stok: {session.CriticalStock:n2}");
+            }
+
+            if (nextStock < 0)
+                sb.AppendLine("Uyari: Bu islem stogu eksiye dusurecek. V1'de engellenmez, sadece uyarilir.");
+
+            sb.AppendLine();
+            sb.AppendLine("Kaydetmek icin `onayla`, vazgecmek icin `iptal` yaz.");
+
+            await _telegram.SendTextAsync(ToChatId(session.ChatId), sb.ToString().Trim(), ct);
+        }
+
+        private async Task CancelStockSessionAsync(long chatId, long userId, CancellationToken ct)
+        {
+            await _stockSessionStore.DeleteAsync(chatId, userId, ct);
+            await _telegram.SendTextAsync(ToChatId(chatId), "Stok oturumu iptal edildi.", ct);
+        }
+
+        private static bool IsSkip(string input)
+        {
+            return string.Equals(input.Trim(), "atla", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool TryParseStockQuantity(string raw, out decimal quantity)
+        {
+            if (!TryParseAmount(raw, out quantity))
+                return false;
+
+            return quantity != 0m;
+        }
+
+        private static bool TryParseNonNegativeDecimal(string raw, out decimal value)
+        {
+            if (!TryParseAmount(raw, out value))
+                return false;
+
+            return value >= 0m;
+        }
+
+        private static string NormalizeBarcode(string value)
+        {
+            return (value ?? string.Empty).Trim();
+        }
+
+        private static string FormatSignedQuantity(decimal quantity)
+        {
+            return quantity > 0 ? $"+{quantity:n2}" : quantity.ToString("n2", CultureInfo.CurrentCulture);
+        }
+
+        private static string GetStockUsage()
+        {
+            return "Kullanim:\n/stok <barkod> +10\n/stok <barkod> -3\nBarkod fotografi icin caption: /stok +50";
+        }
+
+        private static string BuildTempStockFilePath(string telegramFilePath)
+        {
+            var extension = Path.GetExtension(telegramFilePath);
+            if (string.IsNullOrWhiteSpace(extension))
+                extension = ".jpg";
+
+            var folder = GetWritableWorkingFolder("Barcodes");
+            return Path.Combine(folder, $"barcode_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}{extension}");
+        }
+
         private static bool IsSessionCancelCommand(string command, IReadOnlyList<string> args)
         {
             if (args.Count > 0)
@@ -739,6 +1346,7 @@ namespace CashTracker.Infrastructure.Services
                 "/ekle gider <tutar> <kalem> [aciklama]\n" +
                 "/gelir <tutar> [kalem] [aciklama]\n" +
                 "/gider <tutar> <kalem> [aciklama]\n" +
+                "/stok <barkod> +10 veya /stok <barkod> -3\n" +
                 "/onay <kod> - Silme onayini verir\n" +
                 "/iptal <kod> - Silme onayini reddeder\n" +
                 "\n" +
@@ -746,7 +1354,12 @@ namespace CashTracker.Infrastructure.Services
                 "- Bota fis fotografi gonder\n" +
                 "- Eksik eslemelerde sira numarasi, genel gider kalem adi, `yeni: <ad>`, `atla` veya `iptal` kullan\n" +
                 "- Kalemler genel olmali: Mutfak Giderleri, Personel Giderleri gibi\n" +
-                "- Son adimda `onayla` ile kaydet";
+                "- Son adimda `onayla` ile kaydet\n" +
+                "\n" +
+                "Stok:\n" +
+                "- Barkod fotografi gonderirken caption olarak `/stok +50` veya `/stok -3` yaz\n" +
+                "- Barkod okunamazsa bot barkodu elle ister\n" +
+                "- Bilinmeyen barkodda urun bilgilerini sorar, son adimda `onayla` ile kaydeder";
 
             await _telegram.SendTextAsync(ToChatId(chatId), help, ct);
         }
@@ -1146,10 +1759,18 @@ namespace CashTracker.Infrastructure.Services
 
         private static bool TryParseAmount(string raw, out decimal amount)
         {
+            var trimmed = raw.Trim();
+            if (trimmed.Contains(',') && !trimmed.Contains('.'))
+            {
+                var commaAsDecimal = trimmed.Replace(',', '.');
+                if (decimal.TryParse(commaAsDecimal, NumberStyles.Number, CultureInfo.InvariantCulture, out amount))
+                    return true;
+            }
+
             if (decimal.TryParse(raw, NumberStyles.Number, CultureInfo.InvariantCulture, out amount))
                 return true;
 
-            var normalized = raw.Replace(',', '.');
+            var normalized = trimmed.Replace(',', '.');
             return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out amount);
         }
 

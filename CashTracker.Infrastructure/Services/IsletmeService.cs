@@ -123,9 +123,29 @@ namespace CashTracker.Infrastructure.Services
 
             var kasalar = db.Kasalar.Where(x => x.IsletmeId == id);
             var kalemler = db.KalemTanimlari.Where(x => x.IsletmeId == id);
+            var cariKartlar = db.CariKartlari.Where(x => x.IsletmeId == id);
+            var cariHareketler = db.CariHareketleri.Where(x => x.IsletmeId == id);
+            var urunler = db.UrunHizmetleri.Where(x => x.IsletmeId == id);
+            var stokHareketler = db.StokHareketleri.Where(x => x.IsletmeId == id);
+            var faturalar = db.Faturalar.Where(x => x.IsletmeId == id);
+            var faturaSatirlari = db.FaturaSatirlari.Where(x => x.IsletmeId == id);
+            var tahsilatOdemeler = db.TahsilatOdemeleri.Where(x => x.IsletmeId == id);
+            var belgeDosyalari = db.BelgeDosyalari.Where(x => x.IsletmeId == id);
+            var gibAyarlar = db.GibPortalAyarlari.Where(x => x.IsletmeId == id);
+            var gibLoglar = db.GibPortalIslemLoglari.Where(x => x.IsletmeId == id);
 
             db.Kasalar.RemoveRange(kasalar);
             db.KalemTanimlari.RemoveRange(kalemler);
+            db.CariHareketleri.RemoveRange(cariHareketler);
+            db.CariKartlari.RemoveRange(cariKartlar);
+            db.StokHareketleri.RemoveRange(stokHareketler);
+            db.UrunHizmetleri.RemoveRange(urunler);
+            db.FaturaSatirlari.RemoveRange(faturaSatirlari);
+            db.Faturalar.RemoveRange(faturalar);
+            db.TahsilatOdemeleri.RemoveRange(tahsilatOdemeler);
+            db.BelgeDosyalari.RemoveRange(belgeDosyalari);
+            db.GibPortalAyarlari.RemoveRange(gibAyarlar);
+            db.GibPortalIslemLoglari.RemoveRange(gibLoglar);
             db.Isletmeler.Remove(target);
 
             int? newActiveId = null;

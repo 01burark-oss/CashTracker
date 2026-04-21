@@ -326,6 +326,163 @@ namespace CashTracker.Tests.Support
         }
     }
 
+    internal sealed class FakeBarcodeReaderService : IBarcodeReaderService
+    {
+        public BarcodeReadResult NextResult { get; set; } = BarcodeReadResult.Found("8690000000000");
+        public string? LastImagePath { get; private set; }
+
+        public Task<BarcodeReadResult> TryReadAsync(string imagePath, CancellationToken ct = default)
+        {
+            LastImagePath = imagePath;
+            return Task.FromResult(NextResult);
+        }
+    }
+
+    internal sealed class FakeUrunHizmetService : IUrunHizmetService
+    {
+        private readonly List<UrunHizmet> _rows;
+
+        public FakeUrunHizmetService(IEnumerable<UrunHizmet>? seed = null)
+        {
+            _rows = seed?.ToList() ?? new List<UrunHizmet>();
+            NextId = _rows.Count == 0 ? 1 : _rows.Max(x => x.Id) + 1;
+        }
+
+        public int NextId { get; set; }
+        public IReadOnlyList<UrunHizmet> Rows => _rows;
+
+        public Task<List<UrunHizmet>> GetAllAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult(_rows.ToList());
+        }
+
+        public Task<UrunHizmet?> GetByIdAsync(int id, CancellationToken ct = default)
+        {
+            return Task.FromResult(_rows.FirstOrDefault(x => x.Id == id));
+        }
+
+        public Task<UrunHizmet?> GetByBarcodeAsync(string barcode, CancellationToken ct = default)
+        {
+            return Task.FromResult(_rows.FirstOrDefault(x =>
+                string.Equals(x.Barkod, barcode, StringComparison.OrdinalIgnoreCase) && x.Aktif));
+        }
+
+        public Task<int> CreateAsync(UrunHizmetCreateRequest request, CancellationToken ct = default)
+        {
+            var duplicate = _rows.Any(x =>
+                !string.IsNullOrWhiteSpace(request.Barkod) &&
+                string.Equals(x.Barkod, request.Barkod, StringComparison.OrdinalIgnoreCase));
+
+            if (duplicate)
+                throw new InvalidOperationException("Bu barkod aktif isletmede zaten kayitli.");
+
+            var row = new UrunHizmet
+            {
+                Id = NextId++,
+                IsletmeId = 1,
+                Tip = request.Tip,
+                Ad = request.Ad,
+                Barkod = request.Barkod,
+                Birim = string.IsNullOrWhiteSpace(request.Birim) ? "Adet" : request.Birim,
+                KdvOrani = request.KdvOrani,
+                AlisFiyati = request.AlisFiyati,
+                SatisFiyati = request.SatisFiyati,
+                KritikStok = request.KritikStok,
+                Aktif = true
+            };
+
+            _rows.Add(row);
+            return Task.FromResult(row.Id);
+        }
+
+        public Task UpdateAsync(UrunHizmet urunHizmet, CancellationToken ct = default)
+        {
+            var existing = _rows.FindIndex(x => x.Id == urunHizmet.Id);
+            if (existing >= 0)
+                _rows[existing] = urunHizmet;
+
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(int id, CancellationToken ct = default)
+        {
+            _rows.RemoveAll(x => x.Id == id);
+            return Task.CompletedTask;
+        }
+    }
+
+    internal sealed class FakeStokService : IStokService
+    {
+        private readonly Dictionary<int, decimal> _currentStock = new();
+
+        public List<StokHareketCreateRequest> Requests { get; } = new();
+        public StokHareketCreateRequest? LastRequest => Requests.LastOrDefault();
+
+        public void SetCurrentStock(int urunHizmetId, decimal stock)
+        {
+            _currentStock[urunHizmetId] = stock;
+        }
+
+        public Task<decimal> GetCurrentStockAsync(int urunHizmetId, CancellationToken ct = default)
+        {
+            _currentStock.TryGetValue(urunHizmetId, out var stock);
+            return Task.FromResult(stock);
+        }
+
+        public Task<StokHareketResult> CreateMovementAsync(StokHareketCreateRequest request, CancellationToken ct = default)
+        {
+            Requests.Add(request);
+            _currentStock.TryGetValue(request.UrunHizmetId, out var stock);
+            stock += request.Miktar;
+            _currentStock[request.UrunHizmetId] = stock;
+
+            return Task.FromResult(new StokHareketResult
+            {
+                Hareket = new StokHareket
+                {
+                    Id = Requests.Count,
+                    UrunHizmetId = request.UrunHizmetId,
+                    Miktar = request.Miktar,
+                    Kaynak = request.Kaynak,
+                    Aciklama = request.Aciklama
+                },
+                MevcutStok = stock
+            });
+        }
+    }
+
+    internal sealed class FakeTelegramStockSessionStore : ITelegramStockSessionStore
+    {
+        private readonly Dictionary<string, TelegramStockSessionState> _sessions = new(StringComparer.OrdinalIgnoreCase);
+
+        public TelegramStockSessionState? LastSaved { get; private set; }
+
+        public Task<TelegramStockSessionState?> GetAsync(long chatId, long userId, CancellationToken ct = default)
+        {
+            _sessions.TryGetValue(BuildKey(chatId, userId), out var value);
+            return Task.FromResult(value);
+        }
+
+        public Task SaveAsync(TelegramStockSessionState state, CancellationToken ct = default)
+        {
+            state.UpdatedAtUtc = DateTime.UtcNow;
+            _sessions[BuildKey(state.ChatId, state.UserId)] = state;
+            LastSaved = state;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(long chatId, long userId, CancellationToken ct = default)
+        {
+            _sessions.Remove(BuildKey(chatId, userId));
+            return Task.CompletedTask;
+        }
+
+        private static string BuildKey(long chatId, long userId)
+        {
+            return $"{chatId}:{userId}";
+        }
+    }
+
     internal sealed class FakeInstallIdentityService : IInstallIdentityService
     {
         public string InstallCode { get; set; } = "CTI-TEST-CODE";

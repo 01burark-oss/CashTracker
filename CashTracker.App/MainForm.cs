@@ -1,5 +1,6 @@
-﻿using System.Drawing;
+using System.Drawing;
 using System.Windows.Forms;
+using CashTracker.App.Controls;
 using CashTracker.App.Services;
 using CashTracker.App.UI;
 using CashTracker.Core.Models;
@@ -15,6 +16,13 @@ namespace CashTracker.App
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
         private readonly IDashboardSnapshotService _dashboardSnapshotService;
+        private readonly ICariService _cariService;
+        private readonly IUrunHizmetService _urunHizmetService;
+        private readonly IStokService _stokService;
+        private readonly IFaturaService _faturaService;
+        private readonly ITahsilatOdemeService _tahsilatOdemeService;
+        private readonly IGibPortalService _gibPortalService;
+        private readonly IOnMuhasebeReportService _onMuhasebeReportService;
         private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly IAppSecurityService _appSecurityService;
         private readonly BackupReportService _backupReport;
@@ -54,6 +62,18 @@ namespace CashTracker.App
         private Label _lblDailyOnlineOdemeExpense = null!;
         private Label _lblDailyHavaleIncome = null!;
         private Label _lblDailyHavaleExpense = null!;
+        private Button _btnBusinessSelector = null!;
+        private Label _lblTopDate = null!;
+        private Label _lblTopTime = null!;
+        private Label _lblTopTelegramState = null!;
+        private Label _lblSnapshotIncomeValue = null!;
+        private Label _lblSnapshotIncomeDelta = null!;
+        private Label _lblSnapshotNetValue = null!;
+        private Label _lblSnapshotExpenseValue = null!;
+        private Label _lblSnapshotExpenseDelta = null!;
+        private DashboardSparkBarsControl _netSparkChart = null!;
+        private DashboardDonutChartControl _paymentDistributionChart = null!;
+        private ContextMenuStrip? _businessSelectorMenu;
 
         private sealed class SummaryCard
         {
@@ -73,6 +93,13 @@ namespace CashTracker.App
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
             IDashboardSnapshotService dashboardSnapshotService,
+            ICariService cariService,
+            IUrunHizmetService urunHizmetService,
+            IStokService stokService,
+            IFaturaService faturaService,
+            ITahsilatOdemeService tahsilatOdemeService,
+            IGibPortalService gibPortalService,
+            IOnMuhasebeReportService onMuhasebeReportService,
             ITelegramApprovalService telegramApprovalService,
             IAppSecurityService appSecurityService,
             BackupReportService backupReport,
@@ -89,6 +116,13 @@ namespace CashTracker.App
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
             _dashboardSnapshotService = dashboardSnapshotService;
+            _cariService = cariService;
+            _urunHizmetService = urunHizmetService;
+            _stokService = stokService;
+            _faturaService = faturaService;
+            _tahsilatOdemeService = tahsilatOdemeService;
+            _gibPortalService = gibPortalService;
+            _onMuhasebeReportService = onMuhasebeReportService;
             _telegramApprovalService = telegramApprovalService;
             _appSecurityService = appSecurityService;
             _backupReport = backupReport;
@@ -117,8 +151,11 @@ namespace CashTracker.App
             _dateChangeTimer.Tick += async (_, __) => await RefreshSummariesIfDateChangedAsync();
             _dateChangeTimer.Start();
             Shown += async (_, __) => await InitializeAfterLoginAsync();
-            FormClosed += (_, __) => _dateChangeTimer.Dispose();
+            FormClosed += (_, __) =>
+            {
+                _businessSelectorMenu?.Dispose();
+                _dateChangeTimer.Dispose();
+            };
         }
     }
 }
-

@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using CashTracker.App.Controls;
 using CashTracker.App.Forms;
@@ -11,23 +12,288 @@ namespace CashTracker.App
     {
         private void BuildUi()
         {
-            const int sidebarExpandedWidth = 360;
-            const int sidebarCollapsedWidth = 92;
-            var isSidebarExpanded = true;
+            var sidebarBackground = Color.FromArgb(18, 31, 54);
+            var sidebarHover = Color.FromArgb(29, 47, 79);
+            var sidebarText = Color.FromArgb(233, 239, 247);
+            var sidebarMuted = Color.FromArgb(156, 172, 196);
 
-            var sidebarBackground = BrandTheme.NavyDeep;
-            var sidebarButton = BrandTheme.Navy;
-            var sidebarButtonHover = Color.FromArgb(36, 77, 119);
-            var sidebarAccent = Color.FromArgb(79, 199, 175);
-
-            var contentBackground = Color.FromArgb(234, 240, 249);
-            var surface = BrandTheme.Surface;
-            var border = BrandTheme.Border;
-            var heading = BrandTheme.Heading;
-            var textMuted = BrandTheme.MutedText;
+            var contentBackground = Color.FromArgb(237, 242, 249);
+            var surface = Color.White;
+            var border = Color.FromArgb(220, 228, 239);
+            var heading = Color.FromArgb(17, 24, 39);
+            var muted = Color.FromArgb(101, 115, 137);
+            var incomeColor = Color.FromArgb(23, 134, 92);
+            var expenseColor = Color.FromArgb(177, 40, 40);
+            var navyAccent = Color.FromArgb(35, 61, 104);
 
             SuspendLayout();
             Controls.Clear();
+
+            void ApplyRoundedRegion(Control control, int radius)
+            {
+                void UpdateRegion()
+                {
+                    if (control.Width <= 0 || control.Height <= 0)
+                        return;
+
+                    using var path = CreateRoundedPath(new Rectangle(0, 0, control.Width - 1, control.Height - 1), radius);
+                    var oldRegion = control.Region;
+                    control.Region = new Region(path);
+                    oldRegion?.Dispose();
+                }
+
+                control.HandleCreated += (_, __) => UpdateRegion();
+                control.Resize += (_, __) => UpdateRegion();
+                UpdateRegion();
+            }
+
+            void ApplyCircleRegion(Control control)
+            {
+                void UpdateRegion()
+                {
+                    if (control.Width <= 0 || control.Height <= 0)
+                        return;
+
+                    using var path = new GraphicsPath();
+                    path.AddEllipse(0, 0, control.Width - 1, control.Height - 1);
+                    var oldRegion = control.Region;
+                    control.Region = new Region(path);
+                    oldRegion?.Dispose();
+                }
+
+                control.HandleCreated += (_, __) => UpdateRegion();
+                control.Resize += (_, __) => UpdateRegion();
+                UpdateRegion();
+            }
+
+            GraphicsPath CreateRoundedPath(Rectangle rect, int radius)
+            {
+                var diameter = Math.Max(radius * 2, 1);
+                var path = new GraphicsPath();
+                path.AddArc(rect.Left, rect.Top, diameter, diameter, 180, 90);
+                path.AddArc(rect.Right - diameter, rect.Top, diameter, diameter, 270, 90);
+                path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
+                path.AddArc(rect.Left, rect.Bottom - diameter, diameter, diameter, 90, 90);
+                path.CloseFigure();
+                return path;
+            }
+
+            Panel CreateCardPanel(Padding padding, int minHeight = 0)
+            {
+                var panel = new Panel
+                {
+                    BackColor = surface,
+                    Padding = padding,
+                    Margin = new Padding(0),
+                    MinimumSize = new Size(0, minHeight),
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink
+                };
+                ApplyRoundedRegion(panel, 24);
+                panel.Paint += (_, e) =>
+                {
+                    e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                    var rect = new Rectangle(0, 0, panel.Width - 1, panel.Height - 1);
+                    using var path = CreateRoundedPath(rect, 24);
+                    using var pen = new Pen(border, 1.1f);
+                    e.Graphics.DrawPath(pen, path);
+                };
+                return panel;
+            }
+
+            Button CreateSidebarButton(string text, string iconKey)
+            {
+                var button = new Button
+                {
+                    Text = text,
+                    Width = 252,
+                    Height = 52,
+                    Margin = new Padding(0, 0, 0, 10),
+                    BackColor = sidebarBackground,
+                    ForeColor = sidebarText,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = BrandTheme.CreateFont(11f, FontStyle.Regular),
+                    Image = DashboardIconFactory.Create(iconKey, sidebarText, 20),
+                    ImageAlign = ContentAlignment.MiddleLeft,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    TextImageRelation = TextImageRelation.ImageBeforeText,
+                    Padding = new Padding(18, 0, 0, 0)
+                };
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.MouseDownBackColor = sidebarHover;
+                button.FlatAppearance.MouseOverBackColor = sidebarHover;
+                return button;
+            }
+
+            Button CreateCircleIconButton(string iconKey, Color backColor, Color iconColor, int size = 58)
+            {
+                var button = new Button
+                {
+                    Width = size,
+                    Height = size,
+                    BackColor = backColor,
+                    FlatStyle = FlatStyle.Flat,
+                    Margin = new Padding(0),
+                    Image = DashboardIconFactory.Create(iconKey, iconColor, Math.Max(18, size / 2))
+                };
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.MouseDownBackColor = backColor;
+                button.FlatAppearance.MouseOverBackColor = backColor;
+                ApplyCircleRegion(button);
+                return button;
+            }
+
+            Button CreateGhostIconButton(string iconKey, Color iconColor, int size = 42, int iconSize = 28)
+            {
+                var button = new Button
+                {
+                    Width = size,
+                    Height = size,
+                    BackColor = Color.Transparent,
+                    FlatStyle = FlatStyle.Flat,
+                    Margin = new Padding(0),
+                    Image = DashboardIconFactory.Create(iconKey, iconColor, iconSize),
+                    TabStop = false
+                };
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.MouseDownBackColor = Color.Transparent;
+                button.FlatAppearance.MouseOverBackColor = Color.Transparent;
+                return button;
+            }
+
+            Label CreatePillLabel(string text, Color backColor, Color foreColor)
+            {
+                var label = new Label
+                {
+                    Text = text,
+                    AutoSize = true,
+                    BackColor = backColor,
+                    ForeColor = foreColor,
+                    Font = BrandTheme.CreateFont(10.2f, FontStyle.Bold),
+                    Padding = new Padding(14, 8, 14, 8),
+                    Margin = new Padding(0)
+                };
+                ApplyRoundedRegion(label, 14);
+                return label;
+            }
+
+            SummaryCard CreatePeriodCard(string title, string defaultRangeCode)
+            {
+                var card = CreateCardPanel(new Padding(18, 18, 18, 18), 250);
+                card.Dock = DockStyle.Fill;
+
+                var layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Top,
+                    ColumnCount = 1,
+                    RowCount = 2,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BackColor = Color.Transparent
+                };
+                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                card.Controls.Add(layout);
+
+                var titleLabel = new Label
+                {
+                    Text = title,
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(16.5f, FontStyle.Bold),
+                    ForeColor = heading,
+                    Margin = new Padding(0, 0, 0, 14)
+                };
+                layout.Controls.Add(titleLabel, 0, 0);
+
+                var grid = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Top,
+                    ColumnCount = 2,
+                    RowCount = 3,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                    BackColor = Color.Transparent
+                };
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 56));
+                grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44));
+                grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                layout.Controls.Add(grid, 0, 1);
+
+                var incomeCaption = new Label
+                {
+                    Text = "Gelir:",
+                    AutoSize = true,
+                    Font = BrandTheme.CreateFont(13.5f, FontStyle.Regular),
+                    ForeColor = heading,
+                    Anchor = AnchorStyles.Left,
+                    Margin = new Padding(0, 0, 0, 10)
+                };
+                var expenseCaption = new Label
+                {
+                    Text = "Gider:",
+                    AutoSize = true,
+                    Font = BrandTheme.CreateFont(13.5f, FontStyle.Regular),
+                    ForeColor = heading,
+                    Anchor = AnchorStyles.Left,
+                    Margin = new Padding(0, 0, 0, 10)
+                };
+                var netCaption = new Label
+                {
+                    Text = "Net:",
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(13.5f, FontStyle.Bold),
+                    ForeColor = heading,
+                    Anchor = AnchorStyles.Left
+                };
+
+                var incomeValue = new Label
+                {
+                    Text = FormatAmount(0m),
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(14.5f, FontStyle.Bold),
+                    ForeColor = incomeColor,
+                    Anchor = AnchorStyles.Right,
+                    Margin = new Padding(0, 0, 0, 10)
+                };
+                var expenseValue = new Label
+                {
+                    Text = FormatAmount(0m),
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(14.5f, FontStyle.Bold),
+                    ForeColor = expenseColor,
+                    Anchor = AnchorStyles.Right,
+                    Margin = new Padding(0, 0, 0, 10)
+                };
+                var netValue = new Label
+                {
+                    Text = FormatAmount(0m),
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(15f, FontStyle.Bold),
+                    ForeColor = incomeColor,
+                    Anchor = AnchorStyles.Right
+                };
+
+                grid.Controls.Add(incomeCaption, 0, 0);
+                grid.Controls.Add(incomeValue, 1, 0);
+                grid.Controls.Add(expenseCaption, 0, 1);
+                grid.Controls.Add(expenseValue, 1, 1);
+                grid.Controls.Add(netCaption, 0, 2);
+                grid.Controls.Add(netValue, 1, 2);
+
+                return new SummaryCard
+                {
+                    Root = card,
+                    Title = titleLabel,
+                    Income = incomeValue,
+                    Expense = expenseValue,
+                    Net = netValue,
+                    DefaultRangeCode = defaultRangeCode,
+                    SendButton = new Button()
+                };
+            }
 
             var shell = new TableLayoutPanel
             {
@@ -36,7 +302,7 @@ namespace CashTracker.App
                 RowCount = 1,
                 BackColor = contentBackground
             };
-            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, sidebarExpandedWidth));
+            shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 318));
             shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             shell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             Controls.Add(shell);
@@ -45,7 +311,13 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 BackColor = sidebarBackground,
-                Padding = new Padding(18, 18, 18, 14)
+                Padding = new Padding(22, 20, 22, 18)
+            };
+            UiMetrics.EnableDoubleBuffer(sidebar);
+            sidebar.Paint += (_, e) =>
+            {
+                using var brush = new LinearGradientBrush(sidebar.ClientRectangle, Color.FromArgb(17, 30, 52), Color.FromArgb(24, 38, 63), 90f);
+                e.Graphics.FillRectangle(brush, sidebar.ClientRectangle);
             };
             shell.Controls.Add(sidebar, 0, 0);
 
@@ -53,67 +325,44 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3
+                RowCount = 4,
+                BackColor = Color.Transparent
             };
+            UiMetrics.EnableDoubleBuffer(sidebarLayout);
             sidebarLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            sidebarLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             sidebarLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             sidebarLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             sidebarLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             sidebar.Controls.Add(sidebarLayout);
 
-            var brandRow = new TableLayoutPanel
+            var brandRow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
                 AutoSize = true,
-                ColumnCount = 2,
-                RowCount = 1,
-                Margin = new Padding(0, 0, 0, 18)
+                Margin = new Padding(0, 0, 0, 26),
+                BackColor = Color.Transparent
             };
-            brandRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            brandRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            brandRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            UiMetrics.EnableDoubleBuffer(brandRow);
             sidebarLayout.Controls.Add(brandRow, 0, 0);
 
             var logo = new BrandLogoControl
             {
-                Size = new Size(52, 52),
-                Margin = new Padding(0, 0, 10, 0),
-                Anchor = AnchorStyles.Left
+                Size = new Size(46, 46),
+                Margin = new Padding(0, 7, 12, 0)
             };
-            brandRow.Controls.Add(logo, 0, 0);
+            brandRow.Controls.Add(logo);
 
-            var brandText = new Label
+            brandRow.Controls.Add(new Label
             {
                 Text = "CASHTRACKER",
+                AutoSize = true,
                 ForeColor = Color.White,
-                Font = BrandTheme.CreateHeadingFont(15f, FontStyle.Bold),
-                AutoSize = true,
-                Anchor = AnchorStyles.Left,
+                Font = BrandTheme.CreateHeadingFont(15.4f, FontStyle.Bold),
                 Margin = new Padding(0, 13, 0, 0)
-            };
-            brandRow.Controls.Add(brandText, 1, 0);
-
-            var navContainer = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 3
-            };
-            navContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            navContainer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            navContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            navContainer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            sidebarLayout.Controls.Add(navContainer, 0, 1);
-
-            var navCaption = new Label
-            {
-                Text = AppLocalization.T("main.menu"),
-                ForeColor = Color.FromArgb(157, 180, 207),
-                Font = BrandTheme.CreateFont(8.8f, FontStyle.Bold),
-                AutoSize = true,
-                Margin = new Padding(3, 0, 0, 10)
-            };
-            navContainer.Controls.Add(navCaption, 0, 0);
+            });
 
             var navButtons = new FlowLayoutPanel
             {
@@ -121,21 +370,34 @@ namespace CashTracker.App
                 FlowDirection = FlowDirection.TopDown,
                 WrapContents = false,
                 AutoScroll = true,
-                Margin = new Padding(0)
+                Margin = new Padding(0),
+                Padding = new Padding(0, 0, 4, 0),
+                BackColor = Color.Transparent
             };
-            navContainer.Controls.Add(navButtons, 0, 1);
+            UiMetrics.EnableDoubleBuffer(navButtons);
+            sidebarLayout.Controls.Add(navButtons, 0, 2);
 
-            var btnGelirGider = CreateNavButton(AppLocalization.T("main.nav.records"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnSettings = CreateNavButton(AppLocalization.T("main.nav.settings"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnChangeBot = CreateNavButton(AppLocalization.T("main.nav.bot"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnPrint = CreateNavButton(AppLocalization.T("main.nav.print"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
-            var btnUpdate = _btnUpdateNav = CreateNavButton(AppLocalization.T("main.nav.update"), sidebarButton, Color.White, sidebarAccent, sidebarButtonHover);
+            var btnGelirGider = CreateSidebarButton(AppLocalization.T("main.nav.records"), "records");
+            var btnCari = CreateSidebarButton("Cari Hesaplar", "cari");
+            var btnUrunStok = CreateSidebarButton("Urun / Stok", "stock");
+            var btnFaturalar = CreateSidebarButton("Faturalar", "invoice");
+            var btnTahsilat = CreateSidebarButton("Tahsilat / Odeme", "payment");
+            var btnMuhasebeci = CreateSidebarButton("Muhasebeci Raporu", "report");
+            var btnGibPortal = CreateSidebarButton("GiB Portal Ayarlari", "globe");
+            var btnChangeBot = CreateSidebarButton(AppLocalization.T("main.nav.bot"), "swap");
+            var btnPrint = CreateSidebarButton(AppLocalization.T("main.nav.print"), "print");
+            _btnUpdateNav = CreateSidebarButton(AppLocalization.T("main.nav.update"), "refresh");
 
             navButtons.Controls.Add(btnGelirGider);
-            navButtons.Controls.Add(btnSettings);
+            navButtons.Controls.Add(btnCari);
+            navButtons.Controls.Add(btnUrunStok);
+            navButtons.Controls.Add(btnFaturalar);
+            navButtons.Controls.Add(btnTahsilat);
+            navButtons.Controls.Add(btnMuhasebeci);
+            navButtons.Controls.Add(btnGibPortal);
             navButtons.Controls.Add(btnChangeBot);
             navButtons.Controls.Add(btnPrint);
-            navButtons.Controls.Add(btnUpdate);
+            navButtons.Controls.Add(_btnUpdateNav);
 
             btnGelirGider.Click += (_, __) =>
             {
@@ -143,6 +405,8 @@ namespace CashTracker.App
                     _kasaService,
                     _isletmeService,
                     _kalemTanimiService,
+                    _urunHizmetService,
+                    _stokService,
                     _telegramApprovalService,
                     _runtimeOptions,
                     _appSecurityService,
@@ -151,18 +415,51 @@ namespace CashTracker.App
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
             };
-            btnSettings.Click += (_, __) =>
+            btnCari.Click += (_, __) =>
             {
-                using var form = new SettingsForm(
-                    _isletmeService,
-                    _kalemTanimiService,
-                    _telegramApprovalService,
-                    _runtimeOptions,
-                    _appSecurityService,
-                    _licenseService,
-                    _receiptOcrSettings);
+                using var form = new CariForm(_cariService);
                 form.ShowDialog(this);
                 _ = RefreshSummariesAsync();
+            };
+            btnUrunStok.Click += (_, __) =>
+            {
+                using var form = new UrunStokForm(_urunHizmetService, _stokService);
+                form.ShowDialog(this);
+                _ = RefreshSummariesAsync();
+            };
+            btnFaturalar.Click += (_, __) =>
+            {
+                using var form = new FaturaForm(
+                    _faturaService,
+                    _cariService,
+                    _urunHizmetService,
+                    _stokService,
+                    _gibPortalService,
+                    _tahsilatOdemeService);
+                form.ShowDialog(this);
+                _ = RefreshSummariesAsync();
+            };
+            btnTahsilat.Click += (_, __) =>
+            {
+                using var form = new FaturaForm(
+                    _faturaService,
+                    _cariService,
+                    _urunHizmetService,
+                    _stokService,
+                    _gibPortalService,
+                    _tahsilatOdemeService);
+                form.ShowDialog(this);
+                _ = RefreshSummariesAsync();
+            };
+            btnMuhasebeci.Click += (_, __) =>
+            {
+                using var form = new OnMuhasebeReportForm(_onMuhasebeReportService);
+                form.ShowDialog(this);
+            };
+            btnGibPortal.Click += (_, __) =>
+            {
+                using var form = new GibPortalSettingsForm(_gibPortalService);
+                form.ShowDialog(this);
             };
             btnChangeBot.Click += (_, __) => OpenBotSettings();
             btnPrint.Click += (_, __) =>
@@ -170,44 +467,46 @@ namespace CashTracker.App
                 using var form = new PrintPreviewForm(_kasaService, _summaryService, _isletmeService);
                 form.ShowDialog(this);
             };
-            btnUpdate.Click += async (_, __) => await CheckForUpdatesAsync(btnUpdate);
+            _btnUpdateNav.Click += async (_, __) => await CheckForUpdatesAsync(_btnUpdateNav);
 
-            var footerCredit = new Label
+            var footer = new TableLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                ColumnCount = 1,
+                RowCount = 2,
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+            UiMetrics.EnableDoubleBuffer(footer);
+            footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            footer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            sidebarLayout.Controls.Add(footer, 0, 3);
+
+            footer.Controls.Add(new Label
             {
                 Text = AppLocalization.T("main.footer.credit"),
-                ForeColor = Color.FromArgb(159, 182, 208),
-                Font = BrandTheme.CreateFont(9.2f, FontStyle.Regular),
                 AutoSize = true,
-                Margin = new Padding(3, 0, 0, 0)
-            };
-            navContainer.Controls.Add(footerCredit, 0, 2);
+                ForeColor = sidebarMuted,
+                Font = BrandTheme.CreateFont(9.4f),
+                Margin = new Padding(2, 0, 0, 16)
+            }, 0, 0);
 
-            var sidebarFooter = new FlowLayoutPanel
+            var footerBottom = new TableLayoutPanel
             {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 1,
                 AutoSize = true,
-                Margin = new Padding(0, 10, 0, 0)
-            };
-            sidebarLayout.Controls.Add(sidebarFooter, 0, 2);
-
-            var sidebarToggleFont = BrandTheme.CreateFont(10f, FontStyle.Bold);
-            var btnSidebarToggle = new Button
-            {
-                Text = "<",
-                Width = 36,
-                MinimumSize = new Size(36, UiMetrics.GetCompactButtonHeight(sidebarToggleFont)),
-                BackColor = BrandTheme.Navy,
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Font = sidebarToggleFont,
                 Margin = new Padding(0)
             };
-            btnSidebarToggle.FlatAppearance.BorderColor = Color.FromArgb(21, 38, 61);
-            btnSidebarToggle.FlatAppearance.BorderSize = 1;
-            btnSidebarToggle.FlatAppearance.MouseOverBackColor = Color.FromArgb(18, 53, 92);
-            sidebarFooter.Controls.Add(btnSidebarToggle);
+            footerBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            footer.Controls.Add(footerBottom, 0, 1);
+
+            var footerSettings = CreateGhostIconButton("settingsmodern", Color.FromArgb(228, 236, 247), 48, 30);
+            footerSettings.Margin = new Padding(0);
+            footerSettings.Click += (_, __) => OpenSettingsDialog();
+            footerBottom.Controls.Add(footerSettings, 0, 0);
 
             var contentShell = new TableLayoutPanel
             {
@@ -216,12 +515,9 @@ namespace CashTracker.App
                 RowCount = 3,
                 BackColor = contentBackground
             };
+            UiMetrics.EnableDoubleBuffer(contentShell);
             contentShell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            contentShell.RowStyles.Add(new RowStyle(
-                SizeType.Absolute,
-                UiMetrics.GetTopBarHeight(
-                    BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
-                    BrandTheme.CreateFont(9.2f, FontStyle.Bold))));
+            contentShell.RowStyles.Add(new RowStyle(SizeType.Absolute, 132));
             contentShell.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             contentShell.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             shell.Controls.Add(contentShell, 1, 0);
@@ -230,8 +526,9 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 BackColor = surface,
-                Padding = new Padding(24, 16, 24, 14)
+                Padding = new Padding(28, 20, 28, 18)
             };
+            UiMetrics.EnableDoubleBuffer(topPanel);
             topPanel.Paint += (_, e) =>
             {
                 using var pen = new Pen(border);
@@ -243,59 +540,158 @@ namespace CashTracker.App
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 1
+                RowCount = 1,
+                BackColor = Color.Transparent
             };
+            UiMetrics.EnableDoubleBuffer(topLayout);
             topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            topLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
             topPanel.Controls.Add(topLayout);
 
-            var titleStack = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 1
-            };
-            titleStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            titleStack.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            topLayout.Controls.Add(titleStack, 0, 0);
+            topLayout.Controls.Add(new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent }, 0, 0);
 
-            var topTitle = new Label
-            {
-                Text = AppLocalization.T("main.top.commandPanel"),
-                Font = BrandTheme.CreateHeadingFont(16f, FontStyle.Bold),
-                ForeColor = heading,
-                AutoSize = true,
-                Margin = new Padding(0, 2, 0, 4)
-            };
-            titleStack.Controls.Add(topTitle, 0, 0);
-
-            var badgeFlow = new FlowLayoutPanel
+            var actionsRow = new FlowLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
                 AutoSize = true,
-                Margin = new Padding(0, 6, 0, 0)
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 4, 0, 0)
             };
-            topLayout.Controls.Add(badgeFlow, 1, 0);
+            UiMetrics.EnableDoubleBuffer(actionsRow);
+            topLayout.Controls.Add(actionsRow, 1, 0);
 
-            var dateBadge = CreateTopBadge(DateTime.Now.ToString("yyyy-MM-dd"), BrandTheme.Navy, Color.FromArgb(229, 239, 251));
-            var telegramBadge = CreateTopBadge(
-                _telegramSettings.IsEnabled ? AppLocalization.T("main.badge.telegramActive") : AppLocalization.T("main.badge.telegramInactive"),
-                _telegramSettings.IsEnabled ? Color.FromArgb(22, 122, 87) : Color.FromArgb(166, 57, 54),
-                _telegramSettings.IsEnabled ? Color.FromArgb(229, 246, 239) : Color.FromArgb(251, 237, 236));
-            var localBadge = CreateTopBadge(AppLocalization.T("main.badge.localData"), Color.FromArgb(39, 75, 120), Color.FromArgb(229, 239, 251));
-            _lblUpdateBadge = CreateTopBadge(
-                AppLocalization.T("main.badge.updateAvailable"),
-                Color.FromArgb(176, 118, 30),
-                Color.FromArgb(255, 246, 221));
+            var businessSelectorHost = new Panel
+            {
+                Width = 250,
+                Height = 52,
+                BackColor = surface,
+                Margin = new Padding(0, 6, 0, 0),
+                Padding = new Padding(14, 8, 14, 8)
+            };
+            UiMetrics.EnableDoubleBuffer(businessSelectorHost);
+            ApplyRoundedRegion(businessSelectorHost, 16);
+            businessSelectorHost.Paint += (_, e) =>
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                using var hostPath = CreateRoundedPath(new Rectangle(0, 0, businessSelectorHost.Width - 1, businessSelectorHost.Height - 1), 16);
+                using var hostPen = new Pen(Color.FromArgb(205, 213, 225), 1.15f);
+                e.Graphics.DrawPath(hostPen, hostPath);
+            };
+
+            _btnBusinessSelector = new Button
+            {
+                Dock = DockStyle.Fill,
+                BackColor = surface,
+                ForeColor = heading,
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateHeadingFont(11.5f, FontStyle.Bold),
+                Padding = new Padding(4, 0, 4, 0),
+                Image = DashboardIconFactory.Create("chevrondown", heading, 16),
+                ImageAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleLeft,
+                TextImageRelation = TextImageRelation.TextBeforeImage,
+                Margin = new Padding(0),
+                Text = FormatBusinessSelectorText(null)
+            };
+            _btnBusinessSelector.FlatAppearance.BorderSize = 0;
+            _btnBusinessSelector.FlatAppearance.MouseOverBackColor = Color.FromArgb(247, 250, 254);
+            _btnBusinessSelector.Click += async (_, __) => await ShowBusinessSelectorMenuAsync();
+            businessSelectorHost.Controls.Add(_btnBusinessSelector);
+
+            var bellHost = new Panel
+            {
+                Width = 36,
+                Height = 36,
+                Margin = new Padding(0, 14, 18, 0),
+                BackColor = Color.Transparent
+            };
+            var bellIcon = new PictureBox
+            {
+                Image = DashboardIconFactory.Create("bell", heading, 24),
+                SizeMode = PictureBoxSizeMode.CenterImage,
+                Dock = DockStyle.Fill,
+                BackColor = Color.Transparent
+            };
+            bellHost.Controls.Add(bellIcon);
+            var bellDot = new Panel
+            {
+                Width = 8,
+                Height = 8,
+                BackColor = Color.FromArgb(228, 73, 73),
+                Location = new Point(24, 6)
+            };
+            ApplyCircleRegion(bellDot);
+            bellHost.Controls.Add(bellDot);
+
+            var datePanel = new TableLayoutPanel
+            {
+                AutoSize = true,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(0, 6, 20, 0),
+                BackColor = Color.Transparent
+            };
+            UiMetrics.EnableDoubleBuffer(datePanel);
+            _lblTopDate = new Label
+            {
+                AutoSize = true,
+                Font = BrandTheme.CreateHeadingFont(12f, FontStyle.Bold),
+                ForeColor = heading,
+                Margin = new Padding(0, 0, 0, 2)
+            };
+            _lblTopTime = new Label
+            {
+                AutoSize = true,
+                Font = BrandTheme.CreateFont(11f),
+                ForeColor = Color.FromArgb(66, 74, 89),
+                Margin = new Padding(0)
+            };
+            datePanel.Controls.Add(_lblTopDate, 0, 0);
+            datePanel.Controls.Add(_lblTopTime, 0, 1);
+
+            var telegramStack = new FlowLayoutPanel
+            {
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0, 4, 20, 0),
+                BackColor = Color.Transparent
+            };
+            UiMetrics.EnableDoubleBuffer(telegramStack);
+            telegramStack.Controls.Add(CreateCircleIconButton("telegram", Color.FromArgb(58, 165, 232), Color.White, 56));
+            _lblTopTelegramState = CreatePillLabel(
+                _telegramSettings.IsEnabled ? "Aktif" : "Pasif",
+                _telegramSettings.IsEnabled ? Color.FromArgb(233, 244, 237) : Color.FromArgb(252, 237, 237),
+                _telegramSettings.IsEnabled ? incomeColor : expenseColor);
+            _lblTopTelegramState.Margin = new Padding(12, 12, 0, 0);
+            telegramStack.Controls.Add(_lblTopTelegramState);
+
+            _lblUpdateBadge = CreatePillLabel(AppLocalization.T("main.badge.updateAvailable"), Color.FromArgb(255, 244, 214), Color.FromArgb(165, 111, 24));
             _lblUpdateBadge.Visible = false;
+            _lblUpdateBadge.Margin = new Padding(0, 14, 16, 0);
 
-            badgeFlow.Controls.Add(dateBadge);
-            badgeFlow.Controls.Add(telegramBadge);
-            badgeFlow.Controls.Add(localBadge);
-            badgeFlow.Controls.Add(_lblUpdateBadge);
+            Panel CreateSeparator()
+            {
+                return new Panel
+                {
+                    Width = 1,
+                    Height = 78,
+                    BackColor = Color.FromArgb(226, 231, 239),
+                    Margin = new Padding(0, 6, 16, 0)
+                };
+            }
+
+            actionsRow.Controls.Add(businessSelectorHost);
+            actionsRow.Controls.Add(bellHost);
+            actionsRow.Controls.Add(CreateSeparator());
+            actionsRow.Controls.Add(datePanel);
+            actionsRow.Controls.Add(CreateSeparator());
+            actionsRow.Controls.Add(telegramStack);
+            actionsRow.Controls.Add(_lblUpdateBadge);
 
             _licenseBanner = new Panel
             {
@@ -318,8 +714,7 @@ namespace CashTracker.App
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
                 RowCount = 1,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink
+                AutoSize = true
             };
             bannerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             bannerLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -330,8 +725,7 @@ namespace CashTracker.App
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 2,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink
+                AutoSize = true
             };
             bannerTextStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
             bannerLayout.Controls.Add(bannerTextStack, 0, 0);
@@ -356,294 +750,449 @@ namespace CashTracker.App
             };
             bannerTextStack.Controls.Add(_lblLicenseBannerText, 0, 1);
 
-            _btnLicenseBannerAction = CreateNavButton(
-                AppLocalization.T("license.banner.action"),
-                Color.FromArgb(199, 146, 44),
-                Color.White,
-                Color.FromArgb(226, 178, 72),
-                Color.FromArgb(183, 131, 27));
-            _btnLicenseBannerAction.Width = 168;
-            _btnLicenseBannerAction.Margin = new Padding(16, 0, 0, 0);
+            _btnLicenseBannerAction = new Button
+            {
+                Text = AppLocalization.T("license.banner.action"),
+                Width = 168,
+                Height = 40,
+                Margin = new Padding(16, 0, 0, 0),
+                BackColor = Color.FromArgb(199, 146, 44),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateFont(9.6f, FontStyle.Bold),
+                Padding = UiMetrics.ButtonPadding
+            };
+            _btnLicenseBannerAction.FlatAppearance.BorderColor = Color.FromArgb(183, 131, 27);
+            _btnLicenseBannerAction.FlatAppearance.BorderSize = 1;
+            _btnLicenseBannerAction.FlatAppearance.MouseOverBackColor = Color.FromArgb(186, 133, 30);
             _btnLicenseBannerAction.Click += (_, __) =>
             {
-                using var form = new SettingsForm(
-                    _isletmeService,
-                    _kalemTanimiService,
-                    _telegramApprovalService,
-                    _runtimeOptions,
-                    _appSecurityService,
-                    _licenseService,
-                    _receiptOcrSettings);
-                form.ShowDialog(this);
+                OpenSettingsDialog();
                 _ = RefreshLicenseBannerAsync();
             };
             bannerLayout.Controls.Add(_btnLicenseBannerAction, 1, 0);
 
-            var contentScroll = new Panel
+            var dashboardViewport = new Panel
             {
                 Dock = DockStyle.Fill,
                 AutoScroll = true,
                 BackColor = contentBackground,
-                Padding = new Padding(24, 20, 24, 24)
+                Padding = new Padding(36, 26, 36, 30)
             };
-            contentShell.Controls.Add(contentScroll, 0, 2);
+            UiMetrics.EnableDoubleBuffer(dashboardViewport);
+            dashboardViewport.Paint += (_, e) =>
+            {
+                using var brush = new LinearGradientBrush(dashboardViewport.ClientRectangle, Color.FromArgb(243, 246, 251), Color.FromArgb(232, 238, 247), 0f);
+                e.Graphics.FillRectangle(brush, dashboardViewport.ClientRectangle);
 
-            var content = new TableLayoutPanel
+                using var accentBrush = new SolidBrush(Color.FromArgb(16, 88, 132, 194));
+                e.Graphics.FillEllipse(
+                    accentBrush,
+                    dashboardViewport.ClientSize.Width - 360,
+                    dashboardViewport.ClientSize.Height - 240,
+                    240,
+                    240);
+            };
+            contentShell.Controls.Add(dashboardViewport, 0, 2);
+
+            var dashboard = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 AutoSize = true,
                 AutoSizeMode = AutoSizeMode.GrowAndShrink,
                 ColumnCount = 1,
-                RowCount = 5
+                RowCount = 5,
+                BackColor = Color.Transparent
             };
-            content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            contentScroll.Controls.Add(content);
+            UiMetrics.EnableDoubleBuffer(dashboard);
+            dashboard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            dashboardViewport.Controls.Add(dashboard);
 
-            var sectionTitle = new Label
+            var headerRow = new TableLayoutPanel
             {
-                Text = AppLocalization.T("main.section.snapshotTitle"),
-                Font = BrandTheme.CreateHeadingFont(18f, FontStyle.Bold),
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                ColumnCount = 1,
+                RowCount = 1,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0, 0, 0, 18)
+            };
+            UiMetrics.EnableDoubleBuffer(headerRow);
+            headerRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            dashboard.Controls.Add(headerRow, 0, 0);
+
+            var titleStack = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                BackColor = Color.Transparent
+            };
+            UiMetrics.EnableDoubleBuffer(titleStack);
+            titleStack.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            headerRow.Controls.Add(titleStack, 0, 0);
+
+            titleStack.Controls.Add(new Label
+            {
+                Text = "Hizli Finansal Ozet (Snapshot)",
+                AutoSize = true,
+                Font = BrandTheme.CreateHeadingFont(21f, FontStyle.Bold),
                 ForeColor = heading,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 4)
-            };
-            content.Controls.Add(sectionTitle, 0, 0);
-
-            var sectionSubtitle = new Label
-            {
-                Text = AppLocalization.T("main.section.snapshotSubtitle"),
-                Font = BrandTheme.CreateFont(9.8f, FontStyle.Regular),
-                ForeColor = textMuted,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 14)
-            };
-            content.Controls.Add(sectionSubtitle, 0, 1);
+                Margin = new Padding(0, 4, 0, 0)
+            }, 0, 0);
 
             _lblActiveBusinessReport = new Label
             {
-                Text = AppLocalization.F("main.activeBusiness", "-"),
-                Font = BrandTheme.CreateFont(9.2f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(42, 89, 139),
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 14)
+                Visible = false
             };
-            content.Controls.Add(_lblActiveBusinessReport, 0, 2);
+            titleStack.Controls.Add(_lblActiveBusinessReport, 0, 1);
 
-            var dailyOverviewPanel = CreateDailyOverviewPanel(surface, border);
-            content.Controls.Add(dailyOverviewPanel, 0, 3);
-
-            var cardsPanel = new FlowLayoutPanel
+            var kpiRow = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
+                ColumnCount = 3,
+                RowCount = 1,
+                Margin = new Padding(0, 0, 0, 18),
+                BackColor = Color.Transparent,
                 AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = true,
-                Margin = new Padding(0, 0, 0, 12)
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            content.Controls.Add(cardsPanel, 0, 4);
+            UiMetrics.EnableDoubleBuffer(kpiRow);
+            kpiRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            kpiRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            kpiRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
+            kpiRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            dashboard.Controls.Add(kpiRow, 0, 1);
 
-            _cardDaily = CreateSummaryCard(AppLocalization.T("main.summary.daily"), surface, BrandTheme.Teal, AppLocalization.T("main.summary.sendTelegram"), border);
-            _cardPrimaryRange = CreateSummaryCard(AppLocalization.T("main.summary.range.last30Days"), surface, BrandTheme.Navy, AppLocalization.T("main.summary.sendTelegram"), border, includeRangeSelector: true);
-            _cardSecondaryRange = CreateSummaryCard(AppLocalization.T("main.summary.range.last1Year"), surface, Color.FromArgb(88, 101, 178), AppLocalization.T("main.summary.sendTelegram"), border, includeRangeSelector: true);
-            _cardPrimaryRange.DefaultRangeCode = SummaryRangeCatalog.Last30Days;
-            _cardSecondaryRange.DefaultRangeCode = SummaryRangeCatalog.Last1Year;
-
-            _cardDaily.SendButton.Click += async (_, __) => await SendDailySummaryAsync(_cardDaily.SendButton);
-            _cardPrimaryRange.SendButton.Click += async (_, __) => await SendSelectedSummaryAsync(_cardPrimaryRange, _cardPrimaryRange.SendButton);
-            _cardSecondaryRange.SendButton.Click += async (_, __) => await SendSelectedSummaryAsync(_cardSecondaryRange, _cardSecondaryRange.SendButton);
-            if (_cardPrimaryRange.RangeSelector is not null)
-                _cardPrimaryRange.RangeSelector.SelectedIndexChanged += async (_, __) => await HandleSummaryRangeChangedAsync(_cardPrimaryRange);
-            if (_cardSecondaryRange.RangeSelector is not null)
-                _cardSecondaryRange.RangeSelector.SelectedIndexChanged += async (_, __) => await HandleSummaryRangeChangedAsync(_cardSecondaryRange);
-
-            cardsPanel.Controls.Add(_cardDaily.Root);
-            cardsPanel.Controls.Add(_cardPrimaryRange.Root);
-            cardsPanel.Controls.Add(_cardSecondaryRange.Root);
-
-            ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
-            cardsPanel.Resize += (_, __) => ResizeSummaryCards(cardsPanel, _cardDaily.Root, _cardPrimaryRange.Root, _cardSecondaryRange.Root);
-
-            var navItems = new[]
+            Panel CreateMetricCard(string title, Color valueColor, out Label valueLabel, out Label deltaLabel, Control footerControl = null!)
             {
-                new { Button = btnGelirGider, ExpandedText = AppLocalization.T("main.nav.records"), CollapsedText = AppLocalization.T("main.nav.short.records") },
-                new { Button = btnSettings, ExpandedText = AppLocalization.T("main.nav.settings"), CollapsedText = AppLocalization.T("main.nav.short.settings") },
-                new { Button = btnChangeBot, ExpandedText = AppLocalization.T("main.nav.bot"), CollapsedText = AppLocalization.T("main.nav.short.bot") },
-                new { Button = btnPrint, ExpandedText = AppLocalization.T("main.nav.print"), CollapsedText = AppLocalization.T("main.nav.short.print") },
-                new { Button = btnUpdate, ExpandedText = AppLocalization.T("main.nav.update"), CollapsedText = AppLocalization.T("main.nav.short.update") }
-            };
+                var card = CreateCardPanel(new Padding(20, 18, 20, 18), 172);
+                card.Dock = DockStyle.Fill;
+                card.Margin = new Padding(0, 0, 18, 0);
 
-            void ApplySidebarState()
-            {
-                shell.ColumnStyles[0].Width = isSidebarExpanded ? sidebarExpandedWidth : sidebarCollapsedWidth;
-                navCaption.Visible = isSidebarExpanded;
-                footerCredit.Visible = isSidebarExpanded;
-                brandText.Visible = isSidebarExpanded;
-
-                var buttonWidth = isSidebarExpanded ? 300 : 54;
-                foreach (var item in navItems)
+                var layout = new TableLayoutPanel
                 {
-                    item.Button.Text = isSidebarExpanded ? item.ExpandedText : item.CollapsedText;
-                    item.Button.Width = buttonWidth;
-                    item.Button.TextAlign = isSidebarExpanded ? ContentAlignment.MiddleLeft : ContentAlignment.MiddleCenter;
-                    item.Button.Padding = isSidebarExpanded ? new Padding(14, 0, 0, 0) : new Padding(0);
+                    Dock = DockStyle.Top,
+                    ColumnCount = 1,
+                    RowCount = 3,
+                    BackColor = Color.Transparent,
+                    AutoSize = true,
+                    AutoSizeMode = AutoSizeMode.GrowAndShrink
+                };
+                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                card.Controls.Add(layout);
+
+                var header = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Top,
+                    ColumnCount = 2,
+                    RowCount = 1,
+                    BackColor = Color.Transparent
+                };
+                header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+                header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+                layout.Controls.Add(header, 0, 0);
+
+                header.Controls.Add(new Label
+                {
+                    Text = title,
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(15f, FontStyle.Bold),
+                    ForeColor = heading,
+                    Margin = new Padding(0, 0, 0, 8)
+                }, 0, 0);
+
+                deltaLabel = CreatePillLabel("+0%", Color.FromArgb(233, 244, 237), valueColor);
+                deltaLabel.Font = BrandTheme.CreateFont(10f, FontStyle.Bold);
+                deltaLabel.Margin = new Padding(10, 0, 0, 0);
+                header.Controls.Add(deltaLabel, 1, 0);
+
+                valueLabel = new Label
+                {
+                    Text = FormatAmount(0m),
+                    AutoSize = true,
+                    Font = BrandTheme.CreateHeadingFont(32f, FontStyle.Bold),
+                    ForeColor = valueColor,
+                    Margin = new Padding(0, 12, 0, 4)
+                };
+                layout.Controls.Add(valueLabel, 0, 1);
+
+                if (footerControl is not null)
+                {
+                    footerControl.Dock = DockStyle.Top;
+                    footerControl.Height = 82;
+                    footerControl.Margin = new Padding(0, 6, 0, 0);
+                    layout.Controls.Add(footerControl, 0, 2);
                 }
 
-                logo.Margin = isSidebarExpanded ? new Padding(0, 0, 10, 0) : new Padding(0);
-                btnSidebarToggle.Text = isSidebarExpanded ? "<" : ">";
+                return card;
             }
 
-            btnSidebarToggle.Click += (_, __) =>
-            {
-                isSidebarExpanded = !isSidebarExpanded;
-                ApplySidebarState();
-            };
-
-            ApplySidebarState();
-            LoadSummaryRangeSelectors();
-
-            ResumeLayout(true);
-        }
-
-        private static Panel CreatePeriodReportPanel(
-            string title,
-            string subtitle,
-            string actionText,
-            Color actionColor,
-            out ComboBox selector,
-            out Label income,
-            out Label expense,
-            out Label net,
-            out Button actionButton)
-        {
-            var panel = new Panel
+            var incomeCard = CreateMetricCard("Toplam Gelir", incomeColor, out _lblSnapshotIncomeValue, out _lblSnapshotIncomeDelta);
+            _lblSnapshotIncomeDelta.Visible = false;
+            var netCardFooter = new Panel { BackColor = surface };
+            _netSparkChart = new DashboardSparkBarsControl
             {
                 Dock = DockStyle.Fill,
-                BackColor = BrandTheme.Surface,
-                Padding = new Padding(18, 16, 18, 16),
-                MinimumSize = new Size(360, 224)
+                BackColor = surface
             };
-            panel.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, panel.ClientRectangle, BrandTheme.Border, ButtonBorderStyle.Solid);
+            netCardFooter.Controls.Add(_netSparkChart);
+            var netCard = CreateMetricCard("Net Kar", Color.FromArgb(84, 89, 96), out _lblSnapshotNetValue, out var netDelta, netCardFooter);
+            netDelta.Visible = false;
+            var expenseCard = CreateMetricCard("Toplam Gider", expenseColor, out _lblSnapshotExpenseValue, out _lblSnapshotExpenseDelta);
+            _lblSnapshotExpenseDelta.Visible = false;
+            expenseCard.Margin = new Padding(0);
 
-            var layout = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 3
-            };
-            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-            panel.Controls.Add(layout);
+            kpiRow.Controls.Add(incomeCard, 0, 0);
+            kpiRow.Controls.Add(netCard, 1, 0);
+            kpiRow.Controls.Add(expenseCard, 2, 0);
 
-            var header = new TableLayoutPanel
-            {
-                Dock = DockStyle.Top,
-                ColumnCount = 1,
-                RowCount = 1,
-                AutoSize = true
-            };
-            header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            header.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            header.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.Controls.Add(header, 0, 0);
+            var paymentCard = CreateCardPanel(new Padding(18, 18, 18, 18), 266);
+            paymentCard.Dock = DockStyle.Top;
+            paymentCard.Margin = new Padding(0, 0, 0, 18);
+            dashboard.Controls.Add(paymentCard, 0, 2);
 
-            var titleLabel = new Label
-            {
-                Text = title,
-                Font = BrandTheme.CreateHeadingFont(13f, FontStyle.Bold),
-                ForeColor = BrandTheme.Heading,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 4)
-            };
-            header.Controls.Add(titleLabel, 0, 0);
-
-            var subtitleLabel = new Label
-            {
-                Text = subtitle,
-                Font = BrandTheme.CreateFont(9.3f, FontStyle.Regular),
-                ForeColor = BrandTheme.MutedText,
-                AutoSize = true,
-                Margin = new Padding(0, 0, 0, 10)
-            };
-            header.Controls.Add(subtitleLabel, 0, 1);
-
-            var actionRow = new TableLayoutPanel
+            var paymentLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 ColumnCount = 2,
                 RowCount = 1,
-                Margin = new Padding(0, 0, 0, 12)
+                BackColor = Color.Transparent,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            actionRow.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            actionRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.Controls.Add(actionRow, 0, 1);
+            UiMetrics.EnableDoubleBuffer(paymentLayout);
+            paymentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38));
+            paymentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 62));
+            paymentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            paymentCard.Controls.Add(paymentLayout);
 
-            selector = new ComboBox
+            var paymentInfo = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 5,
+                BackColor = Color.Transparent,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            UiMetrics.EnableDoubleBuffer(paymentInfo);
+            paymentInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            paymentLayout.Controls.Add(paymentInfo, 0, 0);
+
+            paymentInfo.Controls.Add(new Label
+            {
+                Text = "Odeme Yontemin Dagilimi",
+                AutoSize = true,
+                Font = BrandTheme.CreateHeadingFont(16.5f, FontStyle.Bold),
+                ForeColor = heading,
+                Margin = new Padding(0, 4, 0, 18)
+            }, 0, 0);
+
+            Panel CreateLegendRow(string text, Color dotColor)
+            {
+                var row = new Panel
+                {
+                    Width = 240,
+                    Height = 30,
+                    Margin = new Padding(0, 0, 0, 10),
+                    BackColor = Color.Transparent
+                };
+
+                var dot = new Panel
+                {
+                    Width = 12,
+                    Height = 12,
+                    BackColor = dotColor,
+                    Location = new Point(0, 8)
+                };
+                ApplyCircleRegion(dot);
+                row.Controls.Add(dot);
+
+                row.Controls.Add(new Label
+                {
+                    Text = text,
+                    AutoSize = true,
+                    Font = BrandTheme.CreateFont(13f),
+                    ForeColor = heading,
+                    Location = new Point(22, 3),
+                    BackColor = Color.Transparent
+                });
+
+                return row;
+            }
+
+            paymentInfo.Controls.Add(CreateLegendRow("Nakit", Color.FromArgb(27, 40, 74)));
+            paymentInfo.Controls.Add(CreateLegendRow("Kredi Karti", Color.FromArgb(46, 95, 153)));
+            paymentInfo.Controls.Add(CreateLegendRow("Online Odeme", Color.FromArgb(110, 157, 206)));
+            paymentInfo.Controls.Add(CreateLegendRow("Havale", Color.FromArgb(189, 204, 224)));
+
+            _paymentDistributionChart = new DashboardDonutChartControl
             {
                 Dock = DockStyle.Fill,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                FlatStyle = FlatStyle.Flat,
-                IntegralHeight = false,
-                Font = BrandTheme.CreateFont(10f),
-                Height = UiMetrics.GetInputHeight(BrandTheme.CreateFont(10f)),
-                Margin = new Padding(0, 2, 10, 2),
-                MinimumSize = new Size(0, UiMetrics.GetInputHeight(BrandTheme.CreateFont(10f)))
+                BackColor = surface,
+                Margin = new Padding(0)
             };
-            actionRow.Controls.Add(selector, 0, 0);
+            _paymentDistributionChart.ShowOuterLabels = false;
+            paymentLayout.Controls.Add(_paymentDistributionChart, 1, 0);
 
-            actionButton = CreatePanelActionButton(actionText, actionColor, Color.White);
-            actionButton.Width = 160;
-            actionButton.Margin = new Padding(0);
-            actionRow.Controls.Add(actionButton, 1, 0);
+            dashboard.Controls.Add(new Label
+            {
+                Text = "Zaman Donemi Ozetleri",
+                AutoSize = true,
+                Font = BrandTheme.CreateHeadingFont(17f, FontStyle.Bold),
+                ForeColor = heading,
+                Margin = new Padding(0, 0, 0, 14)
+            }, 0, 3);
 
-            var stats = new TableLayoutPanel
+            var periodRow = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 4,
+                RowCount = 1,
+                Margin = new Padding(0),
+                BackColor = Color.Transparent,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            UiMetrics.EnableDoubleBuffer(periodRow);
+            periodRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31.5f));
+            periodRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31.5f));
+            periodRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 31.5f));
+            periodRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 216));
+            periodRow.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            dashboard.Controls.Add(periodRow, 0, 4);
+
+            _cardDaily = CreatePeriodCard("Bugun", SummaryRangeCatalog.Daily);
+            _cardPrimaryRange = CreatePeriodCard(AppLocalization.T("main.summary.range.last30Days"), SummaryRangeCatalog.Last30Days);
+            _cardSecondaryRange = CreatePeriodCard(AppLocalization.T("main.summary.range.last1Year"), SummaryRangeCatalog.Last1Year);
+
+            _cardDaily.Root.Margin = new Padding(0, 0, 18, 0);
+            _cardPrimaryRange.Root.Margin = new Padding(0, 0, 18, 0);
+            _cardSecondaryRange.Root.Margin = new Padding(0, 0, 18, 0);
+
+            periodRow.Controls.Add(_cardDaily.Root, 0, 0);
+            periodRow.Controls.Add(_cardPrimaryRange.Root, 1, 0);
+            periodRow.Controls.Add(_cardSecondaryRange.Root, 2, 0);
+
+            var sharePanel = new Panel
+            {
+                Dock = DockStyle.Top,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                MinimumSize = new Size(200, 252),
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
+            };
+            UiMetrics.EnableDoubleBuffer(sharePanel);
+            periodRow.Controls.Add(sharePanel, 3, 0);
+
+            var shareLayout = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                ColumnCount = 1,
+                RowCount = 2,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                BackColor = Color.Transparent
+            };
+            UiMetrics.EnableDoubleBuffer(shareLayout);
+            shareLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            shareLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            shareLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            sharePanel.Controls.Add(shareLayout);
+
+            var shareButton = new Button
+            {
+                Text = "Raporu Paylas",
+                BackColor = navyAccent,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = BrandTheme.CreateHeadingFont(11f, FontStyle.Bold),
+                Width = 196,
+                Height = 44,
+                Image = DashboardIconFactory.Create("chevrondown", Color.White, 14),
+                ImageAlign = ContentAlignment.MiddleRight,
+                TextAlign = ContentAlignment.MiddleLeft,
+                TextImageRelation = TextImageRelation.TextBeforeImage,
+                Padding = new Padding(16, 0, 16, 0),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            shareButton.FlatAppearance.BorderSize = 0;
+            ApplyRoundedRegion(shareButton, 14);
+            shareButton.Margin = new Padding(0, 0, 0, 12);
+            shareLayout.Controls.Add(shareButton, 0, 0);
+
+            var shareMenu = CreateCardPanel(new Padding(8, 8, 8, 8), 0);
+            shareMenu.AutoSize = false;
+            shareMenu.Size = new Size(196, 196);
+            shareMenu.MinimumSize = new Size(196, 196);
+            shareMenu.Dock = DockStyle.Top;
+            shareLayout.Controls.Add(shareMenu, 0, 1);
+
+            var shareMenuLayout = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3
+                RowCount = 4,
+                BackColor = Color.Transparent
             };
-            stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            stats.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            stats.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            stats.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            layout.Controls.Add(stats, 0, 2);
+            UiMetrics.EnableDoubleBuffer(shareMenuLayout);
+            shareMenuLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            shareMenuLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            shareMenuLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            shareMenuLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            shareMenuLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 44));
+            shareMenu.Controls.Add(shareMenuLayout);
 
-            income = new Label
+            Button CreateShareOption(string text, string iconKey)
             {
-                AutoSize = true,
-                ForeColor = Color.FromArgb(17, 121, 85),
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 0, 8)
-            };
-            expense = new Label
+                var button = new Button
+                {
+                    Text = text,
+                    Dock = DockStyle.Top,
+                    Height = 40,
+                    BackColor = Color.White,
+                    ForeColor = heading,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = BrandTheme.CreateFont(10.5f),
+                    Image = DashboardIconFactory.Create(iconKey, navyAccent, 18),
+                    ImageAlign = ContentAlignment.MiddleLeft,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    TextImageRelation = TextImageRelation.ImageBeforeText,
+                    Padding = new Padding(12, 0, 0, 0),
+                    Margin = new Padding(0)
+                };
+                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.MouseOverBackColor = Color.FromArgb(246, 249, 252);
+                return button;
+            }
+
+            var btnShareTelegram = CreateShareOption("Telegram", "telegram");
+            var btnShareEmail = CreateShareOption("Email", "mail");
+            var btnShareWhatsapp = CreateShareOption("WhatsApp", "chat");
+            var btnSharePdf = CreateShareOption("PDF Indir", "pdf");
+
+            btnShareTelegram.Click += async (_, __) => await SendSelectedSummaryAsync(_cardPrimaryRange, btnShareTelegram);
+            btnShareEmail.Click += (_, __) => MessageBox.Show("Email paylasimi sonraki surumde acilacak.", "Paylasim", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            btnShareWhatsapp.Click += (_, __) => MessageBox.Show("WhatsApp paylasimi sonraki surumde acilacak.", "Paylasim", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            btnSharePdf.Click += (_, __) =>
             {
-                AutoSize = true,
-                ForeColor = Color.FromArgb(173, 59, 56),
-                Font = BrandTheme.CreateFont(10f, FontStyle.Bold),
-                Margin = new Padding(0, 0, 0, 8)
-            };
-            net = new Label
-            {
-                AutoSize = true,
-                ForeColor = Color.FromArgb(35, 52, 75),
-                Font = BrandTheme.CreateHeadingFont(11.3f, FontStyle.Bold),
-                Margin = new Padding(0)
+                using var form = new PrintPreviewForm(_kasaService, _summaryService, _isletmeService);
+                form.ShowDialog(this);
             };
 
-            stats.Controls.Add(income, 0, 0);
-            stats.Controls.Add(expense, 0, 1);
-            stats.Controls.Add(net, 0, 2);
+            shareMenuLayout.Controls.Add(btnShareTelegram, 0, 0);
+            shareMenuLayout.Controls.Add(btnShareEmail, 0, 1);
+            shareMenuLayout.Controls.Add(btnShareWhatsapp, 0, 2);
+            shareMenuLayout.Controls.Add(btnSharePdf, 0, 3);
 
-            return panel;
+            UpdateTopClockDisplay();
+
+            ResumeLayout(true);
         }
     }
 }
-

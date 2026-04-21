@@ -97,8 +97,17 @@ static class Program
         services.AddScoped<IIsletmeService, IsletmeService>();
         services.AddScoped<IKalemTanimiService, KalemTanimiService>();
         services.AddScoped<IKasaService, KasaService>();
+        services.AddScoped<ICariService, CariService>();
+        services.AddScoped<IUrunHizmetService, UrunHizmetService>();
+        services.AddScoped<IStokService, StokService>();
+        services.AddScoped<IFaturaService, FaturaService>();
+        services.AddScoped<ITahsilatOdemeService, TahsilatOdemeService>();
+        services.AddScoped<IGibPortalService, GibPortalService>();
+        services.AddScoped<IOnMuhasebeReportService, OnMuhasebeReportService>();
         services.AddScoped<ISummaryService, SummaryService>();
         services.AddScoped<IDashboardSnapshotService, DashboardSnapshotService>();
+        services.AddSingleton<ISecretProtector, DpapiSecretProtector>();
+        services.AddSingleton<IGibPortalClient, GibPortalClient>();
         services.AddSingleton<IInstallIdentityService, InstallIdentityService>();
         services.AddSingleton<ILicenseRuntimeStateStore, LicenseRuntimeStateStore>();
         services.AddSingleton<ILicenseService, LicenseService>();
@@ -117,6 +126,8 @@ static class Program
         services.AddSingleton<ITelegramApprovalService, TelegramApprovalService>();
         services.AddSingleton<IReceiptOcrService, GeminiReceiptOcrService>();
         services.AddSingleton<ITelegramReceiptSessionStore, TelegramReceiptSessionStore>();
+        services.AddSingleton<ITelegramStockSessionStore, TelegramStockSessionStore>();
+        services.AddSingleton<IBarcodeReaderService, BarcodeReaderService>();
 
         services.AddSingleton<IDailyReportService, DailyReportService>();
         services.AddSingleton<DatabaseBackupService>();

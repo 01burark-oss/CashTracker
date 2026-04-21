@@ -33,6 +33,7 @@ namespace CashTracker.App.Forms
             AddPaymentMethodRow(form);
             AddRow(form, AppLocalization.T("common.category"), out _cmbKalem);
             AddKalemEmptyActionRow(form);
+            AddStockLinkRow(form);
             AddRow(form, AppLocalization.T("common.description"), out _txtAciklama);
 
             _btnKalemSettings.Click += async (_, __) => await OpenSettingsForKalemManagementAsync();

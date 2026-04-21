@@ -1,8 +1,10 @@
 using System.Drawing;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using CashTracker.App;
 using CashTracker.App.Services;
 using CashTracker.App.UI;
+using CashTracker.Core.Entities;
 using CashTracker.Core.Models;
 using CashTracker.Core.Services;
 
@@ -13,6 +15,8 @@ namespace CashTracker.App.Forms
         private readonly IKasaService _kasaService;
         private readonly IIsletmeService _isletmeService;
         private readonly IKalemTanimiService _kalemTanimiService;
+        private readonly IUrunHizmetService _urunHizmetService;
+        private readonly IStokService _stokService;
         private readonly ITelegramApprovalService _telegramApprovalService;
         private readonly AppRuntimeOptions _runtimeOptions;
         private readonly IAppSecurityService _appSecurityService;
@@ -31,6 +35,10 @@ namespace CashTracker.App.Forms
         private Label _lblKalemEmptyHint = null!;
         private Button _btnKalemSettings = null!;
         private TextBox _txtAciklama = null!;
+        private CheckBox _chkStokGiris = null!;
+        private ComboBox _cmbStokUrun = null!;
+        private NumericUpDown _numStokMiktar = null!;
+        private Label _lblStokGirisHint = null!;
         private Button _btnSave = null!;
         private Button _btnNew = null!;
         private Button _btnDelete = null!;
@@ -42,12 +50,16 @@ namespace CashTracker.App.Forms
 
         private int _selectedId;
         private bool _isLoadingKalemler;
+        private bool _isLoadingStockProducts;
         private string _selectedOdemeYontemi = "Nakit";
+        private List<UrunHizmet> _stockProducts = new();
 
         internal KasaForm(
             IKasaService kasaService,
             IIsletmeService isletmeService,
             IKalemTanimiService kalemTanimiService,
+            IUrunHizmetService urunHizmetService,
+            IStokService stokService,
             ITelegramApprovalService telegramApprovalService,
             AppRuntimeOptions runtimeOptions,
             IAppSecurityService appSecurityService,
@@ -57,6 +69,8 @@ namespace CashTracker.App.Forms
             _kasaService = kasaService;
             _isletmeService = isletmeService;
             _kalemTanimiService = kalemTanimiService;
+            _urunHizmetService = urunHizmetService;
+            _stokService = stokService;
             _telegramApprovalService = telegramApprovalService;
             _runtimeOptions = runtimeOptions;
             _appSecurityService = appSecurityService;

@@ -19,6 +19,16 @@ namespace CashTracker.Infrastructure.Persistence
             EnsureIsletmeTable(db);
             EnsureKalemTanimiTable(db);
             EnsureAppSettingTable(db);
+            EnsureCariKartTable(db);
+            EnsureCariHareketTable(db);
+            EnsureUrunHizmetTable(db);
+            EnsureStokHareketTable(db);
+            EnsureFaturaTable(db);
+            EnsureFaturaSatirTable(db);
+            EnsureTahsilatOdemeTable(db);
+            EnsureBelgeDosyaTable(db);
+            EnsureGibPortalAyarTable(db);
+            EnsureGibPortalIslemLogTable(db);
 
             EnsureKasaColumns(db, conn);
             EnsureIndexes(db);
@@ -98,6 +108,16 @@ WHERE NOT EXISTS (
         private static partial void EnsureIsletmeTable(CashTrackerDbContext db);
         private static partial void EnsureKalemTanimiTable(CashTrackerDbContext db);
         private static partial void EnsureAppSettingTable(CashTrackerDbContext db);
+        private static partial void EnsureCariKartTable(CashTrackerDbContext db);
+        private static partial void EnsureCariHareketTable(CashTrackerDbContext db);
+        private static partial void EnsureUrunHizmetTable(CashTrackerDbContext db);
+        private static partial void EnsureStokHareketTable(CashTrackerDbContext db);
+        private static partial void EnsureFaturaTable(CashTrackerDbContext db);
+        private static partial void EnsureFaturaSatirTable(CashTrackerDbContext db);
+        private static partial void EnsureTahsilatOdemeTable(CashTrackerDbContext db);
+        private static partial void EnsureBelgeDosyaTable(CashTrackerDbContext db);
+        private static partial void EnsureGibPortalAyarTable(CashTrackerDbContext db);
+        private static partial void EnsureGibPortalIslemLogTable(CashTrackerDbContext db);
         private static partial void EnsureKasaColumns(CashTrackerDbContext db, DbConnection conn);
         private static partial void EnsureIndexes(CashTrackerDbContext db);
         private static partial int EnsureActiveBusiness(CashTrackerDbContext db, DbConnection conn);

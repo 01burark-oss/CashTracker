@@ -13,11 +13,7 @@ namespace CashTracker.App.Forms
             Text = "Opsiyonel Entegrasyonlar";
             Width = 600;
             Height = 340;
-            UiMetrics.ApplyFormDefaults(this);
-            StartPosition = FormStartPosition.CenterScreen;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            MaximizeBox = false;
-            MinimizeBox = false;
+            UiMetrics.ApplyFullscreenDialogDefaults(this, FormStartPosition.CenterScreen);
             BackColor = BrandTheme.AppBackground;
             Font = BrandTheme.CreateFont(10f);
             if (AppIconProvider.Current is Icon appIcon)

@@ -447,6 +447,240 @@ namespace CashTracker.Tests
             Assert.Contains("Devam eden bir fis oturumu var", text!);
         }
 
+        [Fact]
+        public async Task ProcessUpdateAsync_StokTextCommand_KnownBarcodeRequiresConfirmationAndCreatesMovement()
+        {
+            var product = new UrunHizmet
+            {
+                Id = 5,
+                Ad = "Kola",
+                Barkod = "8690000000000",
+                Birim = "Adet",
+                Aktif = true
+            };
+
+            var (_, handler, service, _, stock, _, _, _) = BuildServiceWithStock(new[] { product });
+            stock.SetCurrentStock(product.Id, 12m);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 50,
+                ChatId = 123,
+                UserId = 42,
+                Text = "/stok 8690000000000 +10"
+            });
+
+            var summary = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Stok hareketi ozeti", summary!);
+            Assert.Contains("Urun: Kola", summary!);
+            Assert.Empty(stock.Requests);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 51,
+                ChatId = 123,
+                UserId = 42,
+                Text = "onayla"
+            });
+
+            Assert.Single(stock.Requests);
+            Assert.Equal(product.Id, stock.LastRequest!.UrunHizmetId);
+            Assert.Equal(10m, stock.LastRequest.Miktar);
+            Assert.Equal("Telegram", stock.LastRequest.Kaynak);
+            Assert.Equal("Telegram stok | Barkod: 8690000000000", stock.LastRequest.Aciklama);
+
+            var result = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Stok hareketi kaydedildi.", result!);
+            Assert.Contains("Mevcut stok: 22", result!);
+        }
+
+        [Fact]
+        public async Task ProcessUpdateAsync_PhotoWithStockCaption_UsesBarcodeFlowAndSkipsReceiptOcr()
+        {
+            var product = new UrunHizmet
+            {
+                Id = 6,
+                Ad = "Biskuvit",
+                Barkod = "8691111111111",
+                Birim = "Adet",
+                Aktif = true
+            };
+
+            var (_, handler, service, _, stock, barcode, _, ocr) =
+                BuildServiceWithStock(new[] { product }, BuildPhotoResponder());
+            barcode.NextResult = BarcodeReadResult.Found("8691111111111");
+            stock.SetCurrentStock(product.Id, 3m);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 52,
+                MessageId = 520,
+                ChatId = 123,
+                UserId = 42,
+                Caption = "/stok +50",
+                PhotoFileId = "photo-stock-1"
+            });
+
+            var text = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Stok hareketi ozeti", text!);
+            Assert.Contains("Urun: Biskuvit", text!);
+            Assert.Null(ocr.LastRequest);
+            Assert.False(string.IsNullOrWhiteSpace(barcode.LastImagePath));
+            Assert.Empty(stock.Requests);
+        }
+
+        [Fact]
+        public async Task ProcessUpdateAsync_PhotoWithStockCaption_WhenBarcodeUnreadable_AsksManualBarcode()
+        {
+            var (_, handler, service, _, stock, barcode, stockSessionStore, _) =
+                BuildServiceWithStock(responder: BuildPhotoResponder());
+            barcode.NextResult = BarcodeReadResult.Failed("not found");
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 53,
+                MessageId = 530,
+                ChatId = 123,
+                UserId = 42,
+                Caption = "/stok +50",
+                PhotoFileId = "photo-stock-2"
+            });
+
+            var text = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Barkod okunamadi", text!);
+            Assert.NotNull(stockSessionStore.LastSaved);
+            Assert.Equal(StockSessionStep.AwaitBarcode, stockSessionStore.LastSaved!.Step);
+            Assert.Equal(50m, stockSessionStore.LastSaved.PendingQuantity);
+            Assert.Empty(stock.Requests);
+        }
+
+        [Fact]
+        public async Task ProcessUpdateAsync_StokUnknownBarcode_AsksProductInfoThenCreatesProductAndMovement()
+        {
+            var (_, handler, service, products, stock, _, _, _) = BuildServiceWithStock();
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 54,
+                ChatId = 123,
+                UserId = 42,
+                Text = "/stok 8692222222222 +5"
+            });
+
+            Assert.Contains("Bu barkod kayitli degil", handler.GetLastFormFieldValue("/sendMessage", "text")!);
+
+            foreach (var (updateId, answer) in new[]
+                     {
+                         (55, "Yeni Urun"),
+                         (56, "Adet"),
+                         (57, "20"),
+                         (58, "10,5"),
+                         (59, "15"),
+                         (60, "2")
+                     })
+            {
+                await service.ProcessUpdateAsync(new TelegramUpdate
+                {
+                    UpdateId = updateId,
+                    ChatId = 123,
+                    UserId = 42,
+                    Text = answer
+                });
+            }
+
+            var summary = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Yeni urun: Yeni Urun", summary!);
+            Assert.Empty(products.Rows);
+            Assert.Empty(stock.Requests);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 61,
+                ChatId = 123,
+                UserId = 42,
+                Text = "onayla"
+            });
+
+            Assert.Single(products.Rows);
+            Assert.Equal("Yeni Urun", products.Rows[0].Ad);
+            Assert.Equal("8692222222222", products.Rows[0].Barkod);
+            Assert.Equal(10.5m, products.Rows[0].AlisFiyati);
+            Assert.Single(stock.Requests);
+            Assert.Equal(products.Rows[0].Id, stock.LastRequest!.UrunHizmetId);
+            Assert.Equal(5m, stock.LastRequest.Miktar);
+        }
+
+        [Fact]
+        public async Task ProcessUpdateAsync_StokCancel_RemovesSessionAndDoesNotCreateMovement()
+        {
+            var (_, handler, service, _, stock, _, stockSessionStore, _) = BuildServiceWithStock();
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 62,
+                ChatId = 123,
+                UserId = 42,
+                Text = "/stok +7"
+            });
+
+            Assert.NotNull(stockSessionStore.LastSaved);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 63,
+                ChatId = 123,
+                UserId = 42,
+                Text = "iptal"
+            });
+
+            var text = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Stok oturumu iptal edildi.", text!);
+            Assert.Empty(stock.Requests);
+            Assert.Null(await stockSessionStore.GetAsync(123, 42));
+        }
+
+        [Fact]
+        public async Task ProcessUpdateAsync_StokNegativeMovement_WarnsButAllowsConfirmation()
+        {
+            var product = new UrunHizmet
+            {
+                Id = 7,
+                Ad = "Soda",
+                Barkod = "8693333333333",
+                Birim = "Adet",
+                Aktif = true
+            };
+
+            var (_, handler, service, _, stock, _, _, _) = BuildServiceWithStock(new[] { product });
+            stock.SetCurrentStock(product.Id, 2m);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 64,
+                ChatId = 123,
+                UserId = 42,
+                Text = "/stok 8693333333333 -3"
+            });
+
+            var summary = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("eksiye dusurecek", summary!);
+
+            await service.ProcessUpdateAsync(new TelegramUpdate
+            {
+                UpdateId = 65,
+                ChatId = 123,
+                UserId = 42,
+                Text = "onayla"
+            });
+
+            Assert.Single(stock.Requests);
+            Assert.Equal(-3m, stock.LastRequest!.Miktar);
+
+            var result = handler.GetLastFormFieldValue("/sendMessage", "text");
+            Assert.Contains("Mevcut stok: -1", result!);
+            Assert.Contains("eksiye dustu", result!);
+        }
+
         private static (TelegramBotService Bot, RecordingHttpMessageHandler Handler, TelegramCommandService Service, FakeAppSecurityService Security, FakeReceiptOcrService Ocr, FakeTelegramReceiptSessionStore SessionStore) BuildService(
             FakeKasaService kasa,
             FakeKalemTanimiService kalem,
@@ -477,6 +711,10 @@ namespace CashTracker.Tests
             var approvals = new FakeTelegramApprovalService();
             var ocr = new FakeReceiptOcrService();
             var sessionStore = new FakeTelegramReceiptSessionStore();
+            var products = new FakeUrunHizmetService();
+            var stock = new FakeStokService();
+            var barcode = new FakeBarcodeReaderService();
+            var stockSessionStore = new FakeTelegramStockSessionStore();
             var receiptOcrSettings = new ReceiptOcrSettings
             {
                 Provider = "Gemini",
@@ -497,9 +735,84 @@ namespace CashTracker.Tests
                 approvals,
                 ocr,
                 sessionStore,
-                receiptOcrSettings);
+                receiptOcrSettings,
+                products,
+                stock,
+                barcode,
+                stockSessionStore);
 
             return (bot, handler, service, security, ocr, sessionStore);
+        }
+
+        private static (
+            TelegramBotService Bot,
+            RecordingHttpMessageHandler Handler,
+            TelegramCommandService Service,
+            FakeUrunHizmetService Products,
+            FakeStokService Stock,
+            FakeBarcodeReaderService Barcode,
+            FakeTelegramStockSessionStore StockSessionStore,
+            FakeReceiptOcrService Ocr) BuildServiceWithStock(
+                IEnumerable<UrunHizmet>? productsSeed = null,
+                Func<HttpRequestMessage, string, HttpResponseMessage>? responder = null)
+        {
+            var handler = new RecordingHttpMessageHandler(responder);
+            var http = new HttpClient(handler);
+            var bot = new TelegramBotService(http, "test-token");
+            var settings = new TelegramSettings
+            {
+                BotToken = "test-token",
+                ChatId = "123",
+                EnableCommands = true,
+                AllowedUserIds = "42"
+            };
+
+            var backup = new BackupReportService(
+                bot,
+                settings,
+                new FakeDailyReportService(),
+                new DatabaseBackupService(new DatabasePaths(Path.Combine(
+                    Path.GetTempPath(),
+                    $"cashtracker_tests_{Guid.NewGuid():N}.db"))));
+
+            var security = new FakeAppSecurityService();
+            var approvals = new FakeTelegramApprovalService();
+            var ocr = new FakeReceiptOcrService();
+            var receiptSessionStore = new FakeTelegramReceiptSessionStore();
+            var receiptOcrSettings = new ReceiptOcrSettings
+            {
+                Provider = "Gemini",
+                ApiKey = "test-key",
+                Model = "gemini-2.5-flash",
+                SessionTimeoutMinutes = 30
+            };
+            var products = new FakeUrunHizmetService(productsSeed);
+            var stock = new FakeStokService();
+            var barcode = new FakeBarcodeReaderService();
+            var stockSessionStore = new FakeTelegramStockSessionStore();
+
+            var service = new TelegramCommandService(
+                bot,
+                settings,
+                new FakeKasaService(),
+                new FakeKalemTanimiService(),
+                new FakeSummaryService(),
+                new FakeIsletmeService
+                {
+                    Active = new Isletme { Id = 7, Ad = "Demo Isletme", IsAktif = true }
+                },
+                security,
+                backup,
+                approvals,
+                ocr,
+                receiptSessionStore,
+                receiptOcrSettings,
+                products,
+                stock,
+                barcode,
+                stockSessionStore);
+
+            return (bot, handler, service, products, stock, barcode, stockSessionStore, ocr);
         }
 
         private static Func<HttpRequestMessage, string, HttpResponseMessage> BuildPhotoResponder()

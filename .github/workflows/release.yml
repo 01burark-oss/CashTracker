@@ -90,3 +90,4 @@ jobs:
           files: |
             artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe
             artifacts/${{ steps.meta.outputs.version }}/CashTracker-Setup.exe.sha256
+            artifacts/${{ steps.meta.outputs.version }}/update-manifest.json

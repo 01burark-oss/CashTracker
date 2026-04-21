@@ -326,7 +326,11 @@ namespace CashTracker.Tests
                 new FakeTelegramApprovalService(),
                 new FakeReceiptOcrService(),
                 new FakeTelegramReceiptSessionStore(),
-                receiptOcrSettings);
+                receiptOcrSettings,
+                new FakeUrunHizmetService(),
+                new FakeStokService(),
+                new FakeBarcodeReaderService(),
+                new FakeTelegramStockSessionStore());
 
             return (bot, handler, service);
         }
