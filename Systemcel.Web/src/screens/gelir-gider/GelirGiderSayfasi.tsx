@@ -29,6 +29,8 @@ function kalemEtiketi(value: string) {
   return value;
 }
 
+const GELIR_GIDER_FORM_HATA_ID = "gelir-gider-form-hata";
+
 export function GelirGiderSayfasi({
   onIsletmeDegistir,
   ustBar,
@@ -43,6 +45,9 @@ export function GelirGiderSayfasi({
   const [kaydediliyor, setKaydediliyor] = React.useState(false);
   const saltOkunur =
     (ustBar?.muhasebeciMusteriBaglami ?? false) && ustBar?.muhasebeciYetkiSeviyesi !== "TamIslem";
+  const formHataAciklamasi = hata ? GELIR_GIDER_FORM_HATA_ID : undefined;
+  const tutarHatasi = hata === "Tutar sıfırdan büyük olmalıdır.";
+  const kalemHatasi = hata === "Kalem seçin.";
 
   const yenile = React.useCallback(async () => {
     setHata("");
@@ -275,7 +280,7 @@ export function GelirGiderSayfasi({
             <span>Tarih</span>
             <div className="input-ikonlu">
               <CalendarDays size={18} />
-              <input type="datetime-local" value={form.tarih} disabled={saltOkunur} onChange={(e) => formGuncelle({ tarih: e.target.value })} />
+              <input aria-describedby={formHataAciklamasi} type="datetime-local" value={form.tarih} disabled={saltOkunur} onChange={(e) => formGuncelle({ tarih: e.target.value })} />
             </div>
           </label>
 
@@ -294,7 +299,7 @@ export function GelirGiderSayfasi({
           <label className="satir">
             <span>Tutar</span>
             <div className="tutar-alani">
-              <input value={form.tutar} disabled={saltOkunur} onChange={(e) => formGuncelle({ tutar: e.target.value })} placeholder="Tutar girin" inputMode="decimal" />
+              <input aria-describedby={formHataAciklamasi} aria-invalid={tutarHatasi || undefined} value={form.tutar} disabled={saltOkunur} onChange={(e) => formGuncelle({ tutar: e.target.value })} placeholder="Tutar girin" inputMode="decimal" />
               <strong>TL</strong>
             </div>
           </label>
@@ -318,7 +323,7 @@ export function GelirGiderSayfasi({
 
           <label className="satir">
             <span>Kalem</span>
-            <select value={form.kalem} disabled={saltOkunur} onChange={(e) => formGuncelle({ kalem: e.target.value })}>
+            <select aria-describedby={formHataAciklamasi} aria-invalid={kalemHatasi || undefined} value={form.kalem} disabled={saltOkunur} onChange={(e) => formGuncelle({ kalem: e.target.value })}>
               <option value="">Kalem seçin</option>
               {kalemler.map((kalem) => (
                 <option key={kalem} value={kalem}>
@@ -336,12 +341,14 @@ export function GelirGiderSayfasi({
                   type="checkbox"
                   checked={stokKullanilabilir && form.stokAktif}
                   role="switch" className="app-switch"
+                  aria-describedby={formHataAciklamasi}
                   disabled={!stokKullanilabilir}
                   onChange={(e) => formGuncelle({ stokAktif: e.target.checked })}
                 />
                 Bu gider stoklu ürün alımı
               </label>
               <select
+                aria-describedby={formHataAciklamasi}
                 value={form.stokUrunId}
                 disabled={!stokKullanilabilir || !form.stokAktif}
                 onChange={(e) => formGuncelle({ stokUrunId: Number(e.target.value) })}
@@ -354,6 +361,7 @@ export function GelirGiderSayfasi({
                 ))}
               </select>
               <input
+                aria-describedby={formHataAciklamasi}
                 value={form.stokMiktar}
                 disabled={!stokKullanilabilir || !form.stokAktif}
                 onChange={(e) => formGuncelle({ stokMiktar: e.target.value })}
@@ -371,13 +379,13 @@ export function GelirGiderSayfasi({
 
           <label className="satir aciklama-satiri">
             <span>Açıklama</span>
-            <textarea value={form.aciklama} disabled={saltOkunur} onChange={(e) => formGuncelle({ aciklama: e.target.value })} />
+            <textarea aria-describedby={formHataAciklamasi} value={form.aciklama} disabled={saltOkunur} onChange={(e) => formGuncelle({ aciklama: e.target.value })} />
           </label>
         </div>
 
         <div className="mesaj-alani">
           {hata ? (
-            <p className="hata">{hata}</p>
+            <p className="hata" id={GELIR_GIDER_FORM_HATA_ID} role="alert">{hata}</p>
           ) : (
             <p>{saltOkunur ? "Bu çalışma alanında yalnızca görüntüleme ve raporlama yapabilirsiniz." : durum}</p>
           )}

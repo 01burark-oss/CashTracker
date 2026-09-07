@@ -4,6 +4,34 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 test.describe("workspace accessibility", () => {
   test.beforeEach(async ({ page }) => mockApi(page));
 
+  for (const theme of ["light", "dark"]) {
+    test(`notification recovery preserves the panel in ${theme}`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name !== "desktop-chromium");
+      await page.addInitScript(value => localStorage.setItem("systemcel.theme", value), theme);
+      let attempts = 0;
+      await page.route("**/api/ekran/bildirimler", route => json(route, [{
+        id: 41, tur: "odeme", onem: "yuksek", baslik: "Ödeme gecikti", mesaj: "Vadesi geçen ödeme var.", okundu: false
+      }]));
+      await page.route("**/api/ekran/bildirimler/tumunu-okundu", route => ++attempts === 1
+        ? json(route, { mesaj: "Geçici bağlantı hatası" }, 503) : json(route, { okunmamisSayisi: 0 }));
+      await page.goto("/app/hizli-satis");
+      await page.getByRole("button", { name: "Bildirimleri göster" }).click();
+      const panel = page.getByRole("dialog", { name: "Bildirimler", exact: true });
+      await panel.getByRole("button", { name: "Tümünü okundu işaretle" }).click();
+      await expect(panel.getByRole("alert")).toHaveText("Bildirimler güncellenemedi. Tekrar deneyin.");
+      await expect(panel.getByText("Ödeme gecikti")).toBeVisible();
+      const audit = await new AxeBuilder({ page }).include("#react-topbar-notification-panel").analyze();
+      expect(audit.violations).toEqual([]);
+      const bounds = await panel.boundingBox();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+      await page.screenshot({ path: testInfo.outputPath(`notification-recovery-${theme}.png`) });
+      await panel.getByRole("button", { name: "Tümünü okundu işaretle" }).click();
+      await expect(panel.getByText("Okunmadı")).toHaveCount(0);
+      await expect(panel.getByRole("alert")).toHaveCount(0);
+    });
+  }
+
   test("theme changes preserve settings geometry", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "desktop-chromium", "Settings route");
     await page.addInitScript(() => localStorage.setItem("systemcel.theme", "light"));

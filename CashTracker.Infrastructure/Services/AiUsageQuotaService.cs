@@ -11,8 +11,8 @@ namespace CashTracker.Infrastructure.Services
 {
     public sealed class AiUsageQuotaService : IAiUsageQuotaService
     {
-        private const int UnlimitedWindowLimit = 30;
-        private const int UnlimitedWindowHours = 4;
+        private const int UnlimitedWindowLimit = 15;
+        private const int UnlimitedWindowHours = 1;
 
         private readonly IIsletmeService _isletmeService;
         private readonly ISubscriptionEntitlementService _entitlementService;
@@ -87,11 +87,10 @@ namespace CashTracker.Infrastructure.Services
         {
             if (entitlement.AiSinirsiz)
             {
-                var windowHour = now.Hour / UnlimitedWindowHours * UnlimitedWindowHours;
-                var start = new DateTime(now.Year, now.Month, now.Day, windowHour, 0, 0);
+                var start = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
                 return new AiUsagePeriod(
-                    $"ai:4saat:{start:yyyyMMddHH}",
-                    "4 saatlik",
+                    $"ai:saat:{start:yyyyMMddHH}",
+                    "Saatlik",
                     UnlimitedWindowLimit,
                     start,
                     start.AddHours(UnlimitedWindowHours));

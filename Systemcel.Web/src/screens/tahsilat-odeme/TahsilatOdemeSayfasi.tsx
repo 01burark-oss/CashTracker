@@ -43,6 +43,8 @@ function bugun() {
   return yerelTarihDegeri();
 }
 
+const TAHSILAT_ODEME_FORM_HATA_ID = "tahsilat-odeme-form-hata";
+
 function ayBasi() {
   const now = new Date();
   return yerelTarihDegeri(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -174,6 +176,8 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
   const [geriAliniyor, setGeriAliniyor] = React.useState(false);
   const [silinecekHareket, setSilinecekHareket] = React.useState<TahsilatOdemeListeKaydi | null>(null);
   const [siliniyor, setSiliniyor] = React.useState(false);
+  const formHataAciklamasi = hata ? TAHSILAT_ODEME_FORM_HATA_ID : undefined;
+  const tutarHatasi = hata === "Sayısal alanları kontrol edin.";
 
   const filtreliHareketler = React.useMemo(() => {
     const query = arama.trim().toLocaleLowerCase("tr-TR");
@@ -547,7 +551,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
               <div className="payment-form-grid">
                 <label className="payment-field">
                   <span>İşlem Tipi</span>
-                  <select disabled={Boolean(duzenlenenHareket && duzenlenenHareket.kaynak !== "Manuel")} value={form.islemTipi} onChange={(event) => formGuncelle("islemTipi", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} disabled={Boolean(duzenlenenHareket && duzenlenenHareket.kaynak !== "Manuel")} value={form.islemTipi} onChange={(event) => formGuncelle("islemTipi", event.target.value)}>
                     {(ekran?.islemTipleri ?? []).map((option) => (
                       <option key={option.deger} value={option.deger}>
                         {etiketBic(option.etiket)}
@@ -557,7 +561,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 </label>
                 <label className="payment-field">
                   <span>Cari</span>
-                  <select disabled={Boolean(duzenlenenHareket && duzenlenenHareket.kaynak !== "Manuel")} value={form.cariKartId} onChange={(event) => formGuncelle("cariKartId", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} disabled={Boolean(duzenlenenHareket && duzenlenenHareket.kaynak !== "Manuel")} value={form.cariKartId} onChange={(event) => formGuncelle("cariKartId", event.target.value)}>
                     <option value="0">Cari seçin...</option>
                     {(ekran?.cariler ?? []).map((option) => (
                       <option key={option.id} value={option.id}>
@@ -568,11 +572,11 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 </label>
                 <label className="payment-field">
                   <span>Tarih</span>
-                  <input value={form.tarih} onChange={(event) => formGuncelle("tarih", event.target.value)} type="date" />
+                  <input aria-describedby={formHataAciklamasi} value={form.tarih} onChange={(event) => formGuncelle("tarih", event.target.value)} type="date" />
                 </label>
                 <label className="payment-field">
                   <span>Ödeme Yöntemi</span>
-                  <select value={form.odemeYontemi} onChange={(event) => formGuncelle("odemeYontemi", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.odemeYontemi} onChange={(event) => formGuncelle("odemeYontemi", event.target.value)}>
                     {(ekran?.odemeYontemleri ?? []).map((option) => (
                       <option key={option.deger} value={option.deger}>
                         {etiketBic(option.etiket)}
@@ -584,6 +588,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                   <input
                     checked={form.vadeVar}
                     role="switch" className="app-switch"
+                    aria-describedby={formHataAciklamasi}
                     onChange={(event) => formGuncelle("vadeVar", event.target.checked)}
                     type="checkbox"
                   />
@@ -592,6 +597,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 <label className="payment-field">
                   <span>Vade</span>
                   <input
+                    aria-describedby={formHataAciklamasi}
                     disabled={!form.vadeVar}
                     value={form.vadeTarihi}
                     onChange={(event) => formGuncelle("vadeTarihi", event.target.value)}
@@ -601,6 +607,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 <label className="payment-field payment-field--full">
                   <span>Açıklama</span>
                   <textarea
+                    aria-describedby={formHataAciklamasi}
                     value={form.aciklama}
                     onChange={(event) => formGuncelle("aciklama", event.target.value)}
                     placeholder="Açıklama giriniz..."
@@ -613,11 +620,11 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
               <div className="payment-form-grid payment-form-grid--three">
                 <label className="payment-field">
                   <span>Tutar</span>
-                  <input inputMode="decimal" value={form.tutar} onChange={(event) => formGuncelle("tutar", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} aria-invalid={tutarHatasi || undefined} inputMode="decimal" value={form.tutar} onChange={(event) => formGuncelle("tutar", event.target.value)} />
                 </label>
                 <label className="payment-field">
                   <span>Para Birimi</span>
-                  <select value={form.paraBirimi} onChange={(event) => formGuncelle("paraBirimi", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.paraBirimi} onChange={(event) => formGuncelle("paraBirimi", event.target.value)}>
                     {(ekran?.paraBirimleri ?? []).map((option) => (
                       <option key={option.deger} value={option.deger}>
                         {option.etiket}
@@ -627,11 +634,11 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 </label>
                 <label className="payment-field">
                   <span>Referans No</span>
-                  <input value={form.referansNo} onChange={(event) => formGuncelle("referansNo", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} value={form.referansNo} onChange={(event) => formGuncelle("referansNo", event.target.value)} />
                 </label>
                 <label className="payment-field">
                   <span>Kategori</span>
-                  <select value={form.kategori} onChange={(event) => formGuncelle("kategori", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.kategori} onChange={(event) => formGuncelle("kategori", event.target.value)}>
                     {(ekran?.kategoriler ?? []).map((option) => (
                       <option key={option.deger} value={option.deger}>
                         {option.etiket}
@@ -641,7 +648,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 </label>
                 <label className="payment-field payment-field--wide">
                   <span>Belge / Fatura</span>
-                  <select value={form.faturaId} onChange={(event) => faturaSecimiDegisti(event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.faturaId} onChange={(event) => faturaSecimiDegisti(event.target.value)}>
                     <option value="0">Fatura seçin...</option>
                     {(ekran?.faturalar ?? []).map((option) => (
                       <option key={option.id} value={option.id}>
@@ -654,6 +661,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                   <input
                     checked={form.faturaIleEslestir}
                     role="switch" className="app-switch"
+                    aria-describedby={formHataAciklamasi}
                     onChange={(event) => faturaEslestirmeDegisti(event.target.checked)}
                     type="checkbox"
                   />
@@ -687,6 +695,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
                 <label className="payment-field">
                   <span>Not</span>
                   <textarea
+                    aria-describedby={formHataAciklamasi}
                     value={form.hizliNot}
                     onChange={(event) => formGuncelle("hizliNot", event.target.value)}
                     placeholder="Kısa not giriniz..."
@@ -755,7 +764,7 @@ export function TahsilatOdemeSayfasi({ yenileAnahtari }: TahsilatOdemeSayfasiPro
       ) : null}
 
       {hata && (
-        <p className="payment-feedback">
+        <p className="payment-feedback" id={TAHSILAT_ODEME_FORM_HATA_ID} role="alert">
           <span className="payment-feedback__error">{hata}</span>
         </p>
       )}

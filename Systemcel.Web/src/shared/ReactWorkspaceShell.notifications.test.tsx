@@ -50,6 +50,44 @@ describe("ReactWorkspaceShell bildirim merkezi", () => {
     document.documentElement.style.removeProperty("color-scheme");
   });
 
+  it("keeps notifications available after a failed update and allows retry", async () => {
+    const user = userEvent.setup();
+    const update = vi.fn().mockRejectedValueOnce(new Error("Connection failed")).mockResolvedValueOnce({ okunmamisSayisi: 0 });
+    vi.mocked(jsonOku).mockImplementation(async (url) => {
+      if (url === "/api/ekran/bildirimler") return [{ id: 41, tur: "odeme", onem: "yuksek", baslik: "Ödeme gecikti", mesaj: "Vadesi geçen ödeme var.", okundu: false }];
+      if (url === "/api/ekran/bildirimler/tumunu-okundu") return update();
+      return { aktifSube: { id: 1, ad: "Merkez" }, subeler: [], kurlar: [] };
+    });
+    render(shell());
+    await user.click(screen.getByRole("button", { name: "Bildirimleri göster" }));
+    await screen.findByText("Ödeme gecikti");
+    await user.click(screen.getByRole("button", { name: "Tümünü okundu işaretle" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Bildirimler güncellenemedi. Tekrar deneyin.");
+    expect(screen.getByText("Ödeme gecikti")).toBeVisible();
+    expect(screen.getByText("Okunmadı")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Tümünü okundu işaretle" }));
+    await waitFor(() => expect(screen.queryByText("Okunmadı")).not.toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("disables notification updates while a request is pending", async () => {
+    const user = userEvent.setup();
+    let complete!: (value: unknown) => void;
+    vi.mocked(jsonOku).mockImplementation(async (url) => {
+      if (url === "/api/ekran/bildirimler") return [{ id: 41, tur: "odeme", onem: "yuksek", baslik: "Ödeme gecikti", mesaj: "", okundu: false }];
+      if (url === "/api/ekran/bildirimler/41/okundu") return new Promise(resolve => { complete = resolve; });
+      return { aktifSube: { id: 1, ad: "Merkez" }, subeler: [], kurlar: [] };
+    });
+    render(shell());
+    await user.click(screen.getByRole("button", { name: "Bildirimleri göster" }));
+    const single = await screen.findByRole("button", { name: /^Okundu işaretle$/ });
+    await user.click(single);
+    expect(single).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tümünü okundu işaretle" })).toBeDisabled();
+    await act(async () => complete({ okunmamisSayisi: 0 }));
+    await waitFor(() => expect(screen.queryByText("Okunmadı")).not.toBeInTheDocument());
+  });
+
   it("lists unread state and marks every notification as read", async () => {
     const user = userEvent.setup();
     vi.mocked(jsonOku).mockImplementation(async (url, init) => {

@@ -121,4 +121,21 @@ describe("FaturalarSayfasi toplu seçim", () => {
     expect(await screen.findByRole("heading", { name: "Faturayı düzenle" })).toBeVisible();
     expect(screen.getByDisplayValue("Test faturası")).toBeVisible();
   });
+
+  it("bilinen cari doğrulama hatasını fatura formuna bağlayarak duyurur", async () => {
+    const user = userEvent.setup();
+    render(<FaturalarSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+
+    await screen.findByRole("button", { name: "Yeni Fatura" });
+    await user.click(screen.getByRole("button", { name: "Yeni Fatura" }));
+    const cari = await screen.findByRole("combobox", { name: "Cari" });
+    await user.click(screen.getByRole("button", { name: "Taslak Oluştur" }));
+
+    const hata = await screen.findByRole("alert");
+    expect(hata).toHaveTextContent("Cari seçin.");
+    expect(hata).toHaveAttribute("id", "fatura-form-hata");
+    expect(cari).toHaveAttribute("aria-describedby", "fatura-form-hata");
+    expect(cari).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "Açıklama" })).toHaveAttribute("aria-describedby", "fatura-form-hata");
+  });
 });

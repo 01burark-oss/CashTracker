@@ -49,6 +49,7 @@ telegram-setup.json
 **/TestResults/
 **/coverage/
 **/test-results/
+**/test-results-*/
 **/playwright-report/
 **/.shots/
 *.tsbuildinfo

@@ -8865,7 +8865,50 @@
 
 :root[data-theme] .notification-item {
   border-color: var(--sc-line);
-  background: #f4f1e8;
+  background: var(--sc-paper);
+  color: var(--sc-ink);
+}
+
+:root[data-theme] .notification-item strong,
+:root[data-theme] .notification-item p {
+  color: var(--sc-ink);
+}
+
+:root[data-theme] .notification-state--error {
+  color: var(--sc-danger) !important;
+}
+
+.notification-item__unread {
+  display: block;
+  margin-top: 4px;
+  color: var(--sc-ink);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.notification-action {
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sc-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.notification-action:disabled {
+  color: var(--sc-muted);
+  cursor: wait;
+}
+
+.notification-item > .notification-action {
+  grid-column: 2;
+  justify-self: start;
 }
 
 :root[data-theme] .notification-item__icon,

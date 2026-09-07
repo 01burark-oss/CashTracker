@@ -23,6 +23,8 @@ interface KimlikliMesaj {
   id: number;
 }
 
+const CARI_FORM_HATA_ID = "cari-form-hata";
+
 export function cariHedefId(
   tercihId: number | null | undefined,
   seciliId: number | null
@@ -113,6 +115,9 @@ export function CariHesaplarSayfasi({
   const [islemde, setIslemde] = React.useState(false);
   const ekranRef = React.useRef<CariEkranVerisi | null>(null);
   const seciliIdRef = React.useRef<number | null>(null);
+  const formHataAciklamasi = hata ? CARI_FORM_HATA_ID : undefined;
+  const unvanHatasi = hata === "Unvan alanı zorunludur.";
+  const hareketTutariHatasi = hata === "Tutar sıfırdan büyük olmalıdır.";
 
   const formuSifirla = React.useCallback((ekranVerisi?: CariEkranVerisi | null) => {
     seciliIdRef.current = null;
@@ -376,7 +381,7 @@ export function CariHesaplarSayfasi({
             <div className="cari-form-grid">
               <label className="cari-field">
                 <span>Tip</span>
-                <select value={kartFormu.tip} onChange={(event) => kartAlaniniGuncelle("tip", event.target.value)}>
+                <select aria-describedby={formHataAciklamasi} value={kartFormu.tip} onChange={(event) => kartAlaniniGuncelle("tip", event.target.value)}>
                   {(ekran?.tipSecenekleri ?? []).map((secenek) => (
                     <option key={secenek.deger} value={secenek.deger}>
                       {etiketBic(secenek.etiket)}
@@ -387,32 +392,32 @@ export function CariHesaplarSayfasi({
 
               <label className="cari-field">
                 <span>Unvan</span>
-                <input value={kartFormu.unvan} onChange={(event) => kartAlaniniGuncelle("unvan", event.target.value)} />
+                <input aria-describedby={formHataAciklamasi} aria-invalid={unvanHatasi || undefined} value={kartFormu.unvan} onChange={(event) => kartAlaniniGuncelle("unvan", event.target.value)} />
               </label>
 
               <label className="cari-field">
                 <span>Telefon</span>
-                <input value={kartFormu.telefon} onChange={(event) => kartAlaniniGuncelle("telefon", event.target.value)} />
+                <input aria-describedby={formHataAciklamasi} value={kartFormu.telefon} onChange={(event) => kartAlaniniGuncelle("telefon", event.target.value)} />
               </label>
 
               <label className="cari-field">
                 <span>E-posta</span>
-                <input value={kartFormu.eposta} onChange={(event) => kartAlaniniGuncelle("eposta", event.target.value)} />
+                <input aria-describedby={formHataAciklamasi} value={kartFormu.eposta} onChange={(event) => kartAlaniniGuncelle("eposta", event.target.value)} />
               </label>
 
               <label className="cari-field">
                 <span>Vergi/TC No</span>
-                <input value={kartFormu.vergiNoTc} onChange={(event) => kartAlaniniGuncelle("vergiNoTc", event.target.value)} />
+                <input aria-describedby={formHataAciklamasi} value={kartFormu.vergiNoTc} onChange={(event) => kartAlaniniGuncelle("vergiNoTc", event.target.value)} />
               </label>
 
               <label className="cari-field">
                 <span>Vergi Dairesi</span>
-                <input value={kartFormu.vergiDairesi} onChange={(event) => kartAlaniniGuncelle("vergiDairesi", event.target.value)} />
+                <input aria-describedby={formHataAciklamasi} value={kartFormu.vergiDairesi} onChange={(event) => kartAlaniniGuncelle("vergiDairesi", event.target.value)} />
               </label>
 
               <label className="cari-field cari-field--full">
                 <span>Adres</span>
-                <textarea value={kartFormu.adres} onChange={(event) => kartAlaniniGuncelle("adres", event.target.value)} />
+                <textarea aria-describedby={formHataAciklamasi} value={kartFormu.adres} onChange={(event) => kartAlaniniGuncelle("adres", event.target.value)} />
               </label>
 
               <label className="cari-check">
@@ -420,6 +425,7 @@ export function CariHesaplarSayfasi({
                   type="checkbox"
                   checked={kartFormu.aktif}
                   role="switch" className="app-switch"
+                  aria-describedby={formHataAciklamasi}
                   onChange={(event) => kartAlaniniGuncelle("aktif", event.target.checked)}
                 />
                 Aktif
@@ -455,6 +461,7 @@ export function CariHesaplarSayfasi({
               <label className="cari-field">
                 <span>Tip</span>
                 <select
+                  aria-describedby={formHataAciklamasi}
                   value={hareketFormu.hareketTipi}
                   onChange={(event) => hareketAlaniniGuncelle("hareketTipi", event.target.value)}
                   disabled={!seciliId}
@@ -470,6 +477,8 @@ export function CariHesaplarSayfasi({
               <label className="cari-field">
                 <span>Tutar</span>
                 <input
+                  aria-describedby={formHataAciklamasi}
+                  aria-invalid={hareketTutariHatasi || undefined}
                   value={hareketFormu.tutar}
                   onChange={(event) => hareketAlaniniGuncelle("tutar", event.target.value)}
                   disabled={!seciliId}
@@ -482,6 +491,7 @@ export function CariHesaplarSayfasi({
                 <div className="cari-input-icon">
                   <CalendarDays size={16} />
                   <input
+                    aria-describedby={formHataAciklamasi}
                     type="date"
                     value={hareketFormu.tarih}
                     onChange={(event) => hareketAlaniniGuncelle("tarih", event.target.value)}
@@ -493,6 +503,7 @@ export function CariHesaplarSayfasi({
               <label className="cari-field cari-field--wide">
                 <span>Açıklama</span>
                 <input
+                  aria-describedby={formHataAciklamasi}
                   value={hareketFormu.aciklama}
                   onChange={(event) => hareketAlaniniGuncelle("aciklama", event.target.value)}
                   disabled={!seciliId}
@@ -548,7 +559,7 @@ export function CariHesaplarSayfasi({
 
         {hata && (
           <div className="cari-feedback">
-            <p className="cari-feedback__error">{hata}</p>
+            <p className="cari-feedback__error" id={CARI_FORM_HATA_ID} role="alert">{hata}</p>
           </div>
         )}
     </main>

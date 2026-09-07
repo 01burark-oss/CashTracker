@@ -1,0 +1,10 @@
+[Unit]
+Description=Systemcel verified database and appdata backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/systemcel/repo/deployment/oracle-free
+ExecStart=/bin/bash /opt/systemcel/repo/deployment/oracle-free/scripts/backup.sh
+UMask=0077

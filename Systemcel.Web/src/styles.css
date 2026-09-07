@@ -21050,6 +21050,36 @@ tbody tr.secili {
   }
 }
 
+.analytics-consent {
+  position: fixed;
+  z-index: 1000;
+  right: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  width: min(620px, calc(100vw - 32px));
+  padding: 18px 20px;
+  border: 1px solid rgba(17, 18, 14, .16);
+  border-radius: 18px;
+  color: #f2f0e7;
+  background: #11120e;
+  box-shadow: 0 16px 42px rgba(17, 18, 14, .25);
+}
+
+.analytics-consent strong { display: block; font-size: 15px; }
+.analytics-consent p { margin: 5px 0 0; color: #c5c7ba; font-size: 12px; line-height: 1.45; }
+.analytics-consent__actions { display: flex; flex-shrink: 0; gap: 8px; }
+.analytics-consent__actions button { min-height: 38px; padding: 0 13px; border: 1px solid #55584c; border-radius: 10px; font: inherit; font-size: 12px; cursor: pointer; }
+.analytics-consent__reject { color: #f2f0e7; background: transparent; }
+.analytics-consent__accept { border-color: #d7ff3f !important; color: #11120e; background: #d7ff3f; }
+.analytics-consent__actions button:focus-visible { outline: 2px solid #d7ff3f; outline-offset: 3px; }
+
+@media (max-width: 620px) {
+  .analytics-consent { right: 16px; bottom: 16px; flex-direction: column; align-items: stretch; gap: 14px; }
+  .analytics-consent__actions { justify-content: flex-end; }
+}
+
 /* Masaüstü auth: tarayıcı %100 yakınlaştırmada form ve ürün görseli tek ekrana sığar. */
 @media (min-width: 1181px) and (max-height: 980px) {
   .auth-shell--branded {

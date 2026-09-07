@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openAuthenticatedFile, printAuthenticatedHtml } from "../../shared/authenticatedFile";
@@ -47,6 +47,32 @@ describe("RaporlarSayfasi dışa aktarımı", () => {
   afterEach(() => {
     cleanup();
     vi.clearAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("yerel takvimde ayın ilk gecesinde tarih ve dönem bir gün geriye kaymaz", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 8, 1, 2));
+    render(<RaporlarSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+    await screen.findByRole("option", { name: "Aylık" });
+    expect(screen.getByLabelText("Başlangıç")).toHaveValue("2026-09-01");
+    expect(screen.getByLabelText("Bitiş")).toHaveValue("2026-09-01");
+    expect(screen.getByRole("combobox", { name: "Dönem Ay" })).toHaveValue("09");
+  });
+
+  it("yenileme hatasını duyurur, yüklemeyi bitirir ve tekrar denemeye izin verir", async () => {
+    const user = userEvent.setup();
+    render(<RaporlarSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+    await screen.findByRole("option", { name: "Aylık" });
+    vi.mocked(jsonOku).mockRejectedValueOnce(new Error("Bağlantı kurulamadı."));
+    const refresh = screen.getByRole("button", { name: "Raporları yenile" });
+    await user.click(refresh);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Bağlantı kurulamadı.");
+    expect(screen.queryByText("Raporlar yükleniyor...")).not.toBeInTheDocument();
+    expect(refresh).toBeEnabled();
+    await user.click(refresh);
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    expect(refresh).toBeEnabled();
   });
 
   it("PDF düğmesi JSON yol mesajı yerine indirilebilir dosya ister", async () => {

@@ -27,6 +27,7 @@ export function TelegramBaglantisiSayfasi({ onTelegramDurumuDegisti }: TelegramB
   const [mesaj, setMesaj] = React.useState("Telegram bağlantısı yükleniyor...");
   const [qrYuklenemedi, setQrYuklenemedi] = React.useState(false);
   const sonBagliRef = React.useRef<boolean | null>(null);
+  const yuklemeRef = React.useRef<Promise<void> | null>(null);
 
   const uygula = React.useCallback((data: TelegramEkranVerisi) => {
     const oncekiBagli = sonBagliRef.current;
@@ -40,9 +41,18 @@ export function TelegramBaglantisiSayfasi({ onTelegramDurumuDegisti }: TelegramB
   }, [onTelegramDurumuDegisti]);
 
   const yukle = React.useCallback(async () => {
-    setHata("");
-    const data = await jsonOku<TelegramEkranVerisi>("/api/ekran/telegram");
-    uygula(data);
+    if (yuklemeRef.current)
+      return yuklemeRef.current;
+
+    const request = (async () => {
+      setHata("");
+      const data = await jsonOku<TelegramEkranVerisi>("/api/ekran/telegram");
+      uygula(data);
+    })().finally(() => {
+      yuklemeRef.current = null;
+    });
+    yuklemeRef.current = request;
+    return request;
   }, [uygula]);
 
   React.useEffect(() => {
@@ -56,13 +66,20 @@ export function TelegramBaglantisiSayfasi({ onTelegramDurumuDegisti }: TelegramB
     if (ekran?.bagli)
       return;
 
-    const handle = window.setInterval(() => {
-      yukle().catch(() => {
-        // Sessiz yoklama: ekranda kullanicinin son mesajini bozmayalim.
-      });
-    }, 3_000);
+    const yokla = () => {
+      if (document.visibilityState === "visible") {
+        yukle().catch(() => {
+          // Sessiz yoklama: ekranda kullanicinin son mesajini bozmayalim.
+        });
+      }
+    };
+    const handle = window.setInterval(yokla, 3_000);
+    document.addEventListener("visibilitychange", yokla);
 
-    return () => window.clearInterval(handle);
+    return () => {
+      window.clearInterval(handle);
+      document.removeEventListener("visibilitychange", yokla);
+    };
   }, [ekran?.bagli, yukle]);
 
   React.useEffect(() => {

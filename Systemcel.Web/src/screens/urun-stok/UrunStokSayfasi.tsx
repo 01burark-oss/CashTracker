@@ -37,6 +37,8 @@ function bugun() {
   return new Date().toISOString().slice(0, 10);
 }
 
+const URUN_STOK_FORM_HATA_ID = "urun-stok-form-hata";
+
 function bosUrunFormu(): UrunFormu {
   return {
     id: 0,
@@ -153,6 +155,10 @@ export function UrunStokSayfasi({ yenileAnahtari }: UrunStokSayfasiProps) {
   const [aktifIslemPaneli, setAktifIslemPaneli] = React.useState<"urun" | "stok">("urun");
   const [islemPaneliAcik, setIslemPaneliAcik] = React.useState(false);
   const seciliIdRef = React.useRef<number | null>(null);
+  const formHataAciklamasi = hata ? URUN_STOK_FORM_HATA_ID : undefined;
+  const urunAdiHatasi = hata === "Ad alanı zorunludur.";
+  const stokMiktarHatasi = hata === "Miktar sıfır olamaz.";
+  const stokBirimMaliyetHatasi = hata === "Stok girişi için KDV hariç birim maliyet girin.";
 
   const seciliUrun = React.useMemo(
     () => ekran?.urunler.find((row) => row.id === seciliId) ?? null,
@@ -594,42 +600,42 @@ export function UrunStokSayfasi({ yenileAnahtari }: UrunStokSayfasiProps) {
                 <div className="stock-form-grid">
                   <label className="stock-field">
                     <span>Tip</span>
-                    <select value={urunFormu.tip} onChange={(event) => urunAlaniniGuncelle("tip", event.target.value)}>
+                    <select aria-describedby={formHataAciklamasi} value={urunFormu.tip} onChange={(event) => urunAlaniniGuncelle("tip", event.target.value)}>
                       {(ekran?.tipSecenekleri ?? []).map((secenek) => <option key={secenek.deger} value={secenek.deger}>{etiketBic(secenek.etiket)}</option>)}
                     </select>
                   </label>
                   <label className="stock-field">
                     <span>Birim</span>
-                    <select value={urunFormu.birim} onChange={(event) => urunAlaniniGuncelle("birim", event.target.value)}>
+                    <select aria-describedby={formHataAciklamasi} value={urunFormu.birim} onChange={(event) => urunAlaniniGuncelle("birim", event.target.value)}>
                       {(ekran?.birimSecenekleri ?? []).map((secenek) => <option key={secenek.deger} value={secenek.deger}>{secenek.etiket}</option>)}
                     </select>
                   </label>
                   <label className="stock-field">
                     <span>Ad</span>
-                    <input ref={productNameInputRef} value={urunFormu.ad} onChange={(event) => urunAlaniniGuncelle("ad", event.target.value)} placeholder="Ürün veya hizmet adı" />
+                    <input aria-describedby={formHataAciklamasi} aria-invalid={urunAdiHatasi || undefined} ref={productNameInputRef} value={urunFormu.ad} onChange={(event) => urunAlaniniGuncelle("ad", event.target.value)} placeholder="Ürün veya hizmet adı" />
                   </label>
                   <label className="stock-field">
                     <span>Barkod</span>
-                    <input value={urunFormu.barkod} onChange={(event) => urunAlaniniGuncelle("barkod", event.target.value)} placeholder="Barkod numarası" />
+                    <input aria-describedby={formHataAciklamasi} value={urunFormu.barkod} onChange={(event) => urunAlaniniGuncelle("barkod", event.target.value)} placeholder="Barkod numarası" />
                   </label>
                   <label className="stock-field">
                     <span>Alış fiyatı</span>
-                    <input inputMode="decimal" value={urunFormu.alisFiyati} onChange={(event) => urunAlaniniGuncelle("alisFiyati", event.target.value)} />
+                    <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={urunFormu.alisFiyati} onChange={(event) => urunAlaniniGuncelle("alisFiyati", event.target.value)} />
                   </label>
                   <label className="stock-field">
                     <span>Satış fiyatı</span>
-                    <input inputMode="decimal" value={urunFormu.satisFiyati} onChange={(event) => urunAlaniniGuncelle("satisFiyati", event.target.value)} />
+                    <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={urunFormu.satisFiyati} onChange={(event) => urunAlaniniGuncelle("satisFiyati", event.target.value)} />
                   </label>
                   <label className="stock-field">
                     <span>KDV %</span>
-                    <input inputMode="decimal" value={urunFormu.kdvOrani} onChange={(event) => urunAlaniniGuncelle("kdvOrani", event.target.value)} />
+                    <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={urunFormu.kdvOrani} onChange={(event) => urunAlaniniGuncelle("kdvOrani", event.target.value)} />
                   </label>
                   <label className="stock-field">
                     <span>Kritik stok</span>
-                    <input inputMode="decimal" value={urunFormu.kritikStok} onChange={(event) => urunAlaniniGuncelle("kritikStok", event.target.value)} />
+                    <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={urunFormu.kritikStok} onChange={(event) => urunAlaniniGuncelle("kritikStok", event.target.value)} />
                   </label>
                   <label className="stock-check">
-                    <input type="checkbox" role="switch" className="app-switch" checked={urunFormu.aktif} onChange={(event) => urunAlaniniGuncelle("aktif", event.target.checked)} />
+                    <input aria-describedby={formHataAciklamasi} type="checkbox" role="switch" className="app-switch" checked={urunFormu.aktif} onChange={(event) => urunAlaniniGuncelle("aktif", event.target.checked)} />
                     <span>
                       <strong>Aktif ürün</strong>
                       <small>Listelerde ve işlemlerde kullanılabilir.</small>
@@ -664,11 +670,11 @@ export function UrunStokSayfasi({ yenileAnahtari }: UrunStokSayfasiProps) {
                   <div className="stock-movement-form__primary">
                     <label className="stock-field">
                       <span>Miktar (+/-)</span>
-                      <input inputMode="decimal" data-allow-negative="true" value={stokFormu.miktar} onChange={(event) => stokAlaniniGuncelle("miktar", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} />
+                      <input aria-describedby={formHataAciklamasi} aria-invalid={stokMiktarHatasi || undefined} inputMode="decimal" data-allow-negative="true" value={stokFormu.miktar} onChange={(event) => stokAlaniniGuncelle("miktar", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} />
                     </label>
                     <label className="stock-field stock-field--date">
                       <span>Tarih</span>
-                      <input className="stock-date-input" type="date" value={stokFormu.tarih} onChange={(event) => stokAlaniniGuncelle("tarih", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} />
+                      <input aria-describedby={formHataAciklamasi} className="stock-date-input" type="date" value={stokFormu.tarih} onChange={(event) => stokAlaniniGuncelle("tarih", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} />
                     </label>
                   </div>
                   <p className="stock-movement-form__hint">
@@ -676,11 +682,11 @@ export function UrunStokSayfasi({ yenileAnahtari }: UrunStokSayfasiProps) {
                   </p>
                   <label className="stock-field stock-field--grow">
                     <span>Birim maliyet (KDV hariç)</span>
-                    <input inputMode="decimal" value={stokFormu.birimMaliyet} onChange={(event) => stokAlaniniGuncelle("birimMaliyet", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun" || stokFormu.miktar.trim().startsWith("-")} placeholder="Sadece stok girişi" />
+                    <input aria-describedby={formHataAciklamasi} aria-invalid={stokBirimMaliyetHatasi || undefined} inputMode="decimal" value={stokFormu.birimMaliyet} onChange={(event) => stokAlaniniGuncelle("birimMaliyet", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun" || stokFormu.miktar.trim().startsWith("-")} placeholder="Sadece stok girişi" />
                   </label>
                   <label className="stock-field stock-field--grow stock-field--wide">
                     <span>Açıklama</span>
-                    <input value={stokFormu.aciklama} onChange={(event) => stokAlaniniGuncelle("aciklama", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} placeholder="Hareket açıklaması" />
+                    <input aria-describedby={formHataAciklamasi} value={stokFormu.aciklama} onChange={(event) => stokAlaniniGuncelle("aciklama", event.target.value)} disabled={!seciliId || seciliUrun?.tip !== "Urun"} placeholder="Hareket açıklaması" />
                   </label>
                   <div className="stock-movement-form__actions">
                     <button type="button" className="stock-btn stock-btn--primary stock-btn--movement" onClick={() => void stokIsle()} disabled={islemde || !seciliId || seciliUrun?.tip !== "Urun"}>
@@ -697,7 +703,7 @@ export function UrunStokSayfasi({ yenileAnahtari }: UrunStokSayfasiProps) {
 
       {hata ? (
         <div className="stock-feedback">
-          <p className="stock-feedback__error">{hata}</p>
+          <p className="stock-feedback__error" id={URUN_STOK_FORM_HATA_ID} role="alert">{hata}</p>
         </div>
       ) : null}
 

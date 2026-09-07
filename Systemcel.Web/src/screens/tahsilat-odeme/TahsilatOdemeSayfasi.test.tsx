@@ -204,4 +204,36 @@ describe("TahsilatOdemeSayfasi ödeme hatırlatması", () => {
       { method: "DELETE" }
     ));
   });
+
+  it("bilinen tutar doğrulama hatasını ödeme formuna bağlayarak duyurur", async () => {
+    const user = userEvent.setup();
+    render(<TahsilatOdemeSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+
+    const tutar = await screen.findByRole("textbox", { name: "Tutar" });
+    await user.clear(tutar);
+    await user.type(tutar, "geçersiz");
+    await user.click(screen.getByRole("button", { name: /^Kaydet$/ }));
+
+    const hata = await screen.findByRole("alert");
+    expect(hata).toHaveTextContent("Sayısal alanları kontrol edin.");
+    expect(hata).toHaveAttribute("id", "tahsilat-odeme-form-hata");
+    expect(tutar).toHaveAttribute("aria-describedby", "tahsilat-odeme-form-hata");
+    expect(tutar).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("combobox", { name: "Cari" })).toHaveAttribute("aria-describedby", "tahsilat-odeme-form-hata");
+  });
+
+  it("genel istek hatasında form alanlarını geçersiz işaretlemez", async () => {
+    const user = userEvent.setup();
+    render(<TahsilatOdemeSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+
+    const tutar = await screen.findByRole("textbox", { name: "Tutar" });
+    vi.mocked(jsonOku).mockRejectedValueOnce(new Error("Bağlantı kurulamadı."));
+    await user.click(screen.getByRole("button", { name: /^Kaydet$/ }));
+
+    const hata = await screen.findByRole("alert");
+    expect(hata).toHaveTextContent("Bağlantı kurulamadı.");
+    expect(tutar).toHaveAttribute("aria-describedby", "tahsilat-odeme-form-hata");
+    expect(tutar).not.toHaveAttribute("aria-invalid");
+    expect(screen.getByRole("combobox", { name: "Cari" })).not.toHaveAttribute("aria-invalid");
+  });
 });

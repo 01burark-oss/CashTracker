@@ -23,17 +23,21 @@ interface RaporlarSayfasiProps {
   yenileAnahtari: number;
 }
 
+function yerelTarih(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function bugun() {
-  return new Date().toISOString().slice(0, 10);
+  return yerelTarih(new Date());
 }
 
 function ayBasi() {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  return yerelTarih(new Date(now.getFullYear(), now.getMonth(), 1));
 }
 
 function ayDegeri() {
-  return new Date().toISOString().slice(0, 7);
+  return bugun().slice(0, 7);
 }
 
 function secimDegistir(secili: string[], deger: string) {
@@ -83,22 +87,27 @@ export function RaporlarSayfasi({ yenileAnahtari }: RaporlarSayfasiProps) {
   const [islemde, setIslemde] = React.useState(false);
 
   const yenile = React.useCallback(async () => {
+    setIslemde(true);
     setHata("");
     setDurum("Raporlar yükleniyor...");
-    const data = await jsonOku<RaporlarEkranVerisi>("/api/ekran/raporlar");
-    setEkran(data);
-    setDonem((current) => current || data.varsayilanDonem);
-    setFormatlar(data.formatlar.filter((row) => row.secili).map((row) => row.deger));
-    setIcerikler(data.icerikler.filter((row) => row.secili).map((row) => row.deger));
-    setSonPaket(data.sonPaket);
-    setDurum(data.sonPaket?.varMi ? `${data.sonPaket.ad} hazır.` : "");
+    try {
+      const data = await jsonOku<RaporlarEkranVerisi>("/api/ekran/raporlar");
+      setEkran(data);
+      setDonem((current) => current || data.varsayilanDonem);
+      setFormatlar(data.formatlar.filter((row) => row.secili).map((row) => row.deger));
+      setIcerikler(data.icerikler.filter((row) => row.secili).map((row) => row.deger));
+      setSonPaket(data.sonPaket);
+      setDurum(data.sonPaket?.varMi ? `${data.sonPaket.ad} hazır.` : "");
+    } catch (error) {
+      setHata(error instanceof Error ? error.message : "Raporlar yenilenemedi. Tekrar deneyin.");
+      setDurum("");
+    } finally {
+      setIslemde(false);
+    }
   }, []);
 
   React.useEffect(() => {
-    yenile().catch((error: Error) => {
-      setHata(error.message);
-      setDurum("");
-    });
+    void yenile();
   }, [yenile, yenileAnahtari]);
 
   const yazdirFormuGuncelle = <K extends keyof RaporYazdirFormu>(key: K, value: RaporYazdirFormu[K]) => {
@@ -185,6 +194,11 @@ export function RaporlarSayfasi({ yenileAnahtari }: RaporlarSayfasiProps) {
 
   return (
     <main className="reports-page">
+      {hata && (
+        <p className="reports-feedback reports-feedback--error" role="alert">
+          <span className="reports-feedback__error">{hata}</span>
+        </p>
+      )}
       <section className="reports-layout">
         <div className="reports-left">
           <section className="reports-card reports-package-card">
@@ -330,9 +344,9 @@ export function RaporlarSayfasi({ yenileAnahtari }: RaporlarSayfasiProps) {
         </aside>
       </section>
 
-      {(hata || durum) && (
-        <p className="reports-feedback">
-          {hata ? <span className="reports-feedback__error">{hata}</span> : durum}
+      {!hata && durum && (
+        <p className="reports-feedback" role="status">
+          {durum}
         </p>
       )}
     </main>

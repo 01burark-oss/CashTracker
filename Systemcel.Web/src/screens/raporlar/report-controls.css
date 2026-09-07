@@ -22,3 +22,9 @@
   color: var(--sc-muted); background: var(--sc-soft); border-color: var(--sc-line); opacity: 1;
 }
 :root[data-theme] .reports-page .reports-btn--success:disabled svg { color: var(--sc-muted); }
+.reports-feedback.reports-feedback--error {
+  position: static;
+  max-width: none;
+  margin: 0 0 16px;
+  pointer-events: auto;
+}

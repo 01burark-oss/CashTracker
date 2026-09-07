@@ -1,0 +1,22 @@
+{$CADDY_SITE_ADDRESS} {
+    encode zstd gzip
+
+    reverse_proxy app:8080 {
+        health_uri /api/health/live
+        health_interval 5s
+        health_timeout 5s
+    }
+
+    log {
+        output file /data/access.log {
+            roll_size 10MiB
+            roll_keep 5
+            roll_keep_for 168h
+        }
+        format json
+    }
+}
+
+www.systemcel.app {
+    redir https://systemcel.app{uri} permanent
+}

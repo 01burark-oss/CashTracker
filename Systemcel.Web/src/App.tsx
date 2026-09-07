@@ -7,8 +7,12 @@ import systemcelBrand from "./assets/systemcel-brand.svg";
 import { BusinessSelector } from "./shared/BusinessSelector";
 import type { UstBarDurumu } from "./shared/chrome";
 import { jsonOku } from "./shared/json";
-import { KolayKurulumModal, type KolayKurulumEkran } from "./shared/KolayKurulumModal";
+import type { KolayKurulumEkran } from "./shared/KolayKurulumModal";
 import { ReactWorkspaceShell } from "./shared/ReactWorkspaceShell";
+
+const KolayKurulumModal = React.lazy(() =>
+  import("./shared/KolayKurulumModal").then((module) => ({ default: module.KolayKurulumModal }))
+);
 
 const AuthSayfasi = React.lazy(() =>
   import("./auth/AuthSayfasi").then((module) => ({ default: module.AuthSayfasi }))
@@ -201,11 +205,11 @@ function AppRoutes() {
     return <MuhasebecilerSayfasi publicMode />;
   }
 
-  if (path === "/yardim" || decodeURI(path) === "/yardım") {
+  if (path === "/yardim" || safeDecodePath(path) === "/yardım") {
     return <YardimSayfasi />;
   }
 
-  if (path === "/hakkimizda" || decodeURI(path) === "/hakkımızda") {
+  if (path === "/hakkimizda" || safeDecodePath(path) === "/hakkımızda") {
     return <PublicContentPage kind="about" />;
   }
 
@@ -217,7 +221,7 @@ function AppRoutes() {
     return <PublicContentPage kind="careers" />;
   }
 
-  if (path === "/iletisim" || decodeURI(path) === "/iletişim") {
+  if (path === "/iletisim" || safeDecodePath(path) === "/iletişim") {
     return <PublicContentPage kind="contact" />;
   }
 
@@ -229,15 +233,15 @@ function AppRoutes() {
     return <PublicContentPage kind="privacy" />;
   }
 
-  if (path === "/kullanim-sartlari" || decodeURI(path) === "/kullanım-şartları") {
+  if (path === "/kullanim-sartlari" || safeDecodePath(path) === "/kullanım-şartları") {
     return <PublicContentPage kind="terms" />;
   }
 
-  if (path === "/abonelik-kosullari" || decodeURI(path) === "/abonelik-koşulları") {
+  if (path === "/abonelik-kosullari" || safeDecodePath(path) === "/abonelik-koşulları") {
     return <PublicContentPage kind="subscription" />;
   }
 
-  if (path === "/cerezler" || decodeURI(path) === "/çerezler") {
+  if (path === "/cerezler" || safeDecodePath(path) === "/çerezler") {
     return <PublicContentPage kind="cookies" />;
   }
 
@@ -313,6 +317,7 @@ function useClientNavigation() {
       }
 
       refresh();
+      window.dispatchEvent(new Event("systemcel:route-change"));
       restoreScroll(url);
     },
     [refresh]
@@ -360,6 +365,8 @@ function isClientRoute(pathname: string) {
   return (
     pathname === "/" ||
     pathname.startsWith("/muhasebeci-daveti/") ||
+    pathname.startsWith("/kaynaklar/") ||
+    pathname.startsWith("/fatura-onayi/") ||
     pathname === "/app" ||
     pathname.startsWith("/app/") ||
     decoded === "/giris" ||
@@ -370,15 +377,17 @@ function isClientRoute(pathname: string) {
     decoded === "/hosgeldin" ||
     decoded === "/muhasebeciler" ||
     decoded === "/yardim" ||
-    decoded === "/yardÄ±m" ||
+    decoded === "/yardım" ||
     decoded === "/hakkimizda" ||
-    decoded === "/hakkÄ±mÄ±zda" ||
+    decoded === "/hakkımızda" ||
     decoded === "/blog" ||
     decoded === "/kariyer" ||
     decoded === "/iletisim" ||
     decoded === "/iletişim" ||
     decoded === "/kvkk" ||
     decoded === "/gizlilik" ||
+    decoded === "/abonelik-kosullari" ||
+    decoded === "/abonelik-koşulları" ||
     decoded === "/kullanim-sartlari" ||
     decoded === "/kullanım-şartları" ||
     decoded === "/cerezler" ||
@@ -746,18 +755,20 @@ function WorkspaceRoutes({ path }: { path: string }) {
         )}
       </React.Suspense>
       {kolayKurulum && !kolayKurulum.tamamlandi && !kurulumGizlendi ? (
-        <KolayKurulumModal
-          ekran={kolayKurulum}
-          onClose={() => setKurulumGizlendi(true)}
-          onComplete={(sonuc) => {
-            setKolayKurulum(sonuc);
-            setKurulumGizlendi(false);
-            ustBarYukle().catch(() => undefined);
-            React.startTransition(() => {
-              setYenileAnahtari((current) => current + 1);
-            });
-          }}
-        />
+        <React.Suspense fallback={routeLoadingState}>
+          <KolayKurulumModal
+            ekran={kolayKurulum}
+            onClose={() => setKurulumGizlendi(true)}
+            onComplete={(sonuc) => {
+              setKolayKurulum(sonuc);
+              setKurulumGizlendi(false);
+              ustBarYukle().catch(() => undefined);
+              React.startTransition(() => {
+                setYenileAnahtari((current) => current + 1);
+              });
+            }}
+          />
+        </React.Suspense>
       ) : null}
     </ReactWorkspaceShell>
   );
@@ -852,7 +863,7 @@ function MobileWorkspaceView({
   return (
     <div className={`mobile-workspace-view mobile-workspace-view--${active}`}>
       <div className="mobile-workspace-view__content">
-        <React.Suspense fallback={null}>{children}</React.Suspense>
+        <React.Suspense fallback={routeLoadingState}>{children}</React.Suspense>
       </div>
       <nav className="mobile-workspace-nav" aria-label="Mobil çalışma alanı">
         <a className={active === "merkez" ? "active" : ""} href="/app" aria-label="Merkeze dön">

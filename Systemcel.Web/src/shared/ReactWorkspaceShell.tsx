@@ -336,6 +336,9 @@ export function ReactWorkspaceShell({ children, ustBar, baslik, sagAksiyon, onUs
   const [bildirimler, setBildirimler] = React.useState<Bildirim[]>([]);
   const [bildirimYukleniyor, setBildirimYukleniyor] = React.useState(false);
   const [bildirimHata, setBildirimHata] = React.useState("");
+  const [bildirimIslemHata, setBildirimIslemHata] = React.useState("");
+  const [bildirimGuncelleniyor, setBildirimGuncelleniyor] = React.useState(false);
+  const bildirimIslemRef = React.useRef(false);
   const [sohbetPaneliAcik, setSohbetPaneliAcik] = React.useState(false);
   const [baglamKapatiliyor, setBaglamKapatiliyor] = React.useState(false);
   const [mobilMenuAcik, setMobilMenuAcik] = React.useState(false);
@@ -478,16 +481,29 @@ export function ReactWorkspaceShell({ children, ustBar, baslik, sagAksiyon, onUs
     }
   }, []);
 
-  const bildirimiOkunduYap = React.useCallback(async (id: number) => {
-    await jsonOku<{ okunmamisSayisi: number }>(`/api/ekran/bildirimler/${id}/okundu`, { method: "PUT" });
-    setBildirimler((current) => current.map((item) => item.id === id ? { ...item, okundu: true } : item));
-    await onUstBarYenile?.();
-  }, [onUstBarYenile]);
-
-  const tumunuOkunduYap = React.useCallback(async () => {
-    await jsonOku<{ okunmamisSayisi: number }>("/api/ekran/bildirimler/tumunu-okundu", { method: "POST" });
-    setBildirimler((current) => current.map((item) => ({ ...item, okundu: true })));
-    await onUstBarYenile?.();
+  const bildirimleriOkunduYap = React.useCallback(async (id?: number) => {
+    if (bildirimIslemRef.current) return;
+    bildirimIslemRef.current = true;
+    setBildirimGuncelleniyor(true);
+    setBildirimIslemHata("");
+    try {
+      await jsonOku<{ okunmamisSayisi: number }>(
+        id === undefined ? "/api/ekran/bildirimler/tumunu-okundu" : `/api/ekran/bildirimler/${id}/okundu`,
+        { method: id === undefined ? "POST" : "PUT" }
+      );
+      setBildirimler((current) => current.map((item) => id === undefined || item.id === id ? { ...item, okundu: true } : item));
+    } catch {
+      setBildirimIslemHata("Bildirimler güncellenemedi. Tekrar deneyin.");
+      return;
+    } finally {
+      bildirimIslemRef.current = false;
+      setBildirimGuncelleniyor(false);
+    }
+    try {
+      await onUstBarYenile?.();
+    } catch {
+      setBildirimIslemHata("Bildirim okundu olarak kaydedildi. Bildirim sayısı yenilenemedi.");
+    }
   }, [onUstBarYenile]);
 
   React.useEffect(() => {
@@ -750,9 +766,10 @@ export function ReactWorkspaceShell({ children, ustBar, baslik, sagAksiyon, onUs
                   <div className="react-topbar__panel-head">
                     <strong>Bildirimler</strong>
                     {bildirimler.some((item) => !item.okundu) ? <span>{bildirimler.filter((item) => !item.okundu).length}</span> : null}
-                    {bildirimler.some((item) => !item.okundu) ? <button type="button" className="billing-link-button" onClick={() => void tumunuOkunduYap()}>Tümünü okundu işaretle</button> : null}
+                    {bildirimler.some((item) => !item.okundu) ? <button type="button" className="notification-action" disabled={bildirimGuncelleniyor} onClick={() => void bildirimleriOkunduYap()}>Tümünü okundu işaretle</button> : null}
                   </div>
 
+                  {bildirimIslemHata ? <p className="notification-state notification-state--error" role="alert">{bildirimIslemHata}</p> : null}
                   {bildirimYukleniyor ? (
                     <p className="notification-state">
                       <Loader2 size={16} />
@@ -780,13 +797,13 @@ export function ReactWorkspaceShell({ children, ustBar, baslik, sagAksiyon, onUs
                         );
 
                         return item.url ? (
-                          <a key={item.id} href={item.url} onClick={() => { if (!item.okundu) void bildirimiOkunduYap(item.id); }} className={`notification-item notification-item--${item.onem} ${item.okundu ? "notification-item--read" : "notification-item--unread"}`}>
+                          <a key={item.id} href={item.url} onClick={() => { if (!item.okundu) void bildirimleriOkunduYap(item.id); }} className={`notification-item notification-item--${item.onem} ${item.okundu ? "notification-item--read" : "notification-item--unread"}`}>
                             {content}
                           </a>
                         ) : (
                           <article key={item.id} className={`notification-item notification-item--${item.onem} ${item.okundu ? "notification-item--read" : "notification-item--unread"}`}>
                             {content}
-                            {!item.okundu ? <button type="button" className="billing-link-button" onClick={() => void bildirimiOkunduYap(item.id)}>Okundu işaretle</button> : null}
+                            {!item.okundu ? <button type="button" className="notification-action" disabled={bildirimGuncelleniyor} onClick={() => void bildirimleriOkunduYap(item.id)}>Okundu işaretle</button> : null}
                           </article>
                         );
                       })}

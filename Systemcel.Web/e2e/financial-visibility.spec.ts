@@ -28,6 +28,27 @@ test("financial visibility is reachable and responsive on desktop and mobile", a
 
 });
 
+test("mobile route shows a loading state while its code downloads", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-small");
+  await mockWorkspace(page);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/src/screens/finansal-gorunum/FinansalGorunumSayfasi.tsx", async route => {
+    await gate;
+    await route.continue();
+  });
+  await page.goto("/app/finansal-gorunum", { waitUntil: "domcontentloaded" });
+  try {
+    await expect(page.getByRole("status")).toHaveText("Sayfa yükleniyor…");
+    await expect(page.getByRole("navigation", { name: "Mobil çalışma alanı" })).toBeVisible();
+  } finally {
+    release();
+  }
+  await expect(page.getByRole("heading", { name: "Alacakların durumu" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: testInfo.outputPath("finance-mobile-320.png"), fullPage: true });
+});
+
 async function mockWorkspace(page: Page) {
   await page.route("**/api/public/config", (route) => json(route, { clerk: { enabled: false } }));
   await page.route("**/api/ekran/ust-bar", (route) => json(route, {

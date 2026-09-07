@@ -84,4 +84,24 @@ describe("CariHesaplarSayfasi satır klavye etkileşimi", () => {
     expect(await screen.findByRole("heading", { name: "Hesabı düzenle" })).toBeVisible();
     expect(screen.getByDisplayValue("atlas@example.com")).toBeVisible();
   });
+
+  it("bilinen unvan doğrulama hatasını cari formuna bağlayarak duyurur", async () => {
+    const user = userEvent.setup();
+    render(createElement(CariHesaplarSayfasi, {
+      onIsletmeDegistir: vi.fn(),
+      ustBar: null,
+      ustBarIslemde: false,
+      yenileAnahtari: 0
+    }));
+
+    const unvan = await screen.findByRole("textbox", { name: "Unvan" });
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    const hata = await screen.findByRole("alert");
+    expect(hata).toHaveTextContent("Unvan alanı zorunludur.");
+    expect(hata).toHaveAttribute("id", "cari-form-hata");
+    expect(unvan).toHaveAttribute("aria-describedby", "cari-form-hata");
+    expect(unvan).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("textbox", { name: "Telefon" })).toHaveAttribute("aria-describedby", "cari-form-hata");
+  });
 });

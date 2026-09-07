@@ -79,4 +79,19 @@ describe("GelirGiderSayfasi satır klavye etkileşimi", () => {
     expect(Array.from(amountControl?.children ?? []).map((element) => element.tagName)).toEqual(["INPUT", "STRONG"]);
     expect(amountControl?.querySelector("strong")).toHaveTextContent("TL");
   });
+
+  it("bilinen tutar doğrulama hatasını forma bağlayarak duyurur", async () => {
+    const user = userEvent.setup();
+    render(<GelirGiderSayfasi onIsletmeDegistir={vi.fn()} ustBar={null} ustBarIslemde={false} yenileAnahtari={0} />);
+
+    const tutar = await screen.findByPlaceholderText("Tutar girin");
+    await user.click(screen.getByRole("button", { name: "Kaydet" }));
+
+    const hata = await screen.findByRole("alert");
+    expect(hata).toHaveTextContent("Tutar sıfırdan büyük olmalıdır.");
+    expect(hata).toHaveAttribute("id", "gelir-gider-form-hata");
+    expect(tutar).toHaveAttribute("aria-describedby", "gelir-gider-form-hata");
+    expect(tutar).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("combobox", { name: "Kalem" })).toHaveAttribute("aria-describedby", "gelir-gider-form-hata");
+  });
 });

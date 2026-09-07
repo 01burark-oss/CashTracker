@@ -45,6 +45,7 @@ interface GibSmsBaslatSonucu {
 }
 
 const BIRIM_SECENEKLERI = ["Adet", "Paket", "Kutu", "Kilogram", "Gram", "Litre", "Metre", "Saat", "Hizmet"];
+const FATURA_FORM_HATA_ID = "fatura-form-hata";
 
 function bugun() {
   return yerelTarihDegeri();
@@ -216,6 +217,8 @@ export function FaturalarSayfasi({
   const [formPaneliAcik, setFormPaneliAcik] = React.useState(false);
   const seciliIdRef = React.useRef<number | null>(null);
   const tumunuSecRef = React.useRef<HTMLInputElement | null>(null);
+  const formHataAciklamasi = hata ? FATURA_FORM_HATA_ID : undefined;
+  const cariHatasi = hata === "Cari seçin.";
 
   const seciliFatura = React.useMemo(
     () => ekran?.faturalar.find((row) => row.id === seciliId) ?? null,
@@ -704,38 +707,38 @@ export function FaturalarSayfasi({
               <div className="invoice-form-grid">
                 <label className="invoice-field">
                   <span>Fatura Tipi</span>
-                  <select value={form.faturaTipi} onChange={(event) => formGuncelle("faturaTipi", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.faturaTipi} onChange={(event) => formGuncelle("faturaTipi", event.target.value)}>
                     {ekran?.faturaTipleri.map((item) => <option key={item.deger} value={item.deger}>{etiketBic(item.etiket)}</option>)}
                   </select>
                 </label>
                 <label className="invoice-field">
                   <span>Cari</span>
-                  <select value={form.cariKartId} onChange={(event) => formGuncelle("cariKartId", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} aria-invalid={cariHatasi || undefined} value={form.cariKartId} onChange={(event) => formGuncelle("cariKartId", event.target.value)}>
                     <option value="0">Cari seçin...</option>
                     {ekran?.cariler.map((item) => <option key={item.id} value={item.id}>{item.unvan}</option>)}
                   </select>
                 </label>
                 <label className="invoice-field">
                   <span>Tarih</span>
-                  <input type="date" value={form.tarih} onChange={(event) => formGuncelle("tarih", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} type="date" value={form.tarih} onChange={(event) => formGuncelle("tarih", event.target.value)} />
                 </label>
                 <label className="invoice-field">
                   <span>Ödeme Yöntemi</span>
-                  <select value={form.odemeYontemi} onChange={(event) => formGuncelle("odemeYontemi", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.odemeYontemi} onChange={(event) => formGuncelle("odemeYontemi", event.target.value)}>
                     {ekran?.odemeYontemleri.map((item) => <option key={item.deger} value={item.deger}>{etiketBic(item.etiket)}</option>)}
                   </select>
                 </label>
                 <label className="invoice-check">
-                  <input type="checkbox" role="switch" className="app-switch" checked={form.vadeVar} onChange={(event) => formGuncelle("vadeVar", event.target.checked)} />
+                  <input aria-describedby={formHataAciklamasi} type="checkbox" role="switch" className="app-switch" checked={form.vadeVar} onChange={(event) => formGuncelle("vadeVar", event.target.checked)} />
                   <span>Vade var</span>
                 </label>
                 <label className="invoice-field">
                   <span>Vade</span>
-                  <input type="date" value={form.vadeTarihi} disabled={!form.vadeVar} onChange={(event) => formGuncelle("vadeTarihi", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} type="date" value={form.vadeTarihi} disabled={!form.vadeVar} onChange={(event) => formGuncelle("vadeTarihi", event.target.value)} />
                 </label>
                 <label className="invoice-field invoice-field--full">
                   <span>Açıklama</span>
-                  <input value={form.aciklama} onChange={(event) => formGuncelle("aciklama", event.target.value)} placeholder="Açıklama giriniz..." />
+                  <input aria-describedby={formHataAciklamasi} value={form.aciklama} onChange={(event) => formGuncelle("aciklama", event.target.value)} placeholder="Açıklama giriniz..." />
                 </label>
               </div>
             </div>
@@ -745,36 +748,36 @@ export function FaturalarSayfasi({
               <div className="invoice-form-grid invoice-form-grid--three">
                 <label className="invoice-field">
                   <span>Ürün</span>
-                  <select value={form.urunHizmetId} onChange={(event) => urunSec(event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.urunHizmetId} onChange={(event) => urunSec(event.target.value)}>
                     <option value="0">Ürün seçin...</option>
                     {ekran?.urunler.map((item) => <option key={item.id} value={item.id}>{item.ad}</option>)}
                   </select>
                 </label>
                 <label className="invoice-field">
                   <span>Birim</span>
-                  <select value={form.birim} onChange={(event) => formGuncelle("birim", event.target.value)}>
+                  <select aria-describedby={formHataAciklamasi} value={form.birim} onChange={(event) => formGuncelle("birim", event.target.value)}>
                     {!BIRIM_SECENEKLERI.includes(form.birim) && form.birim ? <option value={form.birim}>{form.birim}</option> : null}
                     {BIRIM_SECENEKLERI.map((birim) => <option key={birim} value={birim}>{birim}</option>)}
                   </select>
                 </label>
                 <label className="invoice-field">
                   <span>Miktar</span>
-                  <input inputMode="decimal" value={form.miktar} onChange={(event) => formGuncelle("miktar", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={form.miktar} onChange={(event) => formGuncelle("miktar", event.target.value)} />
                 </label>
                 <label className="invoice-field">
                   <span>Birim Fiyat (KDV dahil)</span>
-                  <input inputMode="decimal" value={form.birimFiyat} onChange={(event) => formGuncelle("birimFiyat", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={form.birimFiyat} onChange={(event) => formGuncelle("birimFiyat", event.target.value)} />
                 </label>
                 <label className="invoice-field">
                   <span>KDV %</span>
-                  <input inputMode="decimal" value={form.kdvOrani} onChange={(event) => formGuncelle("kdvOrani", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={form.kdvOrani} onChange={(event) => formGuncelle("kdvOrani", event.target.value)} />
                 </label>
                 <label className="invoice-field">
                   <span>İskonto %</span>
-                  <input inputMode="decimal" value={form.iskontoOrani} onChange={(event) => formGuncelle("iskontoOrani", event.target.value)} />
+                  <input aria-describedby={formHataAciklamasi} inputMode="decimal" value={form.iskontoOrani} onChange={(event) => formGuncelle("iskontoOrani", event.target.value)} />
                 </label>
                 <label className="invoice-check">
-                  <input type="checkbox" role="switch" className="app-switch" checked={form.stokEtkilesin} onChange={(event) => formGuncelle("stokEtkilesin", event.target.checked)} />
+                  <input aria-describedby={formHataAciklamasi} type="checkbox" role="switch" className="app-switch" checked={form.stokEtkilesin} onChange={(event) => formGuncelle("stokEtkilesin", event.target.checked)} />
                   <span>Stok etkilensin</span>
                 </label>
               </div>
@@ -859,7 +862,7 @@ export function FaturalarSayfasi({
 
       {hata && (
         <div className="invoice-feedback">
-          <p className="invoice-feedback__error">{hata}</p>
+          <p className="invoice-feedback__error" id={FATURA_FORM_HATA_ID} role="alert">{hata}</p>
         </div>
       )}
     </main>
