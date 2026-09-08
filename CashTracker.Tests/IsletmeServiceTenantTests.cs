@@ -41,6 +41,45 @@ namespace CashTracker.Tests
         }
 
         [Fact]
+        public async Task ForeignBusinessId_CannotBeReadActivatedRenamedOrDeleted()
+        {
+            using var fixture = await IsletmeFixture.CreateAsync();
+            var currentUser = new MutableCurrentUserContext();
+            var service = new IsletmeService(new SingleDbContextFactory(fixture.Options), currentUser);
+
+            currentUser.Set("owner_one", "one@example.com", "Owner One");
+            var ownerOneBusiness = await service.GetActiveAsync();
+
+            currentUser.Set("owner_two", "two@example.com", "Owner Two");
+            var ownerTwoBusiness = await service.GetActiveAsync();
+
+            currentUser.Set("owner_one", "one@example.com", "Owner One");
+            Assert.Null(await service.GetByIdAsync(ownerTwoBusiness.Id));
+
+            await service.SetActiveAsync(ownerTwoBusiness.Id);
+            await using (var activationCheck = fixture.CreateDbContext())
+            {
+                var ownerOneId = await activationCheck.Kullanicilar
+                    .Where(x => x.AuthProviderUserId == "owner_one")
+                    .Select(x => x.Id)
+                    .SingleAsync();
+                var activeBusinessId = await activationCheck.AppSettings
+                    .Where(x => x.Key == $"WebAktifIsletme:{ownerOneId}")
+                    .Select(x => x.Value)
+                    .SingleAsync();
+                Assert.Equal(ownerOneBusiness.Id.ToString(), activeBusinessId);
+            }
+
+            await service.RenameAsync(ownerTwoBusiness.Id, "Yetkisiz değişiklik");
+            await service.DeleteAsync(ownerTwoBusiness.Id);
+
+            Assert.Equal(ownerOneBusiness.Id, await service.GetActiveIdAsync());
+            await using var db = fixture.CreateDbContext();
+            var protectedBusiness = await db.Isletmeler.SingleAsync(x => x.Id == ownerTwoBusiness.Id);
+            Assert.Equal(ownerTwoBusiness.Ad, protectedBusiness.Ad);
+        }
+
+        [Fact]
         public async Task FirstAuthenticatedUser_AdoptsLegacyBusinesses_SecondUserDoesNotSeeThem()
         {
             using var fixture = await IsletmeFixture.CreateAsync();

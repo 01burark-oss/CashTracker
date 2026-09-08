@@ -1,5 +1,7 @@
 # Systemcel DigitalOcean → Oracle geçiş planı
 
+> Tarihsel geçiş kaydıdır. Geçiş tamamlandı ve DigitalOcean kaynakları silindi. Güncel işletim durumu için `deployment/oracle-free/MIGRATION-STATUS.md`, ürün ve ödeme kararı için `docs/product-scope.md` kullanılır; bu belgedeki geri dönüş ve `Unconfigured` sağlayıcı adımları artık uygulanmaz.
+
 **Durum:** Öneri
 **Tarih:** 2026-09-02
 **Karar:** Canlı sistem, önce Oracle üzerinde gerçek verinin kopyasıyla prova edilecek; nihai geçiş kısa bir yazma kesintisi, son PostgreSQL dump/restore ve kontrollü DNS değişikliğiyle yapılacak.

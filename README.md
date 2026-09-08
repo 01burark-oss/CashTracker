@@ -16,10 +16,9 @@ Legacy desktop, installer, release, and license-admin code is no longer part of 
 
 Runtime database is PostgreSQL only. SQLite/local database fallback is intentionally disabled for the API. Tests may still use temporary SQLite databases for speed.
 
-Required production services:
+Current production services:
 
-- DigitalOcean App Platform
-- DigitalOcean Managed PostgreSQL
+- Oracle Cloud Always Free VM, with Docker Compose, Caddy and PostgreSQL 18
 - Clerk production application
 - Optional Telegram bot integration
 - Optional OpenAI receipt OCR and DeepSeek API keys
@@ -33,7 +32,7 @@ Required:
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 SYSTEMCEL_ENVIRONMENT_NAME=production
-SYSTEMCEL_DATABASE_CONNECTION_STRING=Host=...;Port=25060;Database=systemcel;Username=...;Password=...;SSL Mode=Require
+SYSTEMCEL_DATABASE_CONNECTION_STRING=Host=db;Port=5432;Database=systemcel;Username=systemcel_app;Password=...
 SYSTEMCEL_ALLOWED_ORIGINS=https://systemcel.app,https://www.systemcel.app
 SYSTEMCEL_CLERK_AUTHORITY=https://<clerk-domain>
 SYSTEMCEL_CLERK_PUBLISHABLE_KEY=<clerk-publishable-key>
@@ -78,7 +77,7 @@ Use `Systemcel.Web/public/kaynaklar/manychat-links.csv` when configuring the mat
 
 ## Local Development
 
-Start PostgreSQL locally or use a development DigitalOcean database, then set `SYSTEMCEL_DATABASE_CONNECTION_STRING`.
+Start PostgreSQL locally, then set `SYSTEMCEL_DATABASE_CONNECTION_STRING`.
 
 API:
 
@@ -131,34 +130,9 @@ Runtime frontend config:
 GET /api/public/config
 ```
 
-## DigitalOcean Deployment
+## Oracle deployment
 
-Use DigitalOcean App Platform with the root `Dockerfile`.
-
-Production:
-
-- Domain: `systemcel.app`
-- Optional alias: `www.systemcel.app`
-- Database: production Managed PostgreSQL
-- Health check: `/api/health`
-
-Staging:
-
-- Domain: `staging.systemcel.app`
-- Database: separate staging Managed PostgreSQL
-- Same Docker image, separate environment variables
-
-Deployment checklist:
-
-1. Create or attach the Managed PostgreSQL database.
-2. Add every required env var as an encrypted App Platform variable.
-3. Set `SYSTEMCEL_ALLOWED_ORIGINS` and `SYSTEMCEL_CLERK_AUTHORIZED_PARTIES` to the exact environment domains.
-4. Configure matching allowed origins, redirect URLs, and production keys in Clerk.
-5. Include `email` and boolean `email_verified` claims in the Clerk session token template. Team invitations fail closed when the e-mail claim is not verified.
-6. Deploy the Docker app.
-7. Confirm `/api/health` returns 200.
-8. Confirm protected `/api/ekran/*` endpoints return 401 without a token.
-9. Sign in through Clerk and smoke test dashboard, settings, and accountant flows.
+The live deployment runs from `deployment/oracle-free/` with Docker Compose. Caddy terminates HTTPS, the app listens on the internal Docker network, and PostgreSQL 18 is not exposed publicly. Use `deployment/oracle-free/scripts/deploy.sh` for a reviewed release and `docs/runbooks/release.md` for the release, backup and recovery procedure. The canonical product scope and pricing rules are in [`docs/product-scope.md`](docs/product-scope.md).
 
 ## Developer API
 

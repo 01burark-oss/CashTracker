@@ -1,4 +1,4 @@
-# Geçiş durumu — 2 Eylül 2026, 10:42 UTC
+# Geçiş durumu — 8 Eylül 2026
 
 ## Doğrulananlar
 
@@ -11,17 +11,18 @@
 - Uygulama, Caddy ve PostgreSQL 18 container'ları çalışıyor; veritabanı healthy.
 - Oracle IP'sine doğrudan yönlendirilen HTTPS readiness isteği başarılı.
 - `systemcel.app` ve `www.systemcel.app` sertifikaları alınmış; www, ana domaine 301 yönleniyor.
-- Name.com yetkili DNS ve Google DNS Oracle IP'sini döndürüyor. Cloudflare DNS eski DigitalOcean adreslerini önbellekten döndürüyor; yayılım tamamlandı sayılmıyor.
+- Name.com yetkili DNS ve Google DNS Oracle IP'sini döndürüyor; DNS yayılımı doğrulandı.
 - Clerk public config canlı anahtar kullanıyor. Ortam etiketi hâlâ `oracle-production-candidate`.
 - Günlük yedek timer'ı etkin. İlk yedek 10:39 UTC'de tamamlandı; dump/arşiv checksum kontrolleri geçti.
 - Disk kullanımı %16. Yeni ücretli kaynak oluşturulmadı.
+- 8 Eylül 2026'da landing, liveness, readiness, güvenlik başlıkları, CORS, plan kataloğu ve Clerk public config genel HTTP kapısı yeniden doğrulandı.
+- Clerk giriş ekranı ve Google OAuth yönlendirmesi production callback alan adına kadar doğrulandı; yeni kullanıcı hesabı oluşturulmadı.
 
 ## Açık işler
 
-- Kaynak-hedef karşılaştırması geçti; kaynak kapatılana kadar mevcut bağlantıların tekrar yazma ihtimalini gözet.
-- DNS yayılımı sonrası gerçek kullanıcı oturumu, OAuth, tenant izolasyonu ve bildirim teslimatını doğrula.
+- Yeni Clerk kimliğiyle gerçek kullanıcı oturumu, provision, kolay kurulum, tenant izolasyonu ve bildirim teslimatını doğrula.
 - 10:50:28 UTC yedeğinin şifreli bir kopyası Windows bilgisayarına indirildi (`%LOCALAPPDATA%\Systemcel\Backups`). SHA-256 ve DPAPI şifre çözme kontrolü geçti. Bu kopya ilgili Windows kullanıcı profiline bağlıdır; profil/anahtar kaybına karşı taşınabilir kurtarma anahtarı değildir. Otomatik sunucu dışı aktarım henüz kurulmadı.
 - Oracle'a otomatik GitHub dağıtımı kurulmadı. Mevcut CI yalnız test/build yapıyor; `scripts/deploy.sh` sunucudaki checkout'u dağıtır, GitHub'dan güncellemez.
-- Kullanıcının açık onayıyla DigitalOcean `systemcel-staging` uygulaması ve `systemcel-db-dev` managed veritabanı 2 Eylül 2026 yaklaşık 11:05 UTC'de kalıcı silindi; boş uygulama/veritabanı listeleri doğrulandı. 11:06 UTC'de kullanıcının bilgisayarından Oracle IP'sine HTTPS readiness 200 döndü. Geçmiş borç $22.46 ve panelde görülen ay içi tahmini kullanım $0.86 silinmez.
+- Önceki barındırma kaynakları kalıcı olarak silindi; Oracle IP'sine HTTPS readiness 200 döndü. Kapanmış sağlayıcı hesabındaki geçmiş borç ve tahmini kullanım bu geçişin parçası değildir.
 
 Oracle'da yeni yazmalar başladıktan sonra yalnız DNS'i geri çevirmek güvenli bir geri dönüş değildir; önce veri farkı uzlaştırılmalıdır. PayTR kapsam dışıdır.

@@ -186,16 +186,24 @@ namespace CashTracker.Tests
             Assert.Equal(periodEnd, quote.EffectiveAt);
         }
 
-        [Fact]
-        public async Task FakeProvider_CreatesDeterministicCheckoutFromServerQuote()
+        [Theory]
+        [InlineData(PlanKodlari.IsletmeBaslangic, HesapTipleri.Isletme, 0, 690)]
+        [InlineData(PlanKodlari.MuhasebeciStandart, HesapTipleri.Muhasebeci, 2, 999)]
+        [InlineData(PlanKodlari.MuhasebeciPro, HesapTipleri.Muhasebeci, 0, 1499)]
+        public async Task FakeProvider_CreatesDeterministicCheckoutForLaunchVariants(
+            string planCode,
+            string accountType,
+            int extraCustomerCredits,
+            decimal expectedNetAmount)
         {
             var provider = new FakePaymentProvider(Secret);
             var quote = new PaymentPricingService().CreateQuote(
-                PlanKodlari.IsletmeBaslangic,
-                HesapTipleri.Isletme,
-                PaymentBillingPeriods.Monthly);
+                planCode,
+                accountType,
+                PaymentBillingPeriods.Monthly,
+                extraCustomerCredits);
             var request = new PaymentCheckoutRequest(
-                "checkout-1",
+                $"checkout-{planCode}-{extraCustomerCredits}",
                 quote,
                 "business-1",
                 "test@systemcel.local",
@@ -208,6 +216,8 @@ namespace CashTracker.Tests
 
             Assert.Equal(first.ProviderSessionId, second.ProviderSessionId);
             Assert.Equal("Fake", first.Provider);
+            Assert.Equal(expectedNetAmount, quote.NetAmount);
+            Assert.Equal(extraCustomerCredits, quote.ExtraCustomerCredits);
             Assert.Equal(quote.TrialDays, (first.FirstChargeAt!.Value.Date - DateTime.UtcNow.Date).Days);
         }
 

@@ -92,6 +92,21 @@ else {
     }
 }
 
+$publicConfig = Get-Response "/api/public/config"
+Assert-Status $publicConfig 200 "public config"
+if ([string]$publicConfig.Headers["Content-Type"] -notmatch "application/json") {
+    Add-Failure "Public config response is not JSON"
+}
+else {
+    $parsedConfig = $publicConfig.Content | ConvertFrom-Json
+    if ([string]::IsNullOrWhiteSpace([string]$parsedConfig.environmentName) -or $parsedConfig.clerk.enabled -ne $true) {
+        Add-Failure "Public environment or Clerk configuration is missing"
+    }
+    else {
+        Add-Pass "Public environment: $($parsedConfig.environmentName); Clerk enabled"
+    }
+}
+
 $untrusted = Get-Response "/api/health/live" "OPTIONS" @{
     Origin = "https://untrusted.invalid"
     "Access-Control-Request-Method" = "GET"
@@ -115,7 +130,7 @@ else {
 }
 
 if ($failures.Count -gt 0) {
-    throw "Staging gate failed with $($failures.Count) error(s)."
+    throw "Public gate failed with $($failures.Count) error(s)."
 }
 
-Write-Output "Staging gate passed for $base"
+Write-Output "Public gate passed for $base"

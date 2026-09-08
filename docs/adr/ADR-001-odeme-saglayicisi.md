@@ -2,7 +2,7 @@
 
 - **Tarih:** 22 Temmuz 2026
 - **Son güncelleme:** 1 Ağustos 2026
-- **Durum:** PayTR seçildi; sağlayıcıdan bağımsız hazırlık ve sahte sağlayıcı testleri şirket kuruluşundan önce, gerçek PayTR doğrulaması üye işyeri hesabından sonra yapılacak.
+- **Durum:** Superseded. Lansman kapsamı şirket ve gerçek sağlayıcı kapıları tamamlanana kadar `Fake` ödeme sağlayıcısı ve anlık ücretli aboneliktir; PayTR kararı gelecekteki entegrasyon için korunur.
 - **Karar sahibi:** Systemcel
 
 ## Bağlam
@@ -34,16 +34,12 @@ Entegrasyon aşağıdaki sınırlarla geliştirilecek:
 
 ## Kesinleşen ürün ve tahsilat kuralları
 
-- İşletmeler için ücretli planlarda **30 günlük kartlı deneme** uygulanır.
-- Muhasebeciler için ücretli planlarda **14 günlük kartlı deneme** uygulanır.
+- Lansmanda ücretsiz deneme yoktur. Abonelik, açık onay ve başarılı anlık tahsilatla başlar.
+- Bu ADR'nin eski işletme ve muhasebeci deneme süreleri superseded edilmiştir; yeni ürün kapsamı [`docs/product-scope.md`](../product-scope.md) içindedir.
 - Muhasebeciler için kalıcı ücretsiz plan sunulmaz. Mevcut ücretsiz kayıtlar veri kaybetmeden kısıtlı geçiş durumuna alınır.
 - Ücretli planların aylık/yıllık fiyatı mevcut plan kataloğundan gelir.
-- İlk kartlı deneme ve checkout yalnızca aylık faturalamayla başlatılır. Kullanıcı aboneliği başladıktan sonra yıllık döneme geçebilir.
-- Deneme başlangıcında karttan ücret çekilmez. Deneme bitiş tarihi, ilk çekilecek aylık plan tutarı, KDV ve iptal yolu ayrı onay metninde gösterilir.
-- Muhasebeci Standart plana 10 müşteri dahildir. 11. müşteri ve sonrası için muhasebecinin açıkça satın aldığı her `+1 müşteri kredisi` kapasiteyi bir artırır; kredi ana abonelikle birlikte yinelenir ve aylıkta kredi başına KDV hariç 50 TL'dir.
+- İlk checkout aylık veya yıllık dönemle başlatılabilir. Muhasebeci Standart plana 10 müşteri dahildir. 11. müşteri ve sonrası için muhasebecinin açıkça satın aldığı her `+1 müşteri kredisi` kapasiteyi bir artırır; kredi ana abonelikle birlikte yinelenir ve aylıkta kredi başına KDV hariç 50 TL'dir.
 - Yıllık plana sonradan geçildiğinde müşteri kredileri de Standart planla aynı %16 yıllık avantajla kredi başına KDV hariç 504 TL/yıl olarak yinelenir.
-- Deneme bitmeden 7 ve 3 gün önce uygulama içi ve e-posta hatırlatması gönderilir.
-- Deneme sırasında iptal edilen hesap deneme sonuna kadar kullanılır; deneme sonunda çekim yapılmaz.
 - Aylık plandan daha yüksek bir plana geçiş anında uygulanır. Kullanılmayan dönem bedeli gün bazında kredi olarak düşülür, yeni planın kalan dönem farkı tahsil edilir.
 - Yıllık plandan daha yüksek bir yıllık plana geçiş anında uygulanır ve aynı gün bazlı mahsup kuralı kullanılır.
 - Aylıktan yıllığa geçiş anında uygulanır; kullanılmayan aylık bedel yıllık toplamdan kredi olarak düşülür.

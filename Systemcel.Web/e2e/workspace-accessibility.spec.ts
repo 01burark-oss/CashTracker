@@ -54,11 +54,12 @@ test.describe("workspace accessibility", () => {
     const duration = await control.evaluate(button => new Promise<number>(resolve => {
       const panel = document.querySelector(".settings-appearance")!;
       const onTransition = (event: Event) => {
-        if ((event as TransitionEvent).propertyName !== "background-color") return;
-        panel.removeEventListener("transitionrun", onTransition);
-        resolve(Number(getComputedStyle(panel).transitionDuration.split(",")[0].replace("s", "")) * 1000);
+        const transitionEvent = event as TransitionEvent;
+        if (transitionEvent.target !== panel || transitionEvent.propertyName !== "background-color") return;
+        panel.removeEventListener("transitionend", onTransition);
+        resolve(transitionEvent.elapsedTime * 1000);
       };
-      panel.addEventListener("transitionrun", onTransition);
+      panel.addEventListener("transitionend", onTransition);
       (button as HTMLButtonElement).click();
     }));
     expect(duration).toBe(150);

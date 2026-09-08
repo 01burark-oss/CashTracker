@@ -1,6 +1,6 @@
-# Oracle Always Free dağıtım adayı
+# Oracle Always Free canlı dağıtımı
 
-Bu klasör, mevcut DigitalOcean yayınını bozmadan Systemcel'i Oracle Cloud Always Free ARM64 sunucusunda hazırlamak için ayrıdır. DNS değişikliği ve canlı trafik geçişi bu paketin otomatik bir parçası değildir.
+Bu klasör Systemcel'in güncel canlı Oracle Cloud Always Free ARM64 dağıtımını içerir. DigitalOcean kaynakları silinmiştir; geri dönüş hedefi değildir. DNS yönetimi ve sunucu dışı yedek aktarımı bu paketin otomatik bir parçası değildir.
 
 ## Hazırlanan sunucu
 
@@ -32,9 +32,9 @@ cp .env.example .env
 chmod 600 .env
 ```
 
-`.env` içine mevcut production Clerk değerleri, sabit şifreleme anahtarı ve güçlü PostgreSQL parolası girilmelidir. PayTR onayı gelene kadar `SYSTEMCEL_PAYMENT_PROVIDER=Unconfigured` kalmalıdır.
+`.env` içine production Clerk değerleri, sabit şifreleme anahtarı ve güçlü PostgreSQL parolası girilmelidir. Şirket ve gerçek sağlayıcı kapısı açılana kadar `SYSTEMCEL_PAYMENT_PROVIDER=Fake` kullanılmalıdır.
 
-İlk IP tabanlı doğrulamada `CADDY_SITE_ADDRESS=http://89.168.102.124` kullanılır. DNS geçişinde değer `systemcel.app` yapılır; Caddy alan adı sunucuya çözüldüğünde sertifikayı otomatik alır.
+Canlı değer `CADDY_SITE_ADDRESS=systemcel.app` olmalıdır; Caddy alan adı sunucuya çözüldüğünde sertifikayı otomatik alır. Doğrudan IP yalnız arıza ayırma amacıyla ve TLS alan adı doğrulaması korunarak kullanılmalıdır.
 
 ## Dağıtım ve doğrulama
 
@@ -46,7 +46,7 @@ curl --fail https://systemcel.app/api/health/ready
 ./scripts/smoke.sh http://127.0.0.1:8080
 ```
 
-Canlı geçiş yapılmadan önce mevcut DigitalOcean PostgreSQL verisi ve `/var/lib/systemcel` dosyaları kontrollü bakım penceresinde taşınmalı; kayıt sayıları, dosya hashleri, Clerk oturumu ve tenant izolasyonu doğrulanmalıdır.
+2 Eylül 2026 veri taşıması ve geri yükleme kontrolü tamamlanmıştır. Güncel kanıt ve açık kapılar için `MIGRATION-STATUS.md` kullanılır; eski sağlayıcıdan yeniden veri alınmaz.
 
 ## Yedekleme
 
@@ -67,7 +67,7 @@ sudo journalctl -u systemcel-backup.service --no-pager -n 20
 
 Betik PostgreSQL özel-format dump, uygulama verisi arşivi ve bu iki dosyayı kapsayan SHA-256 manifesti üretir. Tamamlanmamış çıktıları yayınlamaz; dump listesini, arşivi ve checksum'ları oluşturma sırasında doğrular. Yerel diskteki 14 günden eski `systemcel-*` yedeklerini temizler. Kalıcı işletim için bu çıktılar ayrıca şifreli, sunucu dışı nesne depolamaya kopyalanmalıdır; aynı diskteki yedek tek başına felaket kurtarma sayılmaz.
 
-Canlı geçişte son ve tutarlı kopyayı almak için uygulama yazmalarını kısa süreli durduran seçenek kullanılmalıdır:
+Planlı bakımda tutarlı bir kopya almak için uygulama yazmalarını kısa süreli durduran seçenek kullanılabilir:
 
 ```bash
 ./scripts/backup.sh --quiesce
@@ -86,13 +86,12 @@ Geri yükleme betiği bilerek etkileşimli ve yıkıcı işlem uyarılıdır:
 
 Üç dosya aynı klasörde ve aynı zaman damgasıyla bulunmalıdır. Betik yıkıcı işleme başlamadan önce manifesti, dump yapısını ve arşiv yollarını doğrular; ardından `app` ile `caddy` servislerini kapatır. PostgreSQL geri yüklemesi hata verirse web servisleri kapalı kalır ve bozuk/eksik veri trafik almaz. Başarılı işlem sonunda veritabanı sorgusu ve yerel smoke testi otomatik çalışır.
 
-## Canlı geçiş kapıları
+## Canlı işletim kapıları
 
-1. ARM64 image build ve readiness kontrolü geçmeli.
-2. DigitalOcean'dan alınan PostgreSQL dump deneme geri yüklemesinde doğrulanmalı.
-3. Uygulama veri klasörü dosya sayısı ve hash ile karşılaştırılmalı.
-4. Clerk production giriş, OAuth callback ve tenant izolasyonu test edilmeli.
-5. SMTP ve Telegram kontrollü test edilmeli.
-6. DNS TTL düşürülmeli, son veri senkronu için kısa yazma kesintisi uygulanmalı.
-7. `systemcel.app` Oracle IP'sine çevrilip HTTPS ve smoke testleri geçmeli.
-8. Geri dönüş süresi boyunca DigitalOcean kaynağı silinmemeli.
+Tamamlanan taşıma kanıtı `MIGRATION-STATUS.md` dosyasındadır. Açık işletim kapıları şunlardır:
+
+1. Yeni Clerk kimliğiyle kayıt, gerçek oturum, provision, kolay kurulum ve tenant izolasyonu.
+2. Gerçek SMTP teslimi ve kontrollü bildirim kanıtı.
+3. Şifreli, taşınabilir ve otomatik sunucu dışı yedek aktarımı.
+4. CPU, RAM, disk, container restart ve yedek yaşı alarmları.
+5. Sınırlı gerçek kullanıcı ve fiziksel iPhone/Safari pilotu.

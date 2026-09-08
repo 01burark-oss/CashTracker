@@ -1,6 +1,6 @@
 # Systemcel — Kompakt Yapılacaklar
 
-> Son güncelleme: 17 Ağustos 2026
+> Son güncelleme: 8 Eylül 2026
 > Kural: Tamamlanan paketler bu dosyada ayrıntılı günlük olarak tutulmaz; yalnız kısa özet bırakılır.
 > PayTR başvurusu, test mağazası, sandbox ve gerçek kart tahsilatı şirket kuruluşundan önce açılmaz.
 
@@ -28,7 +28,7 @@
 
 ### Teknik olarak şimdi yapılabilir
 
-- [ ] DigitalOcean staging'de API ve web'i ayrı bileşenlere ayır; PostgreSQL yalnız API'ye açık kalsın.
+- [x] Oracle Docker/Caddy/PostgreSQL düzeninde app, Caddy ve PostgreSQL sağlık ve ağ izolasyonu doğrulandı; genel HTTP kapısı 8 Eylül 2026'da geçti.
 - [ ] Sıfırdan yeni kimlikle Clerk kayıt → provision → kolay kurulum smoke testi çalıştır.
 - [ ] Gerçek SMTP teslimini doğrula; fiyat/yenileme bildirimlerinin gönderim kanıtını kaydet.
 - [x] Muhasebeci pilotunu; profil görseli yükleme, yönetici onayı, müşteri eşleşmesi ve çalışma alanı geçişiyle tamamla.
@@ -37,7 +37,8 @@
 
 ### Kullanıcı, maliyet veya dış koordinasyon gerektirir
 
-- [ ] DigitalOcean PITR ile yeni PostgreSQL cluster oluştur, uygulamayı yeni cluster'a geçir ve geri dönüşü dene.
+- [x] Oracle yedeği ayrı veritabanına geri yüklendi; checksum ve geri yükleme kontrolü 2 Eylül 2026'da geçti.
+- [ ] Günlük Oracle yedeğini kullanıcı profiline bağlı olmayan, taşınabilir ve otomatik sunucu dışı hedefe aktar.
 - [ ] Sınırlı gerçek kullanıcı pilotunu tamamla; hata oranı, aktivasyon ve destek yüküne göre genel yayın kararı ver.
 
 ### Şirket kuruluşundan sonra
@@ -56,7 +57,8 @@
 - [x] Abonelik özeti, plan hakları, ödeme geçmişi, açık onay penceresi ve dönem sonu iptal ekranı tamamlandı.
 - [x] Fatura, kullanıcı, işletme, gelir-gider, cari, ürün/hizmet ve muhasebeci müşteri limitleri API'de transaction-safe uygulanıyor.
 - [x] AES-256-GCM, tenant sınırları, rate limit, güvenlik başlıkları, dar CORS, dosya imza/boyut ve ZIP bombası kontrolleri tamamlandı.
-- [x] DigitalOcean encrypted secret, dar PostgreSQL kullanıcısı/trusted source, liveness/readiness ve CPU/RAM/restart alarmları doğrulandı.
+- [x] Oracle secret'ları, private PostgreSQL ağı, liveness/readiness, container durumu ve günlük yedek timer'ı doğrulandı.
+- [ ] Oracle CPU, RAM, disk, container restart ve yedek yaşı alarmlarını `docs/runbooks/monitoring.md` eşiklerine göre kur.
 - [x] Mobil kayıt/çıkış, sohbet arşiv yarışı ve eski mavi tema regresyonları kapatıldı.
 - [x] Landing plan/rol/dönem seçimi uygulamaya taşınıyor; aylık kartlar ilk 3 ay ve sonraki fiyatı, yıllık kartlar toplam tutar ve gerçek tasarrufu gösteriyor; muhasebeci kartları masaüstünde merkez, mobilde tek sütun.
 - [x] CI; .NET, Vitest, Playwright cihaz matrisi, lint, typecheck, PostgreSQL smoke, Docker build, zafiyet ve secret taramasını çalıştırıyor.
@@ -90,8 +92,8 @@
 - [ ] Müşteri sohbetinde dosya yükleme.
 - [x] Pazaryeri profili ve işletme eşleşmesi.
 - [x] Standart aylık seçim, açık onay, Fake ödeme, plan dönemi/hakları ve ödeme geçmişi.
-- [ ] Pro planı ve ek müşteri kredisi varyasyonları.
-- [ ] Başka tenant verisine URL/kimlik değiştirerek erişememe.
+- [x] Pro ve Standart + ek müşteri kredisi fiyatları ile Fake checkout varyasyonları kalıcı testlerle doğrulandı.
+- [x] Yabancı işletme kimliğiyle okuma, aktif etme, yeniden adlandırma ve silme girişimleri regresyon testiyle reddediliyor.
 
 ### Ortak kalite kapıları
 
@@ -102,7 +104,7 @@
 
 ### Canlı pilotta kalan somut engeller
 
-- DigitalOcean'a canlı AI anahtarı eklenmeli.
+- Oracle'a canlı AI anahtarı eklenmeli.
 - Gerçek SMTP teslim kanıtı ve sıfırdan yeni kimlik smoke'u alınmalı.
 
 ## 5. P1 — P0 sonrasında öncelik
@@ -130,7 +132,7 @@
 
 - Canlı alan: `https://systemcel.app`
 - Şirket öncesi ödeme sağlayıcısı: `Fake`
-- Canlı uygulama ortamı şu an `Staging`; genel yayın kararı verilmeden `Production` yapılmaz.
+- Canlı uygulama Oracle üzerinde çalışır; genel yayın kararı verilmeden ödeme sağlayıcısı `Fake` kalır.
 - PostgreSQL yalnız `systemcel_app` kullanıcısı ve uygulama trusted source'u üzerinden erişilir.
 - OneDrive dışı geri alınabilir geliştirme önbelleği: `C:\Users\Windows\AppData\Local\SystemcelCacheBackups\20260810-1615`
 - `YAPILACAKLAR.md` kullanıcı isteği gereği commit edilmez.

@@ -2,7 +2,7 @@
 
 > Hukuk onayı kullanıcı tarafından 31 Ağustos 2026'da bildirildi. Hizmet sağlayıcı Burak Özmen (şahıs işletmesi) olarak doğrulandı. Kaynak metinlerdeki taslak ibareleri kaldırıldı; vergi, adres ve resmî iletişim alanları henüz sağlanmadığı için yayım hazırlığı tamamlanmış sayılmıyor.
 >
-> Teknik sürüm tarihi: 31 Ağustos 2026
+> Teknik sürüm tarihi: 8 Eylül 2026
 
 ## 1. Hizmet sağlayıcı bilgileri
 
@@ -38,7 +38,7 @@ Yayındaki bir metin anlamlı biçimde değiştiğinde sürümü değiştirilmel
 - KVKK aydınlatma metni bilgi verme yükümlülüğüdür; tek başına “açık rıza” kutusu gibi sunulmamalıdır.
 - Sözleşmenin kurulması/ifası, hukuki yükümlülük ve meşru menfaat kapsamındaki zorunlu işlemler pazarlama rızasına bağlanmamalıdır.
 - Pazarlama, reklam, hassas veri veya zorunlu olmayan yurt dışı aktarım gibi ayrı rıza gerektirebilecek bir özellik eklenirse amaç bazlı, boş varsayılan ve geri alınabilir ayrı bir tercih oluşturulmalıdır.
-- Mevcut üründe reklam/pazarlama çerezi veya analitik SDK bulunmadığından zorunlu olmayan çerez onay bandı açılmamıştır.
+- Google Analytics yalnız kullanıcının ayrı ve boş varsayılan tercihiyle yüklenir. Ret halinde analitik script'i yüklenmez.
 
 ## 4. Çerez ve tarayıcı depolama envanteri
 
@@ -48,16 +48,18 @@ Yayındaki bir metin anlamlı biçimde değiştiğinde sürümü değiştirilmel
 | `systemcel.language` | localStorage | Dil tercihi | Tercih | Kullanıcı temizleyene kadar |
 | `systemcel.accountTypeIntent` | localStorage | Kayıt/kurulum hedef rolünü koruma | İşlevsel | Kurulum tamamlanınca silinir |
 | Uygulamanın geçici UI tercihleri | localStorage / memory | Ekran tercihleri ve güvenli yönlendirme | İşlevsel | İlgili akış bitince veya kullanıcı temizleyince |
+| `systemcel.analyticsConsent` | localStorage | Google Analytics izin veya ret tercihini saklama | Tercih | Kullanıcı tarayıcı verisini temizleyene kadar |
+| Google Analytics (`_ga` ve sağlayıcının ürettiği ilişkili anahtarlar) | Çerez / tarayıcı verisi | İzin veren kullanıcılar için ziyaret ölçümü | Zorunlu değil | Google yapılandırması ve kullanıcı tercihiyle sınırlı |
 
-Yeni analitik, reklam, A/B testi veya üçüncü taraf widget eklenmeden önce bu tablo güncellenmeli; zorunlu olmayan depolama kullanıcı tercihinden önce başlatılmamalıdır.
+Yeni reklam, A/B testi veya üçüncü taraf widget eklenmeden önce bu tablo güncellenmeli; zorunlu olmayan depolama kullanıcı tercihinden önce başlatılmamalıdır.
 
 ## 5. Hukuk danışmanına verilecek karar listesi
 
 1. Ürünün B2B/B2C kullanıcı ayrımı ve tüketici mevzuatının hangi senaryolarda uygulanacağı.
 2. Dijital hizmette cayma hakkı, hizmetin hemen ifası ve iade yaklaşımının nihai dili.
-3. Deneme sonunda otomatik tahsilat ve 7/3 günlük hatırlatmanın yeterliliği.
+3. Anlık ücretli abonelikte açık onay, KDV, yenileme ve dönem sonu iptal dilinin yeterliliği.
 4. KVKK hukuki sebepleri, veri saklama süreleri, yurt dışı aktarım mekanizması ve veri işleyen sözleşmeleri.
-5. Clerk, DigitalOcean, e-posta, ödeme ve isteğe bağlı GİB/Telegram/AI sağlayıcıları için aktarım ve alt işleyen listesi.
+5. Clerk, Oracle Cloud, Google Analytics, e-posta, ödeme ve isteğe bağlı GİB/Telegram/AI sağlayıcıları için aktarım ve alt işleyen listesi.
 6. Muhasebeci–işletme çalışma alanında veri sorumlusu/veri işleyen rollerinin sınırı.
 7. Destek, güvenlik olayı, veri sahibi başvurusu, hesap kapatma ve kayıt silme süreleri.
 
@@ -66,5 +68,5 @@ Yeni analitik, reklam, A/B testi veya üçüncü taraf widget eklenmeden önce b
 - Tüm köşeli parantezli alanlar doldurulmadan metinler “nihai” işaretlenmez.
 - Hukuk onayı, onaylanan dosyanın sürümü ve tarihiyle kayda geçirilir.
 - Canlı ödeme sağlayıcısının adı, tahsilat/iade yolu ve iletişim bilgileri checkout metniyle karşılaştırılır.
-- Test hesabında kayıt → yasal metin → deneme/ödeme onayı → iptal → kabul kanıtı uçtan uca doğrulanır.
+- Test hesabında kayıt → yasal metin → ödeme onayı → iptal → kabul kanıtı uçtan uca doğrulanır.
 - Yayımdan sonra kullanıcıya gösterilen metin ile veritabanındaki metin özeti aynı olmalıdır.
