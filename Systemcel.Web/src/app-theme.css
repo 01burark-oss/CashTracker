@@ -6113,10 +6113,10 @@
 }
 
 :root[data-theme] .stock-actions {
-  margin: 16px -18px 0;
-  padding: 14px 18px 16px;
+  margin: 16px 0 0;
+  padding: 16px 0 0;
   border-top: 1px solid var(--sc-line);
-  background: rgba(242, 240, 231, .48);
+  background: transparent;
 }
 
 :root[data-theme] .stock-actions .stock-btn--primary {
@@ -6310,8 +6310,8 @@
 
   :root[data-theme] .stock-actions {
     grid-template-columns: 1fr;
-    margin-inline: -14px;
-    padding-inline: 14px;
+    margin-inline: 0;
+    padding-inline: 0;
   }
 
   :root[data-theme] .stock-actions .stock-btn--primary {

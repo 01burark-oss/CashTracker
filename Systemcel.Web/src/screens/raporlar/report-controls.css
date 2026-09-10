@@ -1,6 +1,11 @@
+:root[data-theme] .reports-form-grid--period {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 360px);
+}
+
 :root[data-theme] .reports-period-picker {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 100px;
+  grid-template-columns: minmax(150px, 1fr) minmax(112px, .65fr);
   gap: 12px;
   min-width: 0;
   padding: 0;
@@ -27,4 +32,10 @@
   max-width: none;
   margin: 0 0 16px;
   pointer-events: auto;
+}
+
+@media (max-width: 420px) {
+  :root[data-theme] .reports-period-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

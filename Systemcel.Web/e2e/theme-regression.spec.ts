@@ -38,6 +38,63 @@ for (const theme of ["light", "dark"] as const) {
     const telegramBrand = page.locator(".telegram-btn--primary");
     await expect(telegramBrand).toHaveCSS("background-color", "rgb(34, 158, 217)");
   });
+
+  test(`${theme} stock actions stay integrated with the editor`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Deterministic CSS regression project");
+
+    for (const viewport of [{ width: 1366, height: 768 }, { width: 320, height: 720 }]) {
+      await page.setViewportSize(viewport);
+      await loadThemeFixture(page, theme);
+
+      const stockActions = page.locator(".stock-actions");
+      await stockActions.scrollIntoViewIfNeeded();
+      const styles = await stockActions.evaluate((element) => {
+        const computed = getComputedStyle(element);
+        return {
+          backgroundColor: computed.backgroundColor,
+          marginLeft: computed.marginLeft,
+          marginRight: computed.marginRight
+        };
+      });
+
+      expect(styles, `${viewport.width}px stok işlem alanı karttan kopuk görünmemeli`).toEqual({
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        marginLeft: "0px",
+        marginRight: "0px"
+      });
+      if (process.env.SYSTEMCEL_VISUAL_QA)
+        await page.locator(".stock-workbench").screenshot({ path: testInfo.outputPath(`stock-${theme}-${viewport.width}.png`) });
+    }
+  });
+
+  test(`${theme} report period controls keep readable widths`, async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium", "Deterministic CSS regression project");
+
+    for (const viewport of [{ width: 1366, height: 768 }, { width: 320, height: 720 }]) {
+      await page.setViewportSize(viewport);
+      await loadThemeFixture(page, theme);
+
+      const periodPicker = page.locator(".reports-period-picker");
+      await periodPicker.scrollIntoViewIfNeeded();
+      const dimensions = await periodPicker.evaluate((element) => {
+        const select = element.querySelector("select")!;
+        const input = element.querySelector("input")!;
+        const selectRect = select.getBoundingClientRect();
+        const inputRect = input.getBoundingClientRect();
+        return {
+          selectWidth: selectRect.width,
+          inputWidth: inputRect.width,
+          rightEdge: Math.max(selectRect.right, inputRect.right)
+        };
+      });
+
+      expect(dimensions.selectWidth, `${viewport.width}px ay seçimi kırpılmamalı`).toBeGreaterThanOrEqual(116);
+      expect(dimensions.inputWidth, `${viewport.width}px yıl alanı okunabilir olmalı`).toBeGreaterThanOrEqual(96);
+      expect(dimensions.rightEdge, `${viewport.width}px dönem alanları ekrandan taşmamalı`).toBeLessThanOrEqual(viewport.width);
+      if (process.env.SYSTEMCEL_VISUAL_QA)
+        await page.locator(".reports-card").last().screenshot({ path: testInfo.outputPath(`reports-${theme}-${viewport.width}.png`) });
+    }
+  });
 }
 
 async function loadThemeFixture(page: Page, theme: "light" | "dark") {
@@ -100,6 +157,28 @@ async function loadThemeFixture(page: Page, theme: "light" | "dark") {
               <span class="billing-status billing-status--warning" data-theme-surface>Bekliyor</span>
               <p class="billing-inline-error" data-theme-surface>Plan güncellenemedi.</p>
             </section>
+            <section class="stock-page">
+              <article class="stock-card stock-workbench">
+                <div class="stock-workbench__panel">
+                  <div class="stock-actions">
+                    <button class="stock-btn" type="button">Yeni</button>
+                    <button class="stock-btn stock-btn--danger" type="button">Sil</button>
+                    <button class="stock-btn stock-btn--primary" type="button">Kaydet</button>
+                  </div>
+                </div>
+              </article>
+            </section>
+            <section class="reports-page">
+              <article class="reports-card">
+                <div class="reports-form-grid reports-form-grid--package reports-form-grid--period">
+                  <fieldset class="reports-period-picker">
+                    <legend>Dönem</legend>
+                    <label><span>Ay</span><select aria-label="Dönem Ay"><option>Eylül</option></select></label>
+                    <label><span>Yıl</span><input aria-label="Dönem Yıl" value="2026" /></label>
+                  </fieldset>
+                </div>
+              </article>
+            </section>
           </main>
         </div>
       </body>
@@ -109,6 +188,7 @@ async function loadThemeFixture(page: Page, theme: "light" | "dark") {
   await page.addStyleTag({ path: "src/app-theme.css" });
   await page.addStyleTag({ path: "src/screens/urun-stok/hizli-satis.css" });
   await page.addStyleTag({ path: "src/screens/billing/billing.css" });
+  await page.addStyleTag({ path: "src/screens/raporlar/report-controls.css" });
   await expect(page.locator(".settings-btn--green")).toHaveCSS("background-color", "rgb(200, 255, 0)");
 }
 
