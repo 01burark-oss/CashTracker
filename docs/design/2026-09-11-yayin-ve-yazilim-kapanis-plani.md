@@ -1,6 +1,6 @@
 # Systemcel yayın ve yazılım kapanış planı
 
-Tarih: 11 Eylül 2026. Durum: önerilen uygulama planı.
+Tarih: 11 Eylül 2026. Durum: yazılım uygulaması başladı; dış doğrulama kapıları açık.
 
 Bu plan yeni kullanıcı kaydı, tenant izolasyonu, sunucu dışı yedek, Oracle alarmları ve gerçek cihaz/kullanıcı pilotunu kapatır; kod taramasında görülen diğer yazılım işlerini de sıraya koyar. Şirket kuruluşu, başvurular ve hukuk işlemleri kapsam dışıdır. Bunlara bağlı teknik entegrasyonlar ayrıca gösterilir.
 
@@ -11,10 +11,26 @@ Bu plan yeni kullanıcı kaydı, tenant izolasyonu, sunucu dışı yedek, Oracle
 - Son kayıtlı canlı altyapı doğrulaması 8 Eylül tarihlidir. DNS, HTTPS ve health/readiness başarılı; gerçek yeni Clerk kimliğiyle uçtan uca kayıt hâlâ açık. Bu plan hazırlanırken canlı ortam yeniden test edilmedi.
 - Oracle günlük yerel yedeği ve ayrı veritabanına geri yükleme kanıtı var. Otomatik sunucu dışı aktarım yok; Windows DPAPI kopyası başka bir kullanıcı profiliyle kurtarma kanıtı değildir.
 - CI test/build yapıyor; Oracle'a otomatik yayın yapmıyor. Geçiş kaydı `oracle-production-candidate` etiketini bildiriyor. Etiket değiştirmek tek başına kabul ölçütü değildir.
-- Stok işlem çubuğu ve rapor alanları için önceki turda doğrulanan üç dosya hâlâ çalışma ağacında değişmiş durumda. Yayın adayı hazırlanırken bu değişikliklerin dahil edildiği commit açıkça belirlenmeli.
+- Stok işlem çubuğu, rapor alanları ve bu plan `48d76c7` commit'inde kaydedildi. Bu commit henüz tek başına canlıya dağıtım veya yayın kapısı kanıtı değildir.
 - Aşağıdaki kod/test referansları implementasyonun varlığını gösterir. Testlerin bu turda yeniden geçtiği veya özelliğin canlıda doğrulandığı anlamına gelmez.
 
 Kaynaklar: [Geçiş durumu](../../deployment/oracle-free/MIGRATION-STATUS.md), [CI](../../.github/workflows/ci.yml), [release runbook](../runbooks/release.md).
+
+### 11 Eylül 2026 uygulama kaydı
+
+Şirket veya sağlayıcı hesabı gerektirmeyen ilk yazılım paketi uygulandı. Aşağıdaki durumlar kod/test tamamlanması ile gerçek ortam kabulünü bilinçli olarak ayırır:
+
+| Paket | Yerel yazılım durumu | Kalan gerçek ortam kabulü |
+|---|---|---|
+| K0/K8 | Tam SHA'ya bağlı kanıt şeması, üretici/doğrulayıcı, public smoke ve dağıtım yapmayan kontrollü release-bundle workflow'u eklendi. Developer API adresi `https://systemcel.app/api/v1` olarak düzeltildi. | Workflow artifact'ının aday SHA için üretilmesi, Oracle'a kontrollü dağıtım ve izole rollback provası. |
+| K3 | `rclone crypt` zorunlu uzak aktarım; kilit, retry, immutable paket, indirerek checksum kontrolü, en son yazılan tamamlanma işareti, atomik başarı durumu ve uzak kanıta bağlı güvenli yerel retention eklendi. Bash syntax ve sahte-rclone hata/idempotency fixture'ları geçti. | Nesne depolama ve anahtar/IAM kararı; üç ardışık gerçek uzak yedek; yalnız uzak kopyadan bağımsız restore ve ölçülen RPO/RTO. |
+| K4 | CPU, RAM, disk, readiness, PostgreSQL bağlantısı, container restart ve son doğrulanmış uzak yedek yaşını üreten Prometheus metin collector'ı ile systemd timer eklendi. Sahte Docker/readiness fixture'ı geçti. | Kalıcı metric backend/agent, VM dışı HTTPS probe, gerçek alarm ve düzelme teslimi, sorumlu/alıcı tanımı. |
+| K5 | Genel bildirim outbox'ına SMTP adaptörü bağlandı. Alıcı aktif kullanıcı ve aynı işletmedeki aktif üyelikle çözülüyor; snapshot uyuşmazlığı reddediliyor; eski deneme sender'ıyla mükerrer e-posta engellendi. | Gönderici alan adı ve canlı SMTP kimlik bilgileri; kontrollü gelen kutusunda teslim kanıtı. Güvenli tenant-kullanıcı chat eşleştirmesi olmadığı için genel Telegram kanalı etkinleştirilmedi. |
+| K10 | Fiyat artışı için değişmez dönem/tutar/metin/alıcı ve iki-kanal outbox kanıtı eklendi. Uygulama içi ve e-posta teslimleri yenilemeden en az 30 gün önce tamamlanmamışsa checkout eski dönem fiyatına düşüyor; dönem sonu iptal tahsilatı engelleniyor. Migration, aylık/yıllık, uzlaştırma sonrası yenileme ve tenant/alıcı regresyonları eklendi. | Fiyat değişikliği planlayan yönetim/job bağlantısı ile gerçek ödeme sağlayıcısının zamanlanmış tahsilat ve mutabakat yolunda aynı kuralın K11 ile doğrulanması. |
+| K1/K2/K6/K7/K9 | Kanıt şablonu ve kabul alanları hazır; mevcut otomatik regresyonlar korunuyor. | Gerçek Clerk/OAuth hesapları, iki kontrollü tenant, AI sağlayıcı erişimi, sohbet dosyası uçtan uca testi, fiziksel iPhone/Safari ve pilot katılımcıları. |
+| K11 | Bu turda uygulanmadı. | Şirket ve ödeme sağlayıcısı hesabı açıldıktan sonra gerçek adapter, sandbox/gerçek tahsilat, iade ve satış belgesi mutabakatı. |
+
+Yerel doğrulama kaydı: release-evidence Pester testleri 3/3; bildirim, fiyat koruma, migration ve lifecycle hedefli testleri 56/56; yedek/collector Bash fixture'ları başarılıdır. Ana masaüstü oturumunda .NET SDK ve çalışan Linux dağıtımı bulunmadığı için .NET/Bash sonuçları ilgili alt ajan çalışma ortamından alınmıştır; PowerShell parser, şema ve Pester kontrolleri ana oturumda da tekrar geçmiştir. Gerçek cloud, SMTP, Clerk, AI, iPhone, pilot, ödeme veya production deploy çağrısı yapılmadı.
 
 ## 2. Öncelik ve sıra
 
@@ -186,4 +202,4 @@ Bir geliştirici, hazır test hesapları ve erişimler varsayımıyla kaba sıra
 
 Her paket için tek kayıt tutulur: paket ID, aday commit SHA, ortam, UTC zaman, anonim senaryo/rol, beklenen sonuç, gerçekleşen sonuç, kanıt yolu ve varsa kalan engel. Fiziksel cihaz işlerinde cihaz/sürüm; yedekte uzak paket kimliği/checksum ve kurtarma süresi eklenir. Hassas kanıtlar herkese açık repoya konmaz.
 
-Kontrol kutusu yalnız kanıtla kapanır. Kodun mevcut olması, mock testinin geçmesi, health 200 veya commit/push tek başına canlı kabul değildir. Bu tur yalnız plan ve salt okunur envanter üretmiştir; yayın kapıları tamamlanmış olarak işaretlenmemiştir.
+Kontrol kutusu yalnız kanıtla kapanır. Kodun mevcut olması, mock testinin geçmesi, health 200 veya commit/push tek başına canlı kabul değildir. Bu tur üstteki yerel yazılım paketlerini ve kanıt araçlarını üretmiştir; dış erişim, gerçek cihaz ve pilot gerektiren yayın kapıları tamamlanmış olarak işaretlenmemiştir.

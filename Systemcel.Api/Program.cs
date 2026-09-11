@@ -184,6 +184,7 @@ builder.Services.AddSingleton<IPaymentProvider>(_ => paymentOptions.UsesFakeProv
     ? new FakePaymentProvider(paymentOptions.FakeSecret)
     : new UnconfiguredPaymentProvider());
 builder.Services.AddSingleton<ISubscriptionLifecycleService, SubscriptionLifecycleService>();
+builder.Services.AddSingleton<ISubscriptionPriceProtectionService, SubscriptionPriceProtectionService>();
 builder.Services.AddSingleton<IMuhasebeciOdemeService, MuhasebeciOdemeService>();
 builder.Services.AddSingleton<IPaymentReconciliationService, PaymentReconciliationService>();
 builder.Services.AddSingleton<ISubscriptionReminderSender>(_ => reminderEmailOptions.IsConfigured
@@ -200,7 +201,8 @@ builder.Services.AddSingleton<BildirimService>();
 builder.Services.AddSingleton<IBildirimService>(sp => sp.GetRequiredService<BildirimService>());
 builder.Services.AddSingleton<IBildirimOutboxService>(sp => sp.GetRequiredService<BildirimService>());
 builder.Services.AddSingleton<IBildirimKanalAdapter, UygulamaBildirimAdapter>();
-builder.Services.AddSingleton<IBildirimKanalAdapter>(_ => new YapilandirilmamisBildirimAdapter(BildirimKanallari.Eposta));
+builder.Services.AddSingleton<IEmailDeliveryClient, SmtpEmailDeliveryClient>();
+builder.Services.AddSingleton<IBildirimKanalAdapter, EpostaBildirimAdapter>();
 builder.Services.AddSingleton<IBildirimKanalAdapter>(_ => new YapilandirilmamisBildirimAdapter(BildirimKanallari.Telegram));
 builder.Services.AddSingleton<BildirimDeliveryService>();
 builder.Services.AddHostedService<BildirimDeliveryHostedService>();

@@ -30,7 +30,32 @@ This runbook covers the live Oracle VM deployment. It does not authorize live pa
 
 ## Post-deploy smoke
 
-Run `pwsh ./scripts/Test-SystemcelPublic.ps1 -BaseUrl https://systemcel.app` without displaying tokens or connection strings. Then verify Clerk sign-in, tenant isolation, subscription summary, VAT, explicit consent and period-end cancellation with a controlled test account. Record UTC time, commit SHA, tester and pass/fail result; do not record tokens, passwords, customer data or full request bodies.
+Run the public checks with the exact candidate SHA and write a sanitized result file:
+
+```powershell
+pwsh ./scripts/Test-SystemcelPublic.ps1 `
+  -BaseUrl https://systemcel.app `
+  -CandidateSha <40-character-sha> `
+  -EnvironmentName production `
+  -EvidencePath ./artifacts/public-smoke.json
+```
+
+The smoke covers liveness, readiness, security headers, public plan/config responses, CORS, and the canonical `https://systemcel.app/api/v1` authentication boundary. It does not authenticate, create an account, mutate customer data, or prove Clerk/tenant/pilot acceptance.
+
+Create the real-world checklist from the same candidate SHA, keep all unexecuted checks `pending`, and validate it before and after adding observations:
+
+```powershell
+pwsh ./scripts/New-SystemcelReleaseEvidence.ps1 -CandidateSha <40-character-sha> -EnvironmentName production -OutputPath ./artifacts/release-evidence.json
+pwsh ./scripts/Test-SystemcelReleaseEvidence.ps1 -Path ./artifacts/release-evidence.json
+```
+
+K1, K2, K6, K7 and K9 require controlled accounts, provider access, a physical device or pilot participants as stated in the generated checklist. An executed check needs an anonymous `actorLabel`, UTC time, actual result and a non-secret evidence reference. Do not record names, e-mail addresses, tokens, passwords, customer data or full request bodies.
+
+## Controlled release bundle
+
+The manually triggered `Release bundle` workflow accepts a full commit SHA from the default branch. It checks out that exact commit, rejects a mismatched or non-default-branch candidate, creates a source archive, manifest, SHA-256 checksum and pending evidence template, then uploads them as a 30-day artifact. The workflow never connects to Oracle and never deploys production.
+
+Before deployment, verify both the artifact checksum and the manifest's `candidateSha`. Record the deployed SHA separately in the evidence file; artifact creation alone is not deployment proof. GitHub Actions concurrency permits only one release bundle job at a time.
 
 ## Rollback and database recovery
 

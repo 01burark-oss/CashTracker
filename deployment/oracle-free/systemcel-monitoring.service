@@ -1,0 +1,12 @@
+[Unit]
+Description=Collect local Systemcel health metrics
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/systemcel/repo/deployment/oracle-free
+ExecStart=/bin/bash /opt/systemcel/repo/deployment/oracle-free/scripts/collect-monitoring.sh
+UMask=0077
+StateDirectory=systemcel-monitoring
+StateDirectoryMode=0750

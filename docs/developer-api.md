@@ -7,7 +7,7 @@ Developer API, Büyüme ve Kurumsal işletme planlarında salt okunur entegrasyo
 Her istekte anahtarı ayrı başlıkta gönderin:
 
 ```bash
-curl "https://app.systemcel.app/api/v1/invoices?page=1&pageSize=50" \
+curl "https://systemcel.app/api/v1/invoices?page=1&pageSize=50" \
   -H "X-Systemcel-Api-Key: sys_live_ORNEK_PREFIX_GIZLI_DEGER"
 ```
 

@@ -266,6 +266,12 @@ public sealed class BildirimService : IBildirimService, IBildirimOutboxService
 
     private static async Task EnqueueInternalAsync(CashTrackerDbContext db, int businessId, string userRef, BildirimKaydi row, string channel, DateTime now, CancellationToken ct)
     {
+        // Legacy trial reminders still have their own lifecycle sender. Letting the
+        // general outbox send the same snapshot would produce a second email.
+        if (channel == BildirimKanallari.Eposta &&
+            row.KaynakAnahtari.StartsWith("abonelik-deneme-", StringComparison.Ordinal))
+            return;
+
         var rawKey = $"bildirim:{businessId}:{userRef}:{row.KaynakAnahtari}";
         var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawKey))).ToLowerInvariant();
         if (await db.BildirimTeslimOutboxlari.AnyAsync(x => x.IsletmeId == businessId && x.KullaniciRef == userRef && x.Kanal == channel && x.IdempotencyAnahtari == key, ct)) return;

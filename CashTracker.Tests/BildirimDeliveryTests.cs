@@ -1,4 +1,6 @@
 using CashTracker.Core.Models;
+using CashTracker.Core.Entities;
+using CashTracker.Infrastructure.Payments;
 using CashTracker.Infrastructure.Persistence;
 using CashTracker.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -86,6 +88,47 @@ public sealed class BildirimDeliveryTests : IDisposable
         Assert.Equal("smtp_unavailable", row.SonHataKodu);
     }
 
+    [Fact]
+    public async Task EmailAdapter_ResolvesRecipientThroughActiveTenantMembership()
+    {
+        await using (var db = _factory.CreateDbContext())
+        {
+            var user = new Kullanici { AuthProviderUserId = "user-a", Eposta = "user-a@systemcel.local", AdSoyad = "A", Durum = "Aktif" };
+            db.Kullanicilar.Add(user);
+            await db.SaveChangesAsync();
+            db.IsletmeUyelikleri.Add(new IsletmeUyelik { IsletmeId = 7, KullaniciId = user.Id, Rol = "isletme_sahibi", Durum = "Aktif", DavetEposta = user.Eposta });
+            await db.SaveChangesAsync();
+        }
+        var client = new CapturingEmailClient();
+        var adapter = new EpostaBildirimAdapter(_factory, client, new SubscriptionReminderEmailOptions { Host = "smtp.test", FromAddress = "no-reply@systemcel.local" });
+        await adapter.SendAsync(new BildirimOutboxClaim(1, 7, "user-a", BildirimKanallari.Eposta,
+            "{\"Baslik\":\"Vade geçti\",\"Mesaj\":\"Ödeme bekliyor\",\"Url\":\"/app/faturalar\"}", "claim", 0));
+
+        Assert.Equal("user-a@systemcel.local", client.Recipient);
+        Assert.Equal("Vade geçti", client.Subject);
+        Assert.Contains("https://systemcel.app/app/faturalar", client.Body);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => adapter.SendAsync(new BildirimOutboxClaim(
+            2, 8, "user-a", BildirimKanallari.Eposta, "{\"Baslik\":\"X\",\"Mesaj\":\"Y\"}", "claim", 0)));
+    }
+
+    [Fact]
+    public async Task LegacyTrialSnapshot_DoesNotDuplicateLifecycleEmailSender()
+    {
+        await _service.SavePreferencesAsync(7, "user-a", new BildirimTercihModeli(
+            UygulamaAktif: true, EpostaAktif: true, TelegramAktif: false,
+            SessizSaatAktif: false, SessizBaslangicDakika: 1320, SessizBitisDakika: 480,
+            SaatDilimi: "Europe/Istanbul"));
+        await _service.SyncAndListAsync(7, "user-a", new[]
+        {
+            new BildirimSnapshot("abonelik-deneme-4-7", "abonelik", "orta", "Deneme", "7 gün kaldı", "İncele", "/app/abonelik")
+        });
+
+        await using var db = _factory.CreateDbContext();
+        Assert.Single(await db.BildirimTeslimOutboxlari.ToListAsync());
+        Assert.Equal(BildirimKanallari.Uygulama, (await db.BildirimTeslimOutboxlari.SingleAsync()).Kanal);
+    }
+
     public void Dispose()
     {
         try { if (File.Exists(_dbPath)) File.Delete(_dbPath); } catch { }
@@ -97,5 +140,20 @@ public sealed class BildirimDeliveryTests : IDisposable
         public Factory(string path) => _options = new DbContextOptionsBuilder<CashTrackerDbContext>().UseSqlite($"Data Source={path}").Options;
         public CashTrackerDbContext CreateDbContext() => new(_options);
         public Task<CashTrackerDbContext> CreateDbContextAsync(CancellationToken cancellationToken = default) => Task.FromResult(CreateDbContext());
+    }
+
+    private sealed class CapturingEmailClient : IEmailDeliveryClient
+    {
+        public bool IsConfigured => true;
+        public string Recipient { get; private set; } = string.Empty;
+        public string Subject { get; private set; } = string.Empty;
+        public string Body { get; private set; } = string.Empty;
+        public Task SendAsync(string recipient, string subject, string body, CancellationToken ct = default)
+        {
+            Recipient = recipient;
+            Subject = subject;
+            Body = body;
+            return Task.CompletedTask;
+        }
     }
 }

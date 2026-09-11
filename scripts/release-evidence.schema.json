@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://systemcel.app/schemas/release-evidence-v1.json",
+  "title": "Systemcel release and pilot evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "candidateSha", "environment", "recordedAtUtc", "release", "gates"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "candidateSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "environment": { "type": "string", "minLength": 1 },
+    "recordedAtUtc": { "type": "string", "format": "date-time" },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceSha", "deployedSha", "bundle", "health"],
+      "properties": {
+        "sourceSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "deployedSha": { "type": ["string", "null"], "pattern": "^[0-9a-f]{40}$" },
+        "bundle": { "$ref": "#/$defs/observation" },
+        "health": { "$ref": "#/$defs/observation" }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "externalRequired", "status", "checks"],
+        "properties": {
+          "id": { "enum": ["K0", "K1", "K2", "K6", "K7", "K8", "K9"] },
+          "title": { "type": "string", "minLength": 1 },
+          "externalRequired": { "type": "boolean" },
+          "status": { "$ref": "#/$defs/status" },
+          "checks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/check" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "status": { "enum": ["pending", "passed", "failed", "blocked", "not-applicable"] },
+    "observation": {
+      "type": "object",
+      "required": ["status", "observedAtUtc", "actualResult", "evidencePath", "blocker"],
+      "properties": {
+        "status": { "$ref": "#/$defs/status" },
+        "observedAtUtc": { "type": ["string", "null"], "format": "date-time" },
+        "actualResult": { "type": ["string", "null"] },
+        "evidencePath": { "type": ["string", "null"] },
+        "blocker": { "type": ["string", "null"] }
+      }
+    },
+    "check": {
+      "allOf": [
+        { "$ref": "#/$defs/observation" },
+        {
+          "type": "object",
+          "required": ["scenario", "role", "actorLabel", "expectedResult"],
+          "properties": {
+            "scenario": { "type": "string", "minLength": 1 },
+            "role": { "type": ["string", "null"] },
+            "actorLabel": { "type": ["string", "null"] },
+            "expectedResult": { "type": "string", "minLength": 1 },
+            "device": { "type": ["string", "null"] }
+          }
+        }
+      ]
+    }
+  }
+}

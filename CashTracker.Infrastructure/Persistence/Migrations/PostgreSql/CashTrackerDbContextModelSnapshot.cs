@@ -135,6 +135,32 @@ namespace CashTracker.Infrastructure.Persistence.Migrations.PostgreSql
                     b.ToTable("Abonelik", (string)null);
                 });
 
+            modelBuilder.Entity("CashTracker.Core.Entities.AbonelikFiyatBildirimKaniti", b =>
+                {
+                    b.Property<long>("Id").ValueGeneratedOnAdd().HasColumnType("bigint");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+                    b.Property<int>("AbonelikId").HasColumnType("integer");
+                    b.Property<string>("AliciEposta").IsRequired().HasMaxLength(320).HasColumnType("character varying(320)");
+                    b.Property<DateTime>("BildirimOlusturulduAt").HasColumnType("timestamp without time zone");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp without time zone");
+                    b.Property<DateTime>("DonemBaslangicAt").HasColumnType("timestamp without time zone");
+                    b.Property<DateTime>("DonemBitisAt").HasColumnType("timestamp without time zone");
+                    b.Property<long>("EpostaOutboxId").HasColumnType("bigint");
+                    b.Property<decimal>("EskiNetTutar").HasColumnType("NUMERIC(18,2)");
+                    b.Property<int>("IsletmeId").HasColumnType("integer");
+                    b.Property<string>("KullaniciRef").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
+                    b.Property<string>("MetinHash").IsRequired().HasMaxLength(64).HasColumnType("character varying(64)");
+                    b.Property<string>("MetinSurumu").IsRequired().HasMaxLength(80).HasColumnType("character varying(80)");
+                    b.Property<string>("ParaBirimi").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)");
+                    b.Property<long>("UygulamaOutboxId").HasColumnType("bigint");
+                    b.Property<decimal>("YeniNetTutar").HasColumnType("NUMERIC(18,2)");
+                    b.Property<DateTime>("YururlukAt").HasColumnType("timestamp without time zone");
+                    b.HasKey("Id");
+                    b.HasIndex("IsletmeId", "YururlukAt");
+                    b.HasIndex("AbonelikId", "YururlukAt", "YeniNetTutar").IsUnique();
+                    b.ToTable("AbonelikFiyatBildirimKaniti", (string)null);
+                });
+
             modelBuilder.Entity("CashTracker.Core.Entities.AbonelikOnayi", b =>
                 {
                     b.Property<int>("Id")

@@ -31,6 +31,7 @@ namespace CashTracker.Tests
             var bankIndex = migrations.IndexOf("20260824190000_BankReconciliationMvp");
             var stockLedgerIndex = migrations.IndexOf("20260824200000_AdvancedStockLedger");
             var developerApiIndex = migrations.IndexOf("20260824210000_DeveloperApiAccess");
+            var priceProtectionIndex = migrations.IndexOf("20260911120000_SubscriptionPriceNotificationProtection");
 
             Assert.True(gateIndex >= 0);
             Assert.True(monthlyIndex > gateIndex);
@@ -40,6 +41,7 @@ namespace CashTracker.Tests
             Assert.True(bankIndex > notificationsIndex);
             Assert.True(stockLedgerIndex > bankIndex);
             Assert.True(developerApiIndex > stockLedgerIndex);
+            Assert.True(priceProtectionIndex > developerApiIndex);
         }
 
         [Fact]
@@ -58,8 +60,10 @@ namespace CashTracker.Tests
             var differences = modelDiffer.GetDifferences(snapshotModel.GetRelationalModel(), currentModel.GetRelationalModel())
                 .Where(x => x switch
                 {
-                    AlterColumnOperation column => column.Table.StartsWith("Stok", StringComparison.Ordinal),
-                    CreateIndexOperation index => index.Table.StartsWith("Stok", StringComparison.Ordinal),
+                    AlterColumnOperation column => column.Table.StartsWith("Stok", StringComparison.Ordinal) || column.Table == "AbonelikFiyatBildirimKaniti",
+                    CreateIndexOperation index => index.Table.StartsWith("Stok", StringComparison.Ordinal) || index.Table == "AbonelikFiyatBildirimKaniti",
+                    CreateTableOperation table => table.Name == "AbonelikFiyatBildirimKaniti",
+                    DropTableOperation table => table.Name == "AbonelikFiyatBildirimKaniti",
                     _ => false
                 })
                 .ToList();
@@ -95,6 +99,7 @@ namespace CashTracker.Tests
                 Assert.True(TableExists(conn, "BildirimKaydi"));
                 Assert.True(TableExists(conn, "BildirimTercihi"));
                 Assert.True(TableExists(conn, "BildirimTeslimOutbox"));
+                Assert.True(TableExists(conn, "AbonelikFiyatBildirimKaniti"));
                 Assert.True(TableExists(conn, "BankaHareketi"));
                 Assert.True(TableExists(conn, "StokDepo"));
                 Assert.True(TableExists(conn, "StokDefterIslemi"));
@@ -153,6 +158,7 @@ namespace CashTracker.Tests
                 Assert.True(IndexExists(conn, "IX_BildirimKaydi_IsletmeId_KullaniciRef_KaynakAnahtari"));
                 Assert.True(IndexExists(conn, "IX_BildirimTercihi_IsletmeId_KullaniciRef"));
                 Assert.True(IndexExists(conn, "IX_BildirimTeslimOutbox_IsletmeId_KullaniciRef_Kanal_IdempotencyAnahtari"));
+                Assert.True(IndexExists(conn, "IX_AbonelikFiyatBildirimKaniti_AbonelikId_YururlukAt_YeniNetTutar"));
                 Assert.True(IndexExists(conn, "IX_BankaHareketi_IsletmeId_KaynakHash"));
                 Assert.True(IndexExists(conn, "IX_StokDepo_IsletmeId_Kod"));
                 Assert.True(IndexExists(conn, "IX_StokDefterIslemi_IsletmeId_IslemAnahtari"));

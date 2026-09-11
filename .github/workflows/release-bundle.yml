@@ -1,0 +1,93 @@
+name: Release bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Full 40-character commit SHA from the default branch
+        required: true
+        type: string
+      environment_name:
+        description: Target environment recorded in the evidence template
+        required: true
+        default: production
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: systemcel-release-bundle
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+
+      - name: Verify immutable candidate
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          [[ "${CANDIDATE_SHA}" =~ ^[0-9a-fA-F]{40}$ ]]
+          resolved_sha="$(git rev-parse HEAD)"
+          [[ "${resolved_sha,,}" == "${CANDIDATE_SHA,,}" ]]
+          git fetch --no-tags origin "${DEFAULT_BRANCH}"
+          git merge-base --is-ancestor "${resolved_sha}" "origin/${DEFAULT_BRANCH}"
+
+      - name: Create and validate pending evidence template
+        shell: pwsh
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment_name }}
+        run: |
+          ./scripts/New-SystemcelReleaseEvidence.ps1 `
+            -CandidateSha $env:CANDIDATE_SHA `
+            -EnvironmentName $env:TARGET_ENVIRONMENT `
+            -OutputPath ./release-evidence.template.json
+          ./scripts/Test-SystemcelReleaseEvidence.ps1 -Path ./release-evidence.template.json
+
+      - name: Build source bundle and manifest
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          TARGET_ENVIRONMENT: ${{ inputs.environment_name }}
+        run: |
+          set -euo pipefail
+          short_sha="${CANDIDATE_SHA:0:12}"
+          bundle_dir="artifacts/systemcel-release-${short_sha}"
+          mkdir -p "${bundle_dir}"
+          git archive --format=tar.gz --output="${bundle_dir}/source.tar.gz" HEAD
+          cp release-evidence.template.json scripts/release-evidence.schema.json "${bundle_dir}/"
+          source_checksum="$(sha256sum "${bundle_dir}/source.tar.gz" | cut -d ' ' -f1)"
+          jq -n \
+            --arg sha "$(git rev-parse HEAD)" \
+            --arg environment "${TARGET_ENVIRONMENT}" \
+            --arg createdAtUtc "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg repository "${GITHUB_REPOSITORY}" \
+            --arg runId "${GITHUB_RUN_ID}" \
+            --arg sourceSha256 "${source_checksum}" \
+            '{schemaVersion:1,candidateSha:$sha,targetEnvironment:$environment,createdAtUtc:$createdAtUtc,repository:$repository,workflowRunId:$runId,sourceArchive:"source.tar.gz",sourceSha256:$sourceSha256}' \
+            > "${bundle_dir}/manifest.json"
+          (cd artifacts && zip -qr "systemcel-release-${short_sha}.zip" "systemcel-release-${short_sha}")
+          (cd artifacts && sha256sum "systemcel-release-${short_sha}.zip" > "systemcel-release-${short_sha}.zip.sha256")
+
+      - name: Upload controlled release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: systemcel-release-${{ inputs.candidate_sha }}
+          path: |
+            artifacts/systemcel-release-*.zip
+            artifacts/systemcel-release-*.zip.sha256
+          if-no-files-found: error
+          retention-days: 30

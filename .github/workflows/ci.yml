@@ -44,6 +44,16 @@ jobs:
           npm test
           npm run build
 
+      - name: Validate release evidence tooling
+        shell: pwsh
+        run: |
+          $path = Join-Path $env:RUNNER_TEMP "release-evidence.json"
+          ./scripts/New-SystemcelReleaseEvidence.ps1 `
+            -CandidateSha "${{ github.sha }}" `
+            -EnvironmentName ci `
+            -OutputPath $path
+          ./scripts/Test-SystemcelReleaseEvidence.ps1 -Path $path
+
       - name: Install Playwright browsers
         working-directory: Systemcel.Web
         shell: pwsh

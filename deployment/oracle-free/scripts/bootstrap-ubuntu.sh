@@ -8,7 +8,7 @@ fi
 
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  ca-certificates curl docker.io docker-compose-v2 fail2ban git jq ufw
+  ca-certificates curl docker.io docker-compose-v2 fail2ban git jq rclone ufw
 
 sudo usermod -aG docker "${USER}"
 sudo systemctl enable --now docker fail2ban

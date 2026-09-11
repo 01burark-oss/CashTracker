@@ -2,6 +2,14 @@
 
 This baseline applies to the Oracle VM Docker deployment. Production thresholds must be tuned from observed traffic; the current payment provider remains `Fake` until the company/provider gate.
 
+## Collection and ownership
+
+`deployment/oracle-free/scripts/collect-monitoring.sh` writes Prometheus text atomically to `/var/lib/systemcel-monitoring/systemcel.prom` every minute. Configure the host metric agent/node exporter to collect that directory and forward it to persistent monitoring outside the VM. The backup metric reads `/var/lib/systemcel-backup/offsite-last-success.json`; a local dump timestamp is deliberately not accepted as offsite success.
+
+The application already records request count, duration and error instruments under meter `Systemcel.Api`. Bind that meter to the chosen OpenTelemetry/Prometheus backend for HTTP 5xx ratio alerts; do not derive a durable rate from short Docker log retention. Keep trace/request ID searchable in the log backend. Never use tenant ID, user ID, token, request body, filename or backup package ID as a metric label. The current package ID remains in the local backup state JSON and service log for recovery evidence.
+
+An external HTTPS monitor must probe `https://systemcel.app/api/health/ready` from outside Oracle. The alert destination, secondary critical channel and owner are deployment inputs; neither should depend only on this VM. Recommended notification repeat is 30 minutes while critical and one explicit recovery notification.
+
 ## Health signals
 
 - Liveness: `GET /api/health/live`; process is running. Do not page on one failed probe.
@@ -21,9 +29,40 @@ This baseline applies to the Oracle VM Docker deployment. Production thresholds 
 | PostgreSQL connections | >70% for 15 minutes | >85% for 5 minutes | Find leaked/long queries; diagnose before scaling |
 | Host or PostgreSQL disk | >70% | >85% | Review growth and backups; expand before write risk |
 | Backup age | >26 hours | >36 hours | Check backup timer and take a logical backup if safe |
+| Host CPU (initial, not observed) | >80% for 15 minutes | >95% for 10 minutes | Correlate load, throttling and request duration |
+| Host memory (initial, not observed) | >80% for 10 minutes | >90% for 5 minutes | Check OOM events and container growth |
 | Checkout failure | 3 synthetic failures | >10% real attempts | Disable checkout flag; preserve event IDs |
 | Webhook processing | Any synthetic signature mismatch | Sustained valid-event failures | Preserve provider event IDs; do not replay blindly |
 | Rate limiting | >1% API responses for 15 minutes | >5% for 5 minutes | Separate abuse from bad client retry logic |
+
+Metric mappings:
+
+- `systemcel_host_cpu_usage_percent`, `systemcel_host_memory_usage_percent`, `systemcel_host_disk_usage_percent`: thresholds above.
+- `increase(systemcel_container_restart_count[15m]) >= 2` warning; `increase(...[10m]) >= 3` critical. Container recreation can reset the gauge, so also retain Docker events.
+- `systemcel_postgres_connections / systemcel_postgres_max_connections`: 70% warning, 85% critical.
+- `systemcel_offsite_backup_state_valid != 1` or backup age over 26/36 hours. Age `-1` means unknown and is critical after initial setup grace.
+- `systemcel_readiness_success`: two failures within five minutes warning; five consecutive failures critical. The external probe is authoritative for a VM outage.
+- `rate(systemcel.http.server.request.error.count{error.type="server"}[10m]) / rate(systemcel.http.server.request.count[10m])`: 2% warning; use a five-minute window and 5% for critical.
+
+## Safe dry tests
+
+Run local collection without changing the metric file:
+
+```bash
+cd /opt/systemcel/repo/deployment/oracle-free
+./scripts/collect-monitoring.sh --stdout
+systemctl start systemcel-monitoring.service
+journalctl -u systemcel-monitoring.service --no-pager -n 30
+```
+
+Test rules in an isolated/silenced route or staging alert policy. Inject a synthetic metric into the monitoring backend (for example disk `86`, backup age `129601`, readiness `0`) and then remove it to prove both alert and recovery delivery. Do not fill the live disk, stop the production database, age/delete the real backup state, or create restart loops. Record UTC time, rule name, receiving channel, alert receipt and recovery receipt; do not attach secrets or customer data.
+
+Before enabling paging, verify these failure paths separately:
+
+1. Stop or block only a disposable external probe target to prove the off-VM readiness alert.
+2. Point a staging copy of the backup service at an invalid/non-production remote and confirm that `offsite-last-success.json` is unchanged.
+3. Restore the staging target, run a transfer, and confirm backup age returns to normal and a recovery notification arrives.
+4. Confirm warning/critical repeat behavior and secondary-channel routing with the named operations owner.
 
 ## Log contract
 

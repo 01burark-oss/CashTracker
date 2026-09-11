@@ -84,5 +84,22 @@ mv "${appdata_archive_partial}" "${backup_dir}/${appdata_archive_name}"
   fi
 )
 
-find "${backup_dir}" -type f -name 'systemcel-*' -mtime +14 -delete
+state_file="${OFFSITE_BACKUP_STATE_FILE:-/var/lib/systemcel-backup/offsite-last-success.json}"
+last_remote_package=""
+if [[ -f "${state_file}" ]]; then
+  last_remote_package="$(jq -er '.package_id | select(type == "string")' "${state_file}" 2>/dev/null || true)"
+fi
+
+# Never let local retention remove the only known recoverable copy. A local
+# package becomes eligible only after this host recorded a verified remote
+# package with the same or a newer UTC identifier.
+while IFS= read -r -d '' old_file; do
+  old_name="$(basename "${old_file}")"
+  if [[ "${old_name}" =~ ^systemcel-(db-|appdata-)?([0-9]{8}T[0-9]{6}Z) ]]; then
+    old_package="systemcel-${BASH_REMATCH[2]}"
+    if [[ -n "${last_remote_package}" && ( "${old_package}" < "${last_remote_package}" || "${old_package}" == "${last_remote_package}" ) ]]; then
+      rm -f -- "${old_file}"
+    fi
+  fi
+done < <(find "${backup_dir}" -maxdepth 1 -type f -name 'systemcel-*' -mtime +14 -print0)
 echo "Yedek tamamlandı ve doğrulandı: ${timestamp}"

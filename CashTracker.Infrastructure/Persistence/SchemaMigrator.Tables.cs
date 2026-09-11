@@ -807,6 +807,30 @@ CREATE INDEX IF NOT EXISTS IX_BildirimTeslimOutbox_IsletmeId_KullaniciRef ON Bil
 ");
 
             db.Database.ExecuteSqlRaw(@"
+CREATE TABLE IF NOT EXISTS AbonelikFiyatBildirimKaniti (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AbonelikId INTEGER NOT NULL,
+    IsletmeId INTEGER NOT NULL,
+    KullaniciRef TEXT NOT NULL,
+    AliciEposta TEXT NOT NULL,
+    EskiNetTutar NUMERIC NOT NULL,
+    YeniNetTutar NUMERIC NOT NULL,
+    ParaBirimi TEXT NOT NULL DEFAULT 'TRY',
+    DonemBaslangicAt TEXT NOT NULL,
+    DonemBitisAt TEXT NOT NULL,
+    YururlukAt TEXT NOT NULL,
+    MetinSurumu TEXT NOT NULL,
+    MetinHash TEXT NOT NULL,
+    BildirimOlusturulduAt TEXT NOT NULL,
+    UygulamaOutboxId INTEGER NOT NULL,
+    EpostaOutboxId INTEGER NOT NULL,
+    CreatedAt TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS IX_AbonelikFiyatBildirimKaniti_AbonelikId_YururlukAt_YeniNetTutar ON AbonelikFiyatBildirimKaniti(AbonelikId, YururlukAt, YeniNetTutar);
+CREATE INDEX IF NOT EXISTS IX_AbonelikFiyatBildirimKaniti_IsletmeId_YururlukAt ON AbonelikFiyatBildirimKaniti(IsletmeId, YururlukAt);
+");
+
+            db.Database.ExecuteSqlRaw(@"
 CREATE TABLE IF NOT EXISTS BankaHareketi (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     IsletmeId INTEGER NOT NULL,

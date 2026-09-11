@@ -4,7 +4,7 @@ info:
   version: 1.0.0
   description: Salt-okunur işletme entegrasyon API'si. Mutasyon kapsamları bu sürümde kapalıdır.
 servers:
-  - url: https://app.systemcel.app/api/v1
+  - url: https://systemcel.app/api/v1
 security:
   - ApiKey: []
 paths:

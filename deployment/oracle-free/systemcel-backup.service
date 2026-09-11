@@ -1,10 +1,16 @@
 [Unit]
-Description=Systemcel verified database and appdata backup
+Description=Systemcel verified encrypted offsite backup
 Requires=docker.service
-After=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/systemcel/repo/deployment/oracle-free
-ExecStart=/bin/bash /opt/systemcel/repo/deployment/oracle-free/scripts/backup.sh
+EnvironmentFile=/etc/systemcel/backup-offsite.env
+ExecStart=/bin/bash /opt/systemcel/repo/deployment/oracle-free/scripts/backup-offsite.sh
 UMask=0077
+RuntimeDirectory=systemcel-backup
+RuntimeDirectoryMode=0750
+StateDirectory=systemcel-backup
+StateDirectoryMode=0750

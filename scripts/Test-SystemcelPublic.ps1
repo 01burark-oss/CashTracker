@@ -1,24 +1,64 @@
 [CmdletBinding()]
 param(
     [string]$BaseUrl = "https://systemcel.app",
-    [string]$AllowedOrigin = "https://systemcel.app"
+    [string]$AllowedOrigin = "https://systemcel.app",
+    [ValidatePattern('^$|^[0-9a-fA-F]{40}$')]
+    [string]$CandidateSha = "",
+    [string]$EnvironmentName = "production",
+    [string]$EvidencePath = ""
 )
 
 $ErrorActionPreference = "Stop"
+if (-not [string]::IsNullOrWhiteSpace($EvidencePath) -and [string]::IsNullOrWhiteSpace($CandidateSha)) {
+    throw "CandidateSha is required when EvidencePath is set."
+}
 $base = $BaseUrl.TrimEnd("/")
 $failures = [System.Collections.Generic.List[string]]::new()
+$checks = [System.Collections.Generic.List[object]]::new()
 
 function Add-Failure([string]$Message) {
     $script:failures.Add($Message)
+    $script:checks.Add([ordered]@{ status = "failed"; check = $Message })
     Write-Output "[FAIL] $Message"
 }
 
 function Add-Pass([string]$Message) {
+    $script:checks.Add([ordered]@{ status = "passed"; check = $Message })
     Write-Output "[PASS] $Message"
 }
 
 function Get-Response([string]$Path, [string]$Method = "GET", [hashtable]$Headers = @{}) {
-    Invoke-WebRequest -Uri "$base$Path" -Method $Method -Headers $Headers -UseBasicParsing
+    try {
+        Invoke-WebRequest -Uri "$base$Path" -Method $Method -Headers $Headers -UseBasicParsing -SkipHttpErrorCheck
+    }
+    catch {
+        Add-Failure "Transport error for $Method $Path"
+        [pscustomobject]@{
+            StatusCode = 0
+            Headers = @{}
+            Content = ""
+        }
+    }
+}
+
+function Write-Evidence {
+    if ([string]::IsNullOrWhiteSpace($EvidencePath)) { return }
+
+    $resolvedEvidence = [System.IO.Path]::GetFullPath($EvidencePath)
+    $evidenceParent = Split-Path -Parent $resolvedEvidence
+    if (-not [string]::IsNullOrWhiteSpace($evidenceParent)) {
+        New-Item -ItemType Directory -Force -Path $evidenceParent | Out-Null
+    }
+    [ordered]@{
+        schemaVersion = 1
+        candidateSha = if ([string]::IsNullOrWhiteSpace($CandidateSha)) { $null } else { $CandidateSha.ToLowerInvariant() }
+        environment = $EnvironmentName
+        baseUrl = $base
+        observedAtUtc = [DateTimeOffset]::UtcNow.ToString("o")
+        status = if ($failures.Count -eq 0) { "passed" } else { "failed" }
+        checks = @($checks)
+    } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $resolvedEvidence -Encoding utf8NoBOM
+    Write-Output "Public smoke evidence written: $resolvedEvidence"
 }
 
 function Assert-Status([object]$Response, [int]$Expected, [string]$Name) {
@@ -107,6 +147,15 @@ else {
     }
 }
 
+$developerApi = Get-Response "/api/v1/business"
+Assert-Status $developerApi 401 "developer API canonical unauthenticated endpoint"
+if ([string]$developerApi.Headers["Content-Type"] -notmatch "application/problem\+json") {
+    Add-Failure "Developer API authentication error is not application/problem+json"
+}
+else {
+    Add-Pass "Developer API canonical URL and authentication boundary"
+}
+
 $untrusted = Get-Response "/api/health/live" "OPTIONS" @{
     Origin = "https://untrusted.invalid"
     "Access-Control-Request-Method" = "GET"
@@ -128,6 +177,8 @@ if ([string]$trusted.Headers["Access-Control-Allow-Origin"] -eq $AllowedOrigin) 
 else {
     Add-Failure "Configured CORS origin was not accepted"
 }
+
+Write-Evidence
 
 if ($failures.Count -gt 0) {
     throw "Public gate failed with $($failures.Count) error(s)."

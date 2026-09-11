@@ -1,6 +1,6 @@
 # Oracle Always Free canlı dağıtımı
 
-Bu klasör Systemcel'in güncel canlı Oracle Cloud Always Free ARM64 dağıtımını içerir. DigitalOcean kaynakları silinmiştir; geri dönüş hedefi değildir. DNS yönetimi ve sunucu dışı yedek aktarımı bu paketin otomatik bir parçası değildir.
+Bu klasör Systemcel'in güncel canlı Oracle Cloud Always Free ARM64 dağıtımını içerir. DigitalOcean kaynakları silinmiştir; geri dönüş hedefi değildir. DNS ve alarm teslim sağlayıcısı altyapı sahibinin ayrı yapılandırmasıdır.
 
 ## Hazırlanan sunucu
 
@@ -48,24 +48,50 @@ curl --fail https://systemcel.app/api/health/ready
 
 2 Eylül 2026 veri taşıması ve geri yükleme kontrolü tamamlanmıştır. Güncel kanıt ve açık kapılar için `MIGRATION-STATUS.md` kullanılır; eski sağlayıcıdan yeniden veri alınmaz.
 
-## Yedekleme
+## Şifreli sunucu dışı yedekleme
 
-Günlük systemd zamanlayıcısı sunucuda etkindir; 03:00 UTC (06:00 Türkiye), en fazla beş dakika rastgele gecikmeyle çalışır. İlk servis çalışması 2 Eylül 2026'da başarılı oldu. Kurulum ve kontrol:
+Günlük systemd zamanlayıcısı 03:00 UTC (06:00 Türkiye), en fazla beş dakika rastgele gecikmeyle çalışır. Servis uygulama yazmalarını kısa süre durdurur, doğrulanmış PostgreSQL + appdata + SHA-256 üçlüsünü üretir ve `rclone crypt` hedefe yollar. Hedef depolama sağlayıcısından bağımsızdır; şifreleme VM'den çıkmadan uygulanır.
+
+Altyapı sahibi önce bir rclone depolama remote'u, onun üzerinde `crypt` remote'u oluşturmalıdır. Crypt parolası, salt parolası, sabit `SYSTEMCEL_SECRET_ENCRYPTION_KEY` ve gerekli kurulum sırları VM'den ve eski Windows profilinden bağımsız, erişim kontrollü kurtarma kaydında tutulmalıdır. Aktarım kimliğine mümkünse yalnız yazma/listeleme yetkisi verin; retention silme yetkisini ayrı tutun.
 
 ```bash
+sudo install -d -m 0750 /etc/systemcel
+sudo rclone config --config /etc/systemcel/rclone.conf
+sudo install -m 0600 backup-offsite.env.example /etc/systemcel/backup-offsite.env
+sudoedit /etc/systemcel/backup-offsite.env
 sudo install -m 644 systemcel-backup.service systemcel-backup.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now systemcel-backup.timer
-sudo systemctl start systemcel-backup.service
-sudo systemctl list-timers systemcel-backup.timer
-sudo journalctl -u systemcel-backup.service --no-pager -n 20
 ```
+
+Gerçek hedefe yazmadan kuru kontrol ve ardından kontrollü ilk çalıştırma:
 
 ```bash
-./scripts/backup.sh
+sudo -u root env RCLONE_CONFIG=/etc/systemcel/rclone.conf rclone config show systemcel-crypt | grep 'type = crypt'
+sudo systemctl start systemcel-backup.service
+sudo systemctl status systemcel-backup.service --no-pager
+sudo journalctl -u systemcel-backup.service --no-pager -n 50
+sudo jq . /var/lib/systemcel-backup/offsite-last-success.json
 ```
 
-Betik PostgreSQL özel-format dump, uygulama verisi arşivi ve bu iki dosyayı kapsayan SHA-256 manifesti üretir. Tamamlanmamış çıktıları yayınlamaz; dump listesini, arşivi ve checksum'ları oluşturma sırasında doğrular. Yerel diskteki 14 günden eski `systemcel-*` yedeklerini temizler. Kalıcı işletim için bu çıktılar ayrıca şifreli, sunucu dışı nesne depolamaya kopyalanmalıdır; aynı diskteki yedek tek başına felaket kurtarma sayılmaz.
+Betik tek-çalışan kilidi kullanır, işlemleri tekrar dener, uzak dosyaları yeniden indirerek checksum kontrolü yapar ve `COMPLETED.json` işaretini en son yazar. Yalnız bundan sonra yerel son-başarı durumu atomik güncellenir. Tamamlanma işareti olmayan paketler kurtarılabilir başarı sayılmaz. Loglara rclone yapılandırması ya da sırlar yazılmaz.
+
+Sunucu dışı aktarım başarısızsa yeni yerel paketler 14 günü geçse de silinmez. Bu veri kaybına karşı güvenli varsayılan diski doldurabilir; disk alarmı bu nedenle zorunludur. Uzak retention (pilot başlangıcı: 14 gün) depolama tarafı lifecycle kuralıyla, tamamlanmış paketlere uygulanmalıdır.
+
+Yerel-only yedek veya mevcut bir yerel paketi tekrar aktarmak için:
+
+```bash
+./scripts/backup.sh --quiesce
+sudo --preserve-env=RCLONE_CONFIG,RCLONE_CRYPT_REMOTE ./scripts/backup-offsite.sh --transfer-only
+```
+
+Kurulum ve zamanlayıcı kontrolü:
+
+```bash
+sudo systemctl list-timers systemcel-backup.timer
+```
+
+`backup.sh` tamamlanmamış yerel çıktıları yayınlamaz; dump listesini, arşivi ve checksum'ları oluşturma sırasında doğrular. Aynı diskteki yedek tek başına felaket kurtarma sayılmaz.
 
 Planlı bakımda tutarlı bir kopya almak için uygulama yazmalarını kısa süreli durduran seçenek kullanılabilir:
 
@@ -73,7 +99,21 @@ Planlı bakımda tutarlı bir kopya almak için uygulama yazmalarını kısa sü
 ./scripts/backup.sh --quiesce
 ```
 
-Bu seçenek çalışıyorsa `app` ve `caddy` servislerini durdurur, yedek tamamlandığında yeniden başlatır. Normal periyodik yedek, kesinti oluşturmamak için parametresiz çalışır.
+Bu seçenek çalışıyorsa `app` ve `caddy` servislerini durdurur, yedek tamamlandığında yeniden başlatır. Otomatik servis, dosya ve veritabanı tutarlılığı için güvenli varsayılan olarak bu yolu kullanır. Kesintisiz yöntem eşzamanlı yükleme/silme altında ayrıca kanıtlanmadan tam kurtarma olarak sunulmamalıdır.
+
+## Yerel monitoring collector
+
+Collector CPU, RAM, deployment diski, yerel readiness, PostgreSQL bağlantıları, container durumu/restart sayacı ve son doğrulanmış uzak yedek yaşını Prometheus text formatında atomik üretir:
+
+```bash
+sudo install -m 644 systemcel-monitoring.service systemcel-monitoring.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now systemcel-monitoring.timer
+./scripts/collect-monitoring.sh --stdout
+sudo cat /var/lib/systemcel-monitoring/systemcel.prom
+```
+
+Textfile yolu bir node exporter/ajan tarafından kalıcı metric hedefine alınmalıdır. VM tamamen kapandığında bu collector çalışamayacağı için HTTPS/readiness probe'u ayrı bir VM dışı serviste kurulmalıdır. Eşikler, kuru test ve teslim kanıtı [monitoring runbook](../../docs/runbooks/monitoring.md) içindedir.
 
 Geri yükleme betiği bilerek etkileşimli ve yıkıcı işlem uyarılıdır:
 

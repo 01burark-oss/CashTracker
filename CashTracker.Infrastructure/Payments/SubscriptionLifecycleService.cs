@@ -25,19 +25,22 @@ public sealed class SubscriptionLifecycleService : ISubscriptionLifecycleService
     private readonly IPaymentPricingService _pricing;
     private readonly ISubscriptionReminderSender? _reminderSender;
     private readonly MuhasebeciOdemeOptions _accountantPaymentOptions;
+    private readonly ISubscriptionPriceProtectionService _priceProtection;
 
     public SubscriptionLifecycleService(
         IDbContextFactory<CashTrackerDbContext> dbFactory,
         IPaymentProvider provider,
         IPaymentPricingService pricing,
         ISubscriptionReminderSender? reminderSender = null,
-        MuhasebeciOdemeOptions? accountantPaymentOptions = null)
+        MuhasebeciOdemeOptions? accountantPaymentOptions = null,
+        ISubscriptionPriceProtectionService? priceProtection = null)
     {
         _dbFactory = dbFactory;
         _provider = provider;
         _pricing = pricing;
         _reminderSender = reminderSender;
         _accountantPaymentOptions = accountantPaymentOptions ?? new MuhasebeciOdemeOptions();
+        _priceProtection = priceProtection ?? new SubscriptionPriceProtectionService(dbFactory);
     }
 
     public async Task<SubscriptionCheckoutResult> BeginCheckoutAsync(
@@ -57,7 +60,17 @@ public sealed class SubscriptionLifecycleService : ISubscriptionLifecycleService
             .Where(x => x.IsletmeId == command.BusinessId && x.HesapTipi == command.AccountType && x.Durum == "Aktif")
             .OrderByDescending(x => x.DonemBaslangicAt)
             .FirstOrDefaultAsync(ct);
-        var useFounderPrice = existing is null && activeSubscription is null &&
+        var expiredRenewalSubscription = activeSubscription is null
+            ? await db.Abonelikler.AsNoTracking()
+                .Where(x => x.IsletmeId == command.BusinessId && x.HesapTipi == command.AccountType &&
+                            x.Durum == "SonaErdi" && !x.DonemSonundaIptal && x.DonemBitisAt != null &&
+                            x.PlanKodu == command.PlanCode && x.FaturalamaDonemi == command.BillingPeriod &&
+                            x.EkMusteriKredisi == command.ExtraCustomerCredits)
+                .OrderByDescending(x => x.DonemBitisAt)
+                .FirstOrDefaultAsync(ct)
+            : null;
+        var pricingSubscription = activeSubscription ?? expiredRenewalSubscription;
+        var useFounderPrice = existing is null && pricingSubscription is null &&
             await ReserveFounderSlotAsync(command, checkoutKey, ct);
         var quote = existing is not null
             ? BuildStoredQuote(existing)
@@ -66,7 +79,7 @@ public sealed class SubscriptionLifecycleService : ISubscriptionLifecycleService
                 command.AccountType,
                 command.BillingPeriod,
                 command.ExtraCustomerCredits,
-                ToPricingContext(activeSubscription),
+                ToPricingContext(pricingSubscription),
                 DateTime.UtcNow,
                 useFounderPrice);
         if (!string.Equals(business.TenantTipi, quote.AccountType, StringComparison.OrdinalIgnoreCase))
@@ -74,6 +87,34 @@ public sealed class SubscriptionLifecycleService : ISubscriptionLifecycleService
         EnsureExpectedQuoteMatches(command, quote);
         if (quote.ChangeType == SubscriptionChangeTypes.ScheduledDowngrade)
             throw new InvalidOperationException("Bu degisiklik odeme gerektirmez; donem sonuna planlanmalidir.");
+
+        var isRenewalCheckout = pricingSubscription is not null &&
+            string.Equals(pricingSubscription.PlanKodu, quote.PlanCode, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(pricingSubscription.FaturalamaDonemi, quote.BillingPeriod, StringComparison.OrdinalIgnoreCase) &&
+            pricingSubscription.EkMusteriKredisi == quote.ExtraCustomerCredits &&
+            pricingSubscription.DonemBitisAt is { } activePeriodEnd && EnsureUtc(activePeriodEnd) <= DateTime.UtcNow;
+        if (isRenewalCheckout && quote.FullPeriodNetAmount > pricingSubscription!.DonemTutari)
+        {
+            var decision = await _priceProtection.EvaluateRenewalAsync(
+                pricingSubscription.Id,
+                quote.FullPeriodNetAmount,
+                DateTime.UtcNow,
+                ct);
+            if (!decision.CanCharge)
+            {
+                var protectedNet = decision.AllowedNetAmount;
+                var protectedVat = decimal.Round(protectedNet * quote.VatRate / 100m, 2, MidpointRounding.AwayFromZero);
+                quote = quote with
+                {
+                    NetAmount = protectedNet,
+                    VatAmount = protectedVat,
+                    TotalAmount = protectedNet + protectedVat,
+                    ListNetAmount = protectedNet,
+                    RenewalNetAmount = protectedNet,
+                    FullPeriodNetAmount = protectedNet
+                };
+            }
+        }
 
         if (existing is not null)
         {

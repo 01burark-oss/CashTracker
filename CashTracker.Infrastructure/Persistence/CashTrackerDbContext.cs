@@ -63,6 +63,7 @@ namespace CashTracker.Infrastructure.Persistence
         public DbSet<BildirimKaydi> BildirimKayitlari => Set<BildirimKaydi>();
         public DbSet<BildirimTercihi> BildirimTercihleri => Set<BildirimTercihi>();
         public DbSet<BildirimTeslimOutbox> BildirimTeslimOutboxlari => Set<BildirimTeslimOutbox>();
+        public DbSet<AbonelikFiyatBildirimKaniti> AbonelikFiyatBildirimKanitlari => Set<AbonelikFiyatBildirimKaniti>();
         public DbSet<BankaHareketi> BankaHareketleri => Set<BankaHareketi>();
         public DbSet<GelistiriciApiAnahtari> GelistiriciApiAnahtarlari => Set<GelistiriciApiAnahtari>();
 
@@ -496,6 +497,21 @@ namespace CashTracker.Infrastructure.Persistence
                 e.HasIndex(x => new { x.IsletmeId, x.KullaniciRef, x.Kanal, x.IdempotencyAnahtari }).IsUnique();
                 e.HasIndex(x => new { x.Durum, x.SonrakiDenemeAt, x.ClaimBitisAt });
                 e.HasIndex(x => new { x.IsletmeId, x.KullaniciRef });
+            });
+
+            modelBuilder.Entity<AbonelikFiyatBildirimKaniti>(e =>
+            {
+                e.ToTable("AbonelikFiyatBildirimKaniti");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.KullaniciRef).IsRequired().HasMaxLength(200);
+                e.Property(x => x.AliciEposta).IsRequired().HasMaxLength(320);
+                e.Property(x => x.EskiNetTutar).HasColumnType("NUMERIC(18,2)");
+                e.Property(x => x.YeniNetTutar).HasColumnType("NUMERIC(18,2)");
+                e.Property(x => x.ParaBirimi).IsRequired().HasMaxLength(3);
+                e.Property(x => x.MetinSurumu).IsRequired().HasMaxLength(80);
+                e.Property(x => x.MetinHash).IsRequired().HasMaxLength(64);
+                e.HasIndex(x => new { x.AbonelikId, x.YururlukAt, x.YeniNetTutar }).IsUnique();
+                e.HasIndex(x => new { x.IsletmeId, x.YururlukAt });
             });
 
             modelBuilder.Entity<BankaHareketi>(e =>
